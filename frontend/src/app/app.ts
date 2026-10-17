@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { GymApiService, ActionHistory, Analytics, Branch, BranchPayload, BranchType, CancellationReason, Dashboard, Freeze, Membership, MembershipAccess, MembershipGroup, Plan, RenewalReminder, User, PtProfile, PtSession, PtEarning, PtPayout, PtAnalytics, PtPackageType, ActivationCode, PlatformMetrics, PlatformOrganization, UpgradeRequest, UpgradeRequestPayload } from './gym-api.service';
 import { CsrfTokenService } from './csrf-token.service';
+import { ALL_LEGAL_DOCUMENTS, LegalDocument } from './legal-content';
 
 type View = 'overview' | 'members' | 'packages' | 'register' | 'team' | 'account' | 'branches' | 'reports' | 'history' | 'pt-management' | 'pt-dashboard' | 'pt-earnings' | 'platform-admin';
 type AuthMode = 'home' | 'login' | 'forgot-password' | 'register-gym';
@@ -235,6 +236,59 @@ export class App {
   readonly generatingCode = signal(false);
   readonly copiedCode = signal<string | null>(null);
 
+  // ─── Legal & Compliance Hub Signals ───────────────────────────────────────
+  readonly legalModalOpen = signal(false);
+  readonly legalModalTab = signal<'terms' | 'privacy' | 'disclaimer' | 'acceptable-use'>('terms');
+  readonly legalSearchQuery = signal('');
+  readonly cookieConsentDismissed = signal(this.readCookieConsent());
+
+  readonly activeLegalDoc = computed<LegalDocument>(() => ALL_LEGAL_DOCUMENTS[this.legalModalTab()]);
+  readonly filteredLegalSections = computed(() => {
+    const doc = this.activeLegalDoc();
+    const query = this.legalSearchQuery().trim().toLowerCase();
+    if (!query) return doc.sections;
+    return doc.sections.filter(sec =>
+      sec.title.toLowerCase().includes(query) ||
+      sec.content.some(para => para.toLowerCase().includes(query))
+    );
+  });
+
+  openLegal(tab: 'terms' | 'privacy' | 'disclaimer' | 'acceptable-use' = 'terms'): void {
+    this.legalModalTab.set(tab);
+    this.legalSearchQuery.set('');
+    this.legalModalOpen.set(true);
+  }
+
+  closeLegal(): void {
+    this.legalModalOpen.set(false);
+  }
+
+  dismissCookieConsent(): void {
+    this.cookieConsentDismissed.set(true);
+    if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem('gym_cookie_consent_accepted', 'true');
+      } catch {
+        // ignore storage errors
+      }
+    }
+  }
+
+  private readCookieConsent(): boolean {
+    if (typeof localStorage === 'undefined') return true;
+    try {
+      return localStorage.getItem('gym_cookie_consent_accepted') === 'true';
+    } catch {
+      return true;
+    }
+  }
+
+  printLegalDoc(): void {
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
+  }
+
   registerGymDraft = {
     fullName: '',
     email: '',
@@ -244,7 +298,8 @@ export class App {
     organizationCode: '',
     branchName: '',
     branchAddress: '',
-    subscriptionTier: 'STANDARD' as 'STANDARD' | 'PREMIUM'
+    subscriptionTier: 'STANDARD' as 'STANDARD' | 'PREMIUM',
+    acceptTerms: false
   };
 
   reportFrom = this.addDays(this.todayDate(), -30);
@@ -263,7 +318,7 @@ export class App {
   readonly renewalTarget = signal<Membership | null>(null);
   renewalDraft = { planId: '', branchId: '', personalTrainerId: '', discountPercent: 0, startDate: '' };
   staffDraft = { fullName: '', email: '', phoneNumber: '', password: '', branchId: '' };
-  memberDraft = { fullName: '', email: '', phoneNumber: '', password: '', planId: '', branchId: '', personalTrainerId: '', discountPercent: 0, startDate: this.todayDate() };
+  memberDraft = { fullName: '', email: '', phoneNumber: '', password: '', planId: '', branchId: '', personalTrainerId: '', discountPercent: 0, startDate: this.todayDate(), waiverAcknowledged: false };
   ptDraft = { id: 0, fullName: '', email: '', phoneNumber: '', password: '', branchId: '', specializations: '', bio: '', sessionFeePerHour: 500, commissionPercent: 70 };
   ptPayoutDraft = { ptId: 0, ptName: '', periodFrom: this.addDays(this.todayDate(), -30), periodTo: this.todayDate(), notes: '' };
   receiptFile: File | null = null;
@@ -330,6 +385,7 @@ export class App {
   });
 
   readonly isAnyModalOpen = computed(() => !!(
+    this.legalModalOpen() ||
     this.sessionCompleting() ||
     this.bookingPtSession() ||
     this.ptPayoutModalOpen() ||
@@ -346,6 +402,7 @@ export class App {
 
   @HostListener('window:keydown.escape')
   onEscapePress(): void {
+    if (this.legalModalOpen()) { this.closeLegal(); return; }
     if (this.sessionCompleting()) { this.closeSessionCompletionModal(); return; }
     if (this.bookingPtSession()) { this.closeBookSessionModal(); return; }
     if (this.ptPayoutModalOpen()) { this.ptPayoutModalOpen.set(false); return; }
@@ -656,6 +713,10 @@ export class App {
   }
 
   async registerGym(): Promise<void> {
+    if (!this.registerGymDraft.acceptTerms) {
+      this.error.set('Please review and accept the Terms of Use, Privacy Policy, and Health Disclaimer to proceed.');
+      return;
+    }
     this.error.set('');
     this.busy.set(true);
     try {
@@ -1221,7 +1282,7 @@ export class App {
     if (view === 'pt-management' && this.user()?.role === 'OWNER') void this.loadPtManagementData();
     if (view === 'pt-dashboard' && this.user()?.role === 'PERSONAL_TRAINER') void this.loadMyPtDashboardData();
     if (view === 'pt-earnings' && this.user()?.role === 'PERSONAL_TRAINER') void this.loadMyPtEarningsData();
-    if (view === 'register') { this.memberDraft = { ...this.memberDraft, fullName: '', email: '', phoneNumber: '', password: '', planId: '', branchId: this.user()?.role === 'OWNER' ? String(this.activeBranches()[0]?.id ?? '') : String(this.user()?.branchId ?? ''), personalTrainerId: '', discountPercent: 0, startDate: this.todayDate() }; this.receiptFile = null; }
+    if (view === 'register') { this.memberDraft = { ...this.memberDraft, fullName: '', email: '', phoneNumber: '', password: '', planId: '', branchId: this.user()?.role === 'OWNER' ? String(this.activeBranches()[0]?.id ?? '') : String(this.user()?.branchId ?? ''), personalTrainerId: '', discountPercent: 0, startDate: this.todayDate(), waiverAcknowledged: false }; this.receiptFile = null; }
     if (view === 'account' && this.user()) this.profileDraft = { fullName: this.user()!.fullName, email: this.user()!.email, phoneNumber: this.user()!.phoneNumber ?? '' };
     if (view === 'register' && this.user()?.role === 'OWNER' && !this.memberDraft.branchId) this.memberDraft.branchId = String(this.activeBranches()[0]?.id ?? '');
     if (view === 'team' && !this.staffDraft.branchId) this.staffDraft.branchId = String(this.activeBranches()[0]?.id ?? '');
@@ -1542,6 +1603,10 @@ export class App {
 
   async registerMember(): Promise<void> {
     if (!this.selectedPlan()) return;
+    if (!this.memberDraft.waiverAcknowledged) {
+      this.error.set('Please confirm the member has acknowledged the health waiver and club terms.');
+      return;
+    }
     this.busy.set(true);
     this.error.set('');
     try {

@@ -468,6 +468,104 @@ describe('App', () => {
     }
   });
 
+  it('opens legal modal with specific tab and closes on escape key', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    expect(app.legalModalOpen()).toBe(false);
+
+    app.openLegal('privacy');
+    expect(app.legalModalOpen()).toBe(true);
+    expect(app.legalModalTab()).toBe('privacy');
+    expect(app.activeLegalDoc().title).toContain('Privacy Policy');
+
+    app.onEscapePress();
+    expect(app.legalModalOpen()).toBe(false);
+  });
+
+  it('filters legal sections by search query', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.openLegal('terms');
+    expect(app.filteredLegalSections().length).toBeGreaterThan(0);
+
+    app.legalSearchQuery.set('rhabdomyolysis');
+    const filtered = app.filteredLegalSections();
+    expect(filtered.length).toBe(1);
+    expect(filtered[0].id).toBe('physical-activity-waiver');
+
+    app.legalSearchQuery.set('xyznonexistentterm');
+    expect(app.filteredLegalSections().length).toBe(0);
+  });
+
+  it('blocks gym registration if terms and privacy policy are not accepted', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.registerGymDraft = {
+      fullName: 'Owner Test',
+      email: 'owner@testgym.com',
+      phoneNumber: '+1234567890',
+      password: 'SecurePassword123!',
+      organizationName: 'Test Gym Club',
+      organizationCode: 'TESTGYM',
+      branchName: 'Main Branch',
+      branchAddress: '123 Fitness St',
+      subscriptionTier: 'STANDARD',
+      acceptTerms: false
+    };
+
+    await app.registerGym();
+    expect(app.error()).toContain('Please review and accept the Terms of Use');
+  });
+
+  it('blocks member registration if health waiver is not acknowledged', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.plans.set([{
+      id: 1,
+      name: 'Monthly Plan',
+      description: 'Standard plan',
+      price: 50,
+      durationDays: 30,
+      durationMonths: null,
+      branchId: null,
+      branchName: null,
+      active: true,
+      usageCount: 0,
+      ptPackageType: 'NONE',
+      includedPtSessions: 0,
+      ptFeeIncluded: 0
+    }]);
+
+    app.memberDraft = {
+      fullName: 'New Member',
+      email: 'member@test.com',
+      phoneNumber: '+1234567890',
+      password: 'Password123!',
+      planId: '1',
+      branchId: '1',
+      personalTrainerId: '',
+      discountPercent: 0,
+      startDate: app.todayDate(),
+      waiverAcknowledged: false
+    };
+
+    await app.registerMember();
+    expect(app.error()).toContain('Please confirm the member has acknowledged the health waiver');
+  });
+
+  it('dismisses cookie consent and saves to localStorage', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.dismissCookieConsent();
+    expect(app.cookieConsentDismissed()).toBe(true);
+    expect(localStorage.getItem('gym_cookie_consent_accepted')).toBe('true');
+  });
+
   function membership(overrides: Partial<Membership> = {}): Membership {
     const today = new Date().toISOString().slice(0, 10);
     return {

@@ -18,6 +18,7 @@
             <a href="#platform">Platform</a>
             <a href="#locations">Locations</a>
             <a href="#about">About</a>
+            <button type="button" class="public-nav-legal" (click)="openLegal('terms')">Terms & Privacy</button>
           </nav>
           <div class="public-actions">
             <button class="public-signin" type="button" (click)="showLogin()">Sign in</button>
@@ -98,9 +99,33 @@
         <button class="public-primary" type="button" (click)="showLogin()">Sign in to Re-member Flow <span>→</span></button>
       </section>
       <footer class="public-footer">
-        <a class="public-brand" href="#home-top"><img src="/form-mark.svg" alt="" /><span>Re-member Flow</span></a>
-        <span>MEMBERSHIPS · PEOPLE · LOCATIONS</span>
-        <button type="button" (click)="showLogin()">Club sign in ↗</button>
+        <div class="public-footer-top">
+          <a class="public-brand" href="#home-top"><img src="/form-mark.svg" alt="" /><span>Re-member Flow</span></a>
+          <p class="public-footer-tagline">Cloud gym management software engineered for clarity, members, staff oversight, and multi-location operations.</p>
+        </div>
+        <div class="public-footer-grid">
+          <div class="footer-col">
+            <h4>Platform</h4>
+            <a href="#platform">Platform Overview</a>
+            <a href="#locations">Multi-Location Branches</a>
+            <button type="button" class="footer-link-btn" (click)="openLegal('acceptable-use')">Acceptable Use Policy</button>
+          </div>
+          <div class="footer-col">
+            <h4>Legal & Compliance</h4>
+            <button type="button" class="footer-link-btn" (click)="openLegal('terms')">Terms of Use & SaaS Agreement</button>
+            <button type="button" class="footer-link-btn" (click)="openLegal('privacy')">Privacy Policy (GDPR / DPDP)</button>
+            <button type="button" class="footer-link-btn" (click)="openLegal('disclaimer')">Health & Physical Liability Waiver</button>
+          </div>
+          <div class="footer-col">
+            <h4>Access & Portal</h4>
+            <button type="button" class="footer-link-btn" (click)="showLogin()">Club Sign In ↗</button>
+            <button type="button" class="footer-link-btn" (click)="authMode.set('register-gym')">Register Your Gym ↗</button>
+          </div>
+        </div>
+        <div class="public-footer-bottom">
+          <span>© 2026 Re-member Flow / GymFlow SaaS. All rights reserved.</span>
+          <span class="footer-security-pill">🔒 TLS 1.3 · BCrypt Hashing · Role-Isolated Multi-Tenant</span>
+        </div>
       </footer>
     </main>
   } @else {
@@ -161,6 +186,16 @@
               Register New Gym
             </button>
           </div>
+          <div class="auth-legal-notice">
+            <p>Protected by multi-tenant authentication security.</p>
+            <div class="auth-legal-links">
+              <button type="button" class="auth-legal-btn" (click)="openLegal('terms')">Terms of Use</button>
+              <span>·</span>
+              <button type="button" class="auth-legal-btn" (click)="openLegal('privacy')">Privacy Policy</button>
+              <span>·</span>
+              <button type="button" class="auth-legal-btn" (click)="openLegal('disclaimer')">Health Waiver</button>
+            </div>
+          </div>
         } @else if (authMode() === 'register-gym') {
           <p class="eyebrow">MULTI-TENANT SAAS ONBOARDING</p>
           <h2>Register your Gym</h2>
@@ -187,13 +222,30 @@
             <label>Phone number
               <input name="regOwnerPhone" type="tel" [(ngModel)]="registerGymDraft.phoneNumber" placeholder="+1234567890">
             </label>
+            <div class="legal-consent-card">
+              <label class="legal-checkbox-label">
+                <input
+                  type="checkbox"
+                  name="regAcceptTerms"
+                  [(ngModel)]="registerGymDraft.acceptTerms"
+                  required
+                />
+                <span class="legal-checkbox-text">
+                  I have read, understood, and agree to the
+                  <button type="button" class="legal-inline-btn" (click)="openLegal('terms'); $event.preventDefault()">Terms of Use</button>,
+                  <button type="button" class="legal-inline-btn" (click)="openLegal('privacy'); $event.preventDefault()">Privacy Policy</button>, and
+                  <button type="button" class="legal-inline-btn" (click)="openLegal('disclaimer'); $event.preventDefault()">Health & Safety Disclaimer</button>.
+                  I certify that I am authorized to bind this gym organization.
+                </span>
+              </label>
+            </div>
             @if (error()) {
               <p class="form-error" role="alert">{{ error() }}</p>
             }
             <button
               class="button button-dark button-wide"
               type="submit"
-              [disabled]="busy() || regGymForm.invalid"
+              [disabled]="busy() || regGymForm.invalid || !registerGymDraft.acceptTerms"
             >
               {{ busy() ? 'Setting up gym…' : 'Complete Registration & Launch' }} <span aria-hidden="true">↗</span>
             </button>
@@ -379,6 +431,11 @@
           </div>
           <button class="logout" title="Sign out" aria-label="Sign out" (click)="logout()">
             <span aria-hidden="true">⎋</span>
+          </button>
+        </div>
+        <div class="sidebar-legal-bar">
+          <button type="button" class="sidebar-legal-btn" (click)="openLegal('terms')" title="Review legal terms & privacy">
+            ⚖️ Legal & Privacy
           </button>
         </div>
       </div>
@@ -1869,13 +1926,28 @@
                   }
                 </div>
               </div>
+              <div class="legal-consent-card member-waiver-card">
+                <label class="legal-checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="memberWaiverAcknowledged"
+                    [(ngModel)]="memberDraft.waiverAcknowledged"
+                    required
+                  />
+                  <span class="legal-checkbox-text">
+                    <strong>Member Health & Safety Waiver Acknowledged:</strong>
+                    The member has completed physical activity readiness screening (PAR-Q) and agreed to club safety regulations, privacy terms, and the
+                    <button type="button" class="legal-inline-btn" (click)="openLegal('disclaimer'); $event.preventDefault()">Health & Physical Liability Waiver</button>.
+                  </span>
+                </label>
+              </div>
               @if (error()) {
                 <p class="form-error" role="alert">{{ error() }}</p>
               }
               <button
                 class="button button-dark button-wide submit-registration"
                 type="submit"
-                [disabled]="busy() || registrationForm.invalid || !activePlans().length"
+                [disabled]="busy() || registrationForm.invalid || !activePlans().length || !memberDraft.waiverAcknowledged"
               >
                 {{ busy() ? 'Creating membership…' : 'Create membership' }} <span>↗</span>
               </button>
@@ -2557,6 +2629,58 @@
               </div>
             </div>
           }
+
+          <!-- Legal, Privacy & Compliance Hub -->
+          <div class="panel account-legal-panel" style="margin-top: 16px;">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">LEGAL, PRIVACY & COMPLIANCE</p>
+                <h2>Platform Governance & Policies</h2>
+                <p class="page-subtitle">Review legally binding agreements, data protection disclosures, and physical liability waivers.</p>
+              </div>
+            </div>
+            <div class="account-legal-grid">
+              <div class="account-legal-item">
+                <div class="legal-item-icon">📜</div>
+                <div class="legal-item-copy">
+                  <h4>Terms of Use & SaaS Agreement</h4>
+                  <p>Master subscription agreement, licensing parameters, limitation of liability, and branch delegation terms.</p>
+                  <button type="button" class="button button-quiet" (click)="openLegal('terms')">Review Terms →</button>
+                </div>
+              </div>
+              <div class="account-legal-item">
+                <div class="legal-item-icon">🔒</div>
+                <div class="legal-item-copy">
+                  <h4>Privacy Policy & DPDP / GDPR</h4>
+                  <p>Controller vs. Processor roles, sub-processor disclosures, BCrypt/JWT security, and data subject rights.</p>
+                  <button type="button" class="button button-quiet" (click)="openLegal('privacy')">Review Privacy Policy →</button>
+                </div>
+              </div>
+              <div class="account-legal-item">
+                <div class="legal-item-icon">⚠️</div>
+                <div class="legal-item-copy">
+                  <h4>Health & Physical Liability Waiver</h4>
+                  <p>Physical activity risks, voluntary assumption of bodily injury risk, PAR-Q medical clearance, and facility disclaimers.</p>
+                  <button type="button" class="button button-quiet" (click)="openLegal('disclaimer')">Review Health Waiver →</button>
+                </div>
+              </div>
+              <div class="account-legal-item">
+                <div class="legal-item-icon">🛡️</div>
+                <div class="legal-item-copy">
+                  <h4>Acceptable Use Policy</h4>
+                  <p>System cybersecurity standards, receipt upload compliance, anti-scraping rules, and enforcement actions.</p>
+                  <button type="button" class="button button-quiet" (click)="openLegal('acceptable-use')">Review AUP →</button>
+                </div>
+              </div>
+            </div>
+            <div class="account-legal-notice-box">
+              <span class="notice-icon">🛡️</span>
+              <p>
+                <strong>Data Subject Rights & Portability:</strong>
+                As a gym owner or authorized user, you can export membership and revenue records anytime via the Reports tab. For formal data erasure, DPO inquiries, or regulatory inquiries, contact <a href="mailto:privacy@rememberflow.com">privacy&#64;rememberflow.com</a>.
+              </p>
+            </div>
+          </div>
 
           <footer class="page-footer">
             <span>{{ user()!.role }} ACCOUNT</span><span>SECURITY & PREFERENCES</span>
@@ -5984,3 +6108,121 @@
     </main>
   </div>
 }
+
+@if (legalModalOpen()) {
+  <div class="renewal-backdrop legal-backdrop" (click)="closeLegal()">
+    <section
+      class="legal-modal-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="legal-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="legal-modal-header">
+        <div class="legal-header-titles">
+          <span class="legal-badge">{{ activeLegalDoc().badge }}</span>
+          <h2 id="legal-modal-title">{{ activeLegalDoc().title }}</h2>
+          <p class="legal-subtitle">{{ activeLegalDoc().subtitle }}</p>
+          <span class="legal-updated">Last Updated: {{ activeLegalDoc().lastUpdated }}</span>
+        </div>
+        <div class="legal-header-actions">
+          <button type="button" class="button button-quiet legal-print-btn" (click)="printLegalDoc()" title="Print or save as PDF">
+            🖨️ Print / PDF
+          </button>
+          <button type="button" class="legal-close-btn" (click)="closeLegal()" aria-label="Close dialog">
+            ✕
+          </button>
+        </div>
+      </header>
+
+      <nav class="legal-tabs-nav" aria-label="Legal policy tabs">
+        <button
+          type="button"
+          [class.active]="legalModalTab() === 'terms'"
+          (click)="legalModalTab.set('terms')"
+        >
+          📜 Terms of Use
+        </button>
+        <button
+          type="button"
+          [class.active]="legalModalTab() === 'privacy'"
+          (click)="legalModalTab.set('privacy')"
+        >
+          🔒 Privacy Policy
+        </button>
+        <button
+          type="button"
+          [class.active]="legalModalTab() === 'disclaimer'"
+          (click)="legalModalTab.set('disclaimer')"
+        >
+          ⚠️ Health & Safety Waiver
+        </button>
+        <button
+          type="button"
+          [class.active]="legalModalTab() === 'acceptable-use'"
+          (click)="legalModalTab.set('acceptable-use')"
+        >
+          🛡️ Acceptable Use
+        </button>
+      </nav>
+
+      <div class="legal-search-bar">
+        <span class="search-icon" aria-hidden="true">🔍</span>
+        <input
+          type="search"
+          placeholder="Search within this document (e.g. liability, refund, trainer, privacy, deletion)..."
+          [ngModel]="legalSearchQuery()"
+          (ngModelChange)="legalSearchQuery.set($event)"
+          aria-label="Search within legal document"
+        />
+        @if (legalSearchQuery()) {
+          <button type="button" class="search-clear-btn" (click)="legalSearchQuery.set('')">✕</button>
+        }
+      </div>
+
+      <div class="legal-modal-body">
+        @if (filteredLegalSections().length === 0) {
+          <div class="legal-empty-search">
+            <p>No sections match "<strong>{{ legalSearchQuery() }}</strong>".</p>
+            <button type="button" class="button button-quiet" (click)="legalSearchQuery.set('')">Clear Search</button>
+          </div>
+        } @else {
+          @for (section of filteredLegalSections(); track section.id) {
+            <article class="legal-section-block" [id]="'legal-' + section.id">
+              <h3>{{ section.title }}</h3>
+              @for (paragraph of section.content; track $index) {
+                <p>{{ paragraph }}</p>
+              }
+            </article>
+          }
+        }
+      </div>
+
+      <footer class="legal-modal-footer">
+        <div class="legal-footer-info">
+          <span>🛡️ Legally Binding Agreement · Official Re-member Flow Terms</span>
+        </div>
+        <button type="button" class="button button-dark" (click)="closeLegal()">
+          Close Document
+        </button>
+      </footer>
+    </section>
+  </div>
+}
+
+@if (!cookieConsentDismissed()) {
+  <div class="cookie-banner" role="region" aria-label="Privacy and cookies notice">
+    <div class="cookie-content">
+      <span class="cookie-icon" aria-hidden="true">🍪</span>
+      <p>
+        We use essential browser storage for authentication security and active session tokens. By using Re-member Flow, you agree to our
+        <button type="button" class="cookie-link-btn" (click)="openLegal('privacy')">Privacy Policy</button> and
+        <button type="button" class="cookie-link-btn" (click)="openLegal('terms')">Terms of Use</button>.
+      </p>
+    </div>
+    <button type="button" class="button button-dark cookie-dismiss-btn" (click)="dismissCookieConsent()">
+      Got it
+    </button>
+  </div>
+}
+
