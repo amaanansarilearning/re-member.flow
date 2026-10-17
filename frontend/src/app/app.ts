@@ -844,32 +844,7 @@ export class App {
   }
 
   async upgradeToPremium(): Promise<void> {
-    this.upgradeLoading.set(true);
-    this.error.set('');
-    try {
-      const sub = await firstValueFrom(this.api.upgradeSubscription('PREMIUM'));
-      const u = this.user();
-      if (u) {
-        const updated: User = {
-          ...u,
-          subscriptionTier: 'PREMIUM',
-          enabledFeatures: sub.enabledFeatures
-        };
-        this.user.set(updated);
-        try { sessionStorage.setItem('gym.user', JSON.stringify(updated)); } catch {}
-      }
-      this.upgradeModalOpen.set(false);
-      this.notice.set('Congratulations! Your gym has been upgraded to Premium PRO! All premium features are unlocked.');
-      if (this.upgradeFeatureTarget() === 'pt') {
-        this.navigate('pt-management');
-      } else if (this.upgradeFeatureTarget() === 'history') {
-        this.navigate('history');
-      }
-    } catch (err) {
-      this.error.set(this.api.message(err, 'Failed to upgrade subscription.'));
-    } finally {
-      this.upgradeLoading.set(false);
-    }
+    this.openUpgradeModal(this.upgradeFeatureTarget() || 'general');
   }
 
   // ─── SaaS Subscription & Activation Code Methods ──────────────────────────
@@ -1207,7 +1182,30 @@ export class App {
     } catch {}
   }
 
+  isViewAllowed(view: View): boolean {
+    const role = this.user()?.role;
+    if (!role) return false;
+    switch (role) {
+      case 'SUPER_ADMIN':
+        return view === 'platform-admin' || view === 'account';
+      case 'OWNER':
+        return ['overview', 'members', 'packages', 'register', 'team', 'account', 'branches', 'reports', 'history', 'pt-management'].includes(view);
+      case 'STAFF':
+        return ['overview', 'members', 'packages', 'register', 'account'].includes(view);
+      case 'PERSONAL_TRAINER':
+        return ['pt-dashboard', 'pt-earnings', 'members', 'packages', 'account'].includes(view);
+      case 'MEMBER':
+        return ['overview', 'members', 'account'].includes(view);
+      default:
+        return false;
+    }
+  }
+
   navigate(view: View): void {
+    if (!this.isViewAllowed(view)) {
+      this.error.set('Access denied: You do not have permission to view that section.');
+      return;
+    }
     if ((view === 'pt-management' || view === 'pt-dashboard' || view === 'pt-earnings') && !this.isPremium()) {
       this.openUpgradeModal('pt');
       return;

@@ -255,7 +255,7 @@ public class GymService {
         if (organizations.findByCodeIgnoreCase(request.organizationCode()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A gym with code " + request.organizationCode() + " already exists");
         }
-        SubscriptionTier tier = request.subscriptionTier() == null ? SubscriptionTier.STANDARD : request.subscriptionTier();
+        SubscriptionTier tier = SubscriptionTier.STANDARD;
         GymOrganization organization = organizations.save(new GymOrganization(
                 request.organizationName(), request.organizationCode(), tier));
 
@@ -322,6 +322,18 @@ public class GymService {
     public void resetPassword(String email, String newPassword) {
         UserAccount user = account(email);
         user.changePassword(passwordEncoder.encode(newPassword));
+    }
+
+    public void invalidateUserTokens(String email) {
+        users.findByEmailIgnoreCase(email).ifPresent(UserAccount::invalidateTokens);
+    }
+
+    public void updateMemberPin(String email, String pin) {
+        UserAccount member = account(email);
+        if (member.getRole() != Role.MEMBER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only members have attendance PINs");
+        }
+        member.updateMemberPin(pin);
     }
 
     public void deleteStaff(String ownerEmail, long id) {
@@ -861,7 +873,7 @@ public class GymService {
                 membership.getPlanDurationMonthsSnapshot(), membership.getPlanDurationDaysSnapshot(), frozen,
                 membershipFreezes,
                 ptId, ptName, membership.getPtSessionsIncluded(), membership.getPtSessionsUsed(),
-                membership.getMember().getMemberPin());
+                null);
     }
 
     private BigDecimal money(BigDecimal value) {
@@ -944,6 +956,11 @@ public class GymService {
                 || !membership.getBranch().getId().equals(actor.getBranch().getId()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Staff can only manage memberships at their assigned branch");
+        }
+        if (role == Role.PERSONAL_TRAINER && (membership.getPersonalTrainer() == null
+                || !membership.getPersonalTrainer().getUserAccount().getId().equals(actor.getId()))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Personal trainers can only access memberships assigned to them");
         }
     }
 

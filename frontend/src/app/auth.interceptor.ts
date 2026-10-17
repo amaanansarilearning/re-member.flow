@@ -5,10 +5,18 @@ import { catchError, from, switchMap, throwError } from 'rxjs';
 import { CsrfTokenService } from './csrf-token.service';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  const unsafeMethod = !['GET', 'HEAD', 'OPTIONS'].includes(request.method);
+  const isPublicAuth = [
+    '/api/auth/login',
+    '/api/auth/setup-owner',
+    '/api/auth/register-gym',
+    '/api/auth/password-reset/request',
+    '/api/auth/password-reset/confirm',
+  ].some((path) => request.url.startsWith(path) || request.url.endsWith(path));
+
   const isProtectedApiWrite = unsafeMethod
     && request.url.startsWith('/api/')
-    && !request.url.startsWith('/api/auth/');
+    && !request.url.startsWith('/api/csrf')
+    && !isPublicAuth;
   const authenticatedRequest = request.clone({ withCredentials: true });
   const csrfTokens = inject(CsrfTokenService);
   const sendProtectedRequest = () => from(csrfTokens.getToken()).pipe(

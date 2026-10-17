@@ -35,7 +35,7 @@ public class PlatformAdminController {
     @PutMapping("/organizations/{id}/subscription")
     public PlatformOrganizationDto updateOrganizationSubscription(
             @PathVariable Long id,
-            @RequestBody UpdateSubscriptionAdminRequest request) {
+            @Valid @RequestBody UpdateSubscriptionAdminRequest request) {
         return subscriptionService.updateOrganizationSubscriptionAdmin(
                 id,
                 request.tier(),
@@ -66,7 +66,7 @@ public class PlatformAdminController {
     @PostMapping("/activation-codes")
     public ActivationCodeDto generateActivationCode(
             Principal principal,
-            @RequestBody GenerateCodeRequest request) {
+            @Valid @RequestBody GenerateCodeRequest request) {
         return subscriptionService.generateActivationCode(
                 principal != null ? principal.getName() : "system",
                 request.tier(),

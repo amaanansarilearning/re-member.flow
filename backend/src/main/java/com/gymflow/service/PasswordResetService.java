@@ -23,11 +23,13 @@ public class PasswordResetService {
     private final JavaMailSender mailSender;
     private final String fromAddress;
     private final boolean exposeCode;
+    private final org.springframework.core.env.Environment env;
 
     public PasswordResetService(PasswordResetCodeRepository resetCodes, UserRepository users, GymService gymService,
             PasswordEncoder passwordEncoder, JavaMailSender mailSender,
             @Value("${gym.mail.from}") String fromAddress,
-            @Value("${gym.password-reset.expose-code:false}") boolean exposeCode) {
+            @Value("${gym.password-reset.expose-code:false}") boolean exposeCode,
+            org.springframework.core.env.Environment env) {
         this.resetCodes = resetCodes;
         this.users = users;
         this.gymService = gymService;
@@ -35,6 +37,7 @@ public class PasswordResetService {
         this.mailSender = mailSender;
         this.fromAddress = fromAddress;
         this.exposeCode = exposeCode;
+        this.env = env;
     }
 
     @Transactional
@@ -51,7 +54,7 @@ public class PasswordResetService {
         String code = "%06d".formatted(RANDOM.nextInt(1_000_000));
         resetCodes
                 .save(new PasswordResetCode(normalizedEmail, passwordEncoder.encode(code), now, now.plusSeconds(600)));
-        if (exposeCode)
+        if (exposeCode && env.acceptsProfiles(org.springframework.core.env.Profiles.of("dev", "test")))
             return new PasswordResetResponse(message, code);
         SimpleMailMessage mail = new SimpleMailMessage();
         mail.setFrom(fromAddress);

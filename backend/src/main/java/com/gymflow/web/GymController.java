@@ -209,6 +209,12 @@ public class GymController {
         return membershipOperations.access(principal.getName(), currentRole(), id);
     }
 
+    @PutMapping("/memberships/my-pin")
+    @PreAuthorize("hasRole('MEMBER')")
+    public void updateMyPin(Principal principal, @Valid @RequestBody UpdatePinRequest request) {
+        gymService.updateMemberPin(principal.getName(), request.pin());
+    }
+
     @PostMapping("/memberships/{id}/transfer")
     @PreAuthorize("hasRole('OWNER')")
     public MembershipDto transfer(Principal principal, @PathVariable long id,

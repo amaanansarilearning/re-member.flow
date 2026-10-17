@@ -47,26 +47,28 @@ public class AuthController {
     }
 
     private boolean isSecureCookie(jakarta.servlet.http.HttpServletRequest request) {
-        if (cookieSecureConfig != null) {
-            return cookieSecureConfig;
+        if (Boolean.TRUE.equals(cookieSecureConfig)) {
+            return true;
+        }
+        if (request != null && (request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto")))) {
+            return true;
         }
         if (appUrl != null && appUrl.toLowerCase().startsWith("https://")) {
             return true;
         }
-        if (request == null) {
-            return false;
-        }
-        return request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
+        return false;
     }
 
     private void attachJwtCookie(jakarta.servlet.http.HttpServletResponse response,
             jakarta.servlet.http.HttpServletRequest request, String token, int maxAgeSeconds) {
-        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("gym_jwt", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(isSecureCookie(request));
-        cookie.setPath("/");
-        cookie.setMaxAge(maxAgeSeconds);
-        response.addCookie(cookie);
+        org.springframework.http.ResponseCookie cookie = org.springframework.http.ResponseCookie.from("gym_jwt", token)
+                .httpOnly(true)
+                .secure(isSecureCookie(request))
+                .path("/")
+                .maxAge(maxAgeSeconds)
+                .sameSite("Lax")
+                .build();
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     @PostMapping("/login")
@@ -151,8 +153,12 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public void logout(jakarta.servlet.http.HttpServletResponse response,
+    public void logout(Principal principal,
+            jakarta.servlet.http.HttpServletResponse response,
             jakarta.servlet.http.HttpServletRequest httpRequest) {
+        if (principal != null) {
+            gymService.invalidateUserTokens(principal.getName());
+        }
         attachJwtCookie(response, httpRequest, "", 0);
     }
 }

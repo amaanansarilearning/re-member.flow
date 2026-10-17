@@ -1069,9 +1069,20 @@ class GymApiIntegrationTest {
                 assertThat(historyRes.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
                 assertThat(historyRes.getBody()).contains("Audit History & Logs is a Premium feature");
 
-                ResponseEntity<Map<String, Object>> upgradeRes = rest.exchange(
+                ResponseEntity<Map<String, Object>> directUpgrade = rest.exchange(
                                 url("/api/subscription/upgrade"), HttpMethod.POST,
                                 request(cookies, Map.of("tier", "PREMIUM")), MAP_RESPONSE);
+                assertThat(directUpgrade.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+                String adminCookies = login("admin@gymflow.io", "AdminPassword123!").get("token").toString();
+                ResponseEntity<Map<String, Object>> codeRes = rest.exchange(
+                                url("/api/platform/activation-codes"), HttpMethod.POST,
+                                request(adminCookies, Map.of("tier", "PREMIUM", "durationDays", 30)), MAP_RESPONSE);
+                String activationCode = codeRes.getBody().get("code").toString();
+
+                ResponseEntity<Map<String, Object>> upgradeRes = rest.exchange(
+                                url("/api/subscription/redeem"), HttpMethod.POST,
+                                request(cookies, Map.of("code", activationCode)), MAP_RESPONSE);
                 assertThat(upgradeRes.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(upgradeRes.getBody().get("subscriptionTier")).isEqualTo("PREMIUM");
                 assertThat(upgradeRes.getBody().get("ptEnabled")).isEqualTo(true);

@@ -22,9 +22,15 @@ public class SuperAdminInitializer {
     private String adminPassword;
 
     @Bean
-    CommandLineRunner initSuperAdmin(UserRepository users, PasswordEncoder encoder) {
+    CommandLineRunner initSuperAdmin(UserRepository users, PasswordEncoder encoder, org.springframework.core.env.Environment env) {
         return args -> {
             String email = adminEmail.trim().toLowerCase();
+            if ("AdminPassword123!".equals(adminPassword)) {
+                if (!env.acceptsProfiles(org.springframework.core.env.Profiles.of("dev", "test"))) {
+                    throw new IllegalStateException("FATAL: Default Super-Admin password detected in non-dev environment. Please configure GYM_PLATFORM_ADMIN_PASSWORD.");
+                }
+                log.warn("SECURITY WARNING: Using default Super-Admin password. Configure GYM_PLATFORM_ADMIN_PASSWORD for production environments.");
+            }
             if (!users.existsByEmailIgnoreCase(email)) {
                 users.save(new UserAccount("Platform Super-Admin", email, null,
                         encoder.encode(adminPassword), Role.SUPER_ADMIN, null, null));

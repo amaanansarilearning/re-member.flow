@@ -63,22 +63,36 @@ public class PtSchedulingService {
 
     public PtSessionDto bookSession(String actorEmail, Role actorRole, PtSessionBookRequest req) {
         UserAccount actor = gymService.account(actorEmail);
+        GymOrganization org = requireOrg(actor);
+        Membership membership = memberships.findById(req.membershipId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Membership not found"));
+
+        if (membership.getMember().getOrganization() == null ||
+                !membership.getMember().getOrganization().getId().equals(org.getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Membership not found");
+        }
+
+        if (actorRole == Role.MEMBER && !membership.getMember().getId().equals(actor.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Members can only book sessions for their own membership");
+        }
+
+        if (actorRole == Role.STAFF && (actor.getBranch() == null || membership.getBranch() == null ||
+                !actor.getBranch().getId().equals(membership.getBranch().getId()))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Staff can only book sessions for memberships at their assigned branch");
+        }
+
         // Resolve PT
         PersonalTrainer pt;
         if (actorRole == Role.PERSONAL_TRAINER) {
             pt = requirePtProfile(actor);
         } else {
-            // OWNER or STAFF — they specify ptId via membership's assigned PT
-            Membership m = memberships.findById(req.membershipId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Membership not found"));
-            if (m.getPersonalTrainer() == null) {
+            if (membership.getPersonalTrainer() == null) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                         "This membership has no assigned PT");
             }
-            pt = m.getPersonalTrainer();
+            pt = membership.getPersonalTrainer();
         }
-        Membership membership = memberships.findById(req.membershipId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Membership not found"));
+
         // Validate membership has this PT assigned
         if (membership.getPersonalTrainer() == null ||
                 !membership.getPersonalTrainer().getId().equals(pt.getId())) {
@@ -231,10 +245,17 @@ public class PtSchedulingService {
             // OWNER or STAFF
             PtSession session = sessions.findById(sessionId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found"));
-            if (actor.getOrganization() != null &&
-                    session.getPersonalTrainer().getOrganization() != null &&
-                    !session.getPersonalTrainer().getOrganization().getId().equals(actor.getOrganization().getId())) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Session belongs to a different organization");
+            GymOrganization org = requireOrg(actor);
+            if (session.getPersonalTrainer().getOrganization() == null ||
+                    !session.getPersonalTrainer().getOrganization().getId().equals(org.getId())) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Session not found");
+            }
+            if (actorRole == Role.STAFF) {
+                GymBranch branch = actor.getBranch();
+                GymBranch sessionBranch = session.getMembership().getBranch();
+                if (branch == null || sessionBranch == null || !branch.getId().equals(sessionBranch.getId())) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Staff can only manage sessions at their assigned branch");
+                }
             }
             return session;
         }

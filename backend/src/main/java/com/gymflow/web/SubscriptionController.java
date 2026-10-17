@@ -18,12 +18,9 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/subscription")
 public class SubscriptionController {
     private final SubscriptionService subscriptionService;
-    private final String ownerSetupKey;
 
-    public SubscriptionController(SubscriptionService subscriptionService,
-            @Value("${gym.owner-setup.key:}") String ownerSetupKey) {
+    public SubscriptionController(SubscriptionService subscriptionService) {
         this.subscriptionService = subscriptionService;
-        this.ownerSetupKey = ownerSetupKey;
     }
 
     @GetMapping("/current")
@@ -36,10 +33,8 @@ public class SubscriptionController {
     @PreAuthorize("hasRole('OWNER')")
     public SubscriptionStatusDto upgrade(Principal principal,
             @RequestBody(required = false) SubscriptionUpgradeRequest request) {
-        var targetTier = (request != null && request.tier() != null)
-                ? request.tier()
-                : com.gymflow.domain.SubscriptionTier.PREMIUM;
-        return subscriptionService.upgrade(principal.getName(), targetTier);
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Direct self-upgrades are not permitted. Please submit an upgrade request or redeem an activation code.");
     }
 
     @PostMapping("/request-upgrade")
@@ -74,22 +69,5 @@ public class SubscriptionController {
     @PreAuthorize("hasRole('OWNER')")
     public SubscriptionStatusDto reactivate(Principal principal) {
         return subscriptionService.reactivateSubscription(principal.getName());
-    }
-
-    @PutMapping("/admin/{organizationId}")
-    public SubscriptionStatusDto updateTierAdmin(
-            @PathVariable Long organizationId,
-            @RequestHeader(value = "X-Admin-Key", required = false) String adminKey,
-            @RequestBody SubscriptionUpgradeRequest request) {
-        if (ownerSetupKey == null || ownerSetupKey.isBlank() || adminKey == null
-                || !MessageDigest.isEqual(ownerSetupKey.getBytes(StandardCharsets.UTF_8),
-                        adminKey.getBytes(StandardCharsets.UTF_8))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin authorization failed");
-        }
-        var targetTier = (request != null && request.tier() != null)
-                ? request.tier()
-                : com.gymflow.domain.SubscriptionTier.PREMIUM;
-        return subscriptionService.updateOrganizationTier(organizationId, targetTier,
-                com.gymflow.domain.SubscriptionStatus.ACTIVE, null);
     }
 }

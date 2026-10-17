@@ -190,12 +190,6 @@
             <label>Phone number
               <input name="regOwnerPhone" type="tel" [(ngModel)]="registerGymDraft.phoneNumber" placeholder="+1234567890">
             </label>
-            <label>Subscription Plan Tier
-              <select name="regTier" [(ngModel)]="registerGymDraft.subscriptionTier">
-                <option value="STANDARD">Standard Plan (Core Gym Operations)</option>
-                <option value="PREMIUM">Premium PRO Plan (Trainers + Audit History)</option>
-              </select>
-            </label>
             @if (error()) {
               <p class="form-error" role="alert">{{ error() }}</p>
             }
@@ -1289,11 +1283,6 @@
                             <span aria-hidden="true">📞</span> {{ group.phoneNumber }}
                           </button>
                         }
-                        @if (member.memberPin) {
-                          <button type="button" class="contact-pill copyable pin-pill" (click)="copyToClipboard(member.memberPin, 'Attendance PIN copied: ' + member.memberPin)" title="Member Attendance PIN for Personal Trainer Session Completion">
-                            <span aria-hidden="true">🔐</span> PIN: <strong>{{ member.memberPin }}</strong>
-                          </button>
-                        }
                       </div>
                     </div>
                   </div>
@@ -1390,7 +1379,7 @@
                   </div>
 
                   <div class="footer-right-actions">
-                    @if (user()!.role !== 'MEMBER') {
+                    @if (user()!.role === 'OWNER' || user()!.role === 'STAFF') {
                       @if (canRenewMembership(member)) {
                         <button class="action-btn action-btn-renew" type="button" title="Schedule renewal" (click)="openRenewal(member)">
                           <span class="btn-icon" aria-hidden="true">↻</span>
@@ -1520,7 +1509,7 @@
         </section>
       }
 
-      @if (view() === 'packages') {
+      @if (view() === 'packages' && (user()!.role === 'OWNER' || user()!.role === 'STAFF' || user()!.role === 'PERSONAL_TRAINER')) {
         <section class="page-content">
           <div class="page-heading">
             <div>
@@ -1795,7 +1784,7 @@
         </section>
       }
 
-      @if (view() === 'register') {
+      @if (view() === 'register' && (user()!.role === 'OWNER' || user()!.role === 'STAFF')) {
         <section class="page-content register-page">
           <div class="page-heading">
             <div>
@@ -4447,9 +4436,6 @@
                           <span class="contact-pill copyable" (click)="copyToClipboard(trainee.email, 'Email copied!')" title="Click to copy email">✉ {{ trainee.email }}</span>
                           @if (trainee.phoneNumber) {
                             <span class="contact-pill copyable" (click)="copyToClipboard(trainee.phoneNumber, 'Phone copied!')" title="Click to copy phone">📞 {{ trainee.phoneNumber }}</span>
-                          }
-                          @if (trainee.memberPin) {
-                            <span class="contact-pill pin-pill copyable" (click)="copyToClipboard(trainee.memberPin, 'PIN copied!')" title="Client Attendance PIN">🔐 PIN: <strong>{{ trainee.memberPin }}</strong></span>
                           }
                         </div>
                       </div>

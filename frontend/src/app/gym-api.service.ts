@@ -367,6 +367,7 @@ export class GymApiService {
   cancelFreeze(id: number, freezeId: number, reason: string): Observable<Membership> { return this.http.post<Membership>(`${this.baseUrl}/memberships/${id}/freezes/${freezeId}/cancel`, { reason }); }
   endFreezeEarly(id: number, freezeId: number, reason: string): Observable<Membership> { return this.http.post<Membership>(`${this.baseUrl}/memberships/${id}/freezes/${freezeId}/end-early`, { reason }); }
   membershipAccess(id: number): Observable<MembershipAccess> { return this.http.get<MembershipAccess>(`${this.baseUrl}/memberships/${id}/access`); }
+  updateMyPin(pin: string): Observable<void> { return this.http.put<void>(`${this.baseUrl}/memberships/my-pin`, { pin }); }
   transferMembership(id: number, payload: { branchId: number; reason: string }): Observable<Membership> { return this.http.post<Membership>(`${this.baseUrl}/memberships/${id}/transfer`, payload); }
   correctMembership(id: number, payload: { planId: number; startDate: string; endDate: string; listPrice: number; discountPercent: number; amountPaid: number; reason: string }): Observable<Membership> { return this.http.put<Membership>(`${this.baseUrl}/memberships/${id}/correction`, payload); }
   history(): Observable<ActionHistory[]> { return this.http.get<ActionHistory[]>(`${this.baseUrl}/history`); }

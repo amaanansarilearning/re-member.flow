@@ -146,8 +146,8 @@ public final class ApiDtos {
         }
 
         public record GenerateCodeRequest(
-                        SubscriptionTier tier,
-                        Integer durationDays,
+                        @NotNull SubscriptionTier tier,
+                        @NotNull @Min(1) @Max(3650) Integer durationDays,
                         @Size(max = 255) String notes) {
         }
 
@@ -179,8 +179,8 @@ public final class ApiDtos {
         }
 
         public record UpdateSubscriptionAdminRequest(
-                        SubscriptionTier tier,
-                        SubscriptionStatus status,
+                        @NotNull SubscriptionTier tier,
+                        @NotNull SubscriptionStatus status,
                         Instant expiresAt) {
         }
 
@@ -432,9 +432,17 @@ public final class ApiDtos {
                         @Size(max = 1000) String notes) {
         }
 
+        public record PtSessionCancelRequest(
+                        @Size(max = 500) String reason) {
+        }
+
         public record PtSessionCompleteRequest(
                         @Size(max = 1000) String notes,
-                        @Size(max = 10) String pin) {
+                        @Pattern(regexp = "^$|^\\d{4}$") String pin) {
+        }
+
+        public record UpdatePinRequest(
+                        @NotBlank @Pattern(regexp = "^\\d{4}$") String pin) {
         }
 
         public record PtSessionUpdateRequest(

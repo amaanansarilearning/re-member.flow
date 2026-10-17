@@ -144,17 +144,17 @@ public class PersonalTrainerController {
     @PostMapping("/sessions/{sessionId}/cancel")
     @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'PERSONAL_TRAINER', 'MEMBER')")
     public PtSessionDto cancelSession(Principal principal, @PathVariable Long sessionId,
-            @RequestBody(required = false) Map<String, String> body) {
-        String reason = body != null ? body.getOrDefault("reason", "") : "";
+            @Valid @RequestBody(required = false) PtSessionCancelRequest body) {
+        String reason = body != null && body.reason() != null ? body.reason() : "";
         return scheduling.cancelSession(principal.getName(), currentRole(), sessionId, reason);
     }
 
     @PostMapping("/sessions/{sessionId}/complete")
     @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'PERSONAL_TRAINER')")
     public PtSessionDto completeSession(Principal principal, @PathVariable Long sessionId,
-            @RequestBody(required = false) Map<String, String> body) {
-        String notes = body != null ? body.getOrDefault("notes", "") : "";
-        String pin = body != null ? body.getOrDefault("pin", "") : "";
+            @Valid @RequestBody(required = false) PtSessionCompleteRequest body) {
+        String notes = body != null && body.notes() != null ? body.notes() : "";
+        String pin = body != null && body.pin() != null ? body.pin() : "";
         return scheduling.completeSession(principal.getName(), currentRole(), sessionId, notes, pin);
     }
 

@@ -31,7 +31,12 @@ public class SecurityConfig {
             RateLimitFilter rateLimitFilter, CookieCsrfTokenRepository csrfTokenRepository) throws Exception {
         return http
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/auth/**", "/api/csrf", "/api/subscription/admin/**")
+                        .ignoringRequestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/setup-owner",
+                                "/api/auth/register-gym",
+                                "/api/auth/password-reset/**",
+                                "/api/csrf")
                         .csrfTokenRequestHandler(
                                 new org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler())
                         .csrfTokenRepository(csrfTokenRepository))
@@ -39,9 +44,12 @@ public class SecurityConfig {
                 })
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/setup-owner", "/api/auth/register-gym",
-                                "/api/auth/password-reset/request", "/api/auth/password-reset/confirm",
-                                "/api/subscription/admin/**",
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/setup-owner",
+                                "/api/auth/register-gym",
+                                "/api/auth/password-reset/request",
+                                "/api/auth/password-reset/confirm",
                                 "/error")
                         .permitAll()
                         // H2 console access is only available in dev profile via

@@ -56,7 +56,7 @@ public class UserAccount {
         this.organization = organization;
         this.branch = branch;
         if (role == Role.MEMBER) {
-            this.memberPin = generateDefaultPin(this.email);
+            this.memberPin = generateDefaultPin();
         }
     }
 
@@ -64,6 +64,14 @@ public class UserAccount {
         this.fullName = fullName.trim();
         this.email = email.trim().toLowerCase();
         this.phoneNumber = phoneNumber == null ? null : phoneNumber.trim();
+    }
+
+    public void invalidateTokens() {
+        this.tokenVersion++;
+    }
+
+    public void updateMemberPin(String memberPin) {
+        this.memberPin = memberPin != null ? memberPin.trim() : null;
     }
 
     public void changePassword(String passwordHash) {
@@ -118,7 +126,7 @@ public class UserAccount {
 
     public String getMemberPin() {
         if (this.memberPin == null && this.role == Role.MEMBER) {
-            this.memberPin = generateDefaultPin(this.email);
+            this.memberPin = generateDefaultPin();
         }
         return this.memberPin;
     }
@@ -127,9 +135,10 @@ public class UserAccount {
         this.memberPin = memberPin;
     }
 
-    private static String generateDefaultPin(String seed) {
-        int hash = Math.abs(seed != null ? seed.hashCode() : 1234);
-        int pinNum = (hash % 9000) + 1000;
+    private static final java.security.SecureRandom SECURE_RANDOM = new java.security.SecureRandom();
+
+    private static String generateDefaultPin() {
+        int pinNum = 1000 + SECURE_RANDOM.nextInt(9000);
         return String.format("%04d", pinNum);
     }
 }
