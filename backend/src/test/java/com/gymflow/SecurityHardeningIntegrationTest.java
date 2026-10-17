@@ -115,7 +115,9 @@ public class SecurityHardeningIntegrationTest {
                                                 plan2.getPrice(), plan2.getPrice(), BigDecimal.ZERO, null, null));
         }
 
-        private String loginAndGetCookie(String email, String password) {
+        record AuthSession(String cookieHeader, String csrfToken) {}
+
+        private AuthSession login(String email, String password) {
                 ResponseEntity<Map<String, Object>> response = rest.exchange(
                                 "/api/auth/login",
                                 HttpMethod.POST,
@@ -124,17 +126,31 @@ public class SecurityHardeningIntegrationTest {
                 assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
                 List<String> cookies = response.getHeaders().get(HttpHeaders.SET_COOKIE);
                 assertThat(cookies).isNotNull();
-                return cookies.stream().filter(c -> c.startsWith("gym_jwt=")).findFirst().orElseThrow();
+                String jwt = cookies.stream().filter(c -> c.startsWith("gym_jwt=")).findFirst().orElseThrow().split(";")[0];
+
+                HttpHeaders csrfReqHeaders = new HttpHeaders();
+                csrfReqHeaders.add(HttpHeaders.COOKIE, jwt);
+                ResponseEntity<Map<String, Object>> csrfRes = rest.exchange(
+                                "/api/csrf", HttpMethod.GET, new HttpEntity<>(csrfReqHeaders), MAP_RESPONSE);
+                assertThat(csrfRes.getStatusCode()).isEqualTo(HttpStatus.OK);
+                String csrfToken = (String) csrfRes.getBody().get("token");
+
+                List<String> csrfCookies = csrfRes.getHeaders().get(HttpHeaders.SET_COOKIE);
+                String xsrf = (csrfCookies != null) ? csrfCookies.stream()
+                                .filter(c -> c.startsWith("XSRF-TOKEN="))
+                                .findFirst()
+                                .map(c -> c.split(";")[0])
+                                .orElse("XSRF-TOKEN=" + csrfToken)
+                                : ("XSRF-TOKEN=" + csrfToken);
+
+                return new AuthSession(jwt + "; " + xsrf, csrfToken);
         }
 
-        private String fetchCsrfToken(String cookie) {
+        private HttpHeaders authHeaders(AuthSession session) {
                 HttpHeaders headers = new HttpHeaders();
-                if (cookie != null)
-                        headers.add(HttpHeaders.COOKIE, cookie);
-                ResponseEntity<Map<String, Object>> response = rest.exchange(
-                                "/api/csrf", HttpMethod.GET, new HttpEntity<>(headers), MAP_RESPONSE);
-                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-                return (String) response.getBody().get("token");
+                headers.add(HttpHeaders.COOKIE, session.cookieHeader());
+                headers.add("X-XSRF-TOKEN", session.csrfToken());
+                return headers;
         }
 
         @Test
@@ -157,17 +173,12 @@ public class SecurityHardeningIntegrationTest {
 
         @Test
         void testDirectSelfUpgradeIsForbidden() {
-                String ownerCookie = loginAndGetCookie("owner2@beta.test", "password123");
-                String csrfToken = fetchCsrfToken(ownerCookie);
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.add(HttpHeaders.COOKIE, ownerCookie);
-                headers.add("X-XSRF-TOKEN", csrfToken);
+                AuthSession session = login("owner2@beta.test", "password123");
 
                 ResponseEntity<Map<String, Object>> response = rest.exchange(
                                 "/api/subscription/upgrade",
                                 HttpMethod.POST,
-                                new HttpEntity<>(new SubscriptionUpgradeRequest(SubscriptionTier.PREMIUM), headers),
+                                new HttpEntity<>(new SubscriptionUpgradeRequest(SubscriptionTier.PREMIUM), authHeaders(session)),
                                 MAP_RESPONSE);
 
                 assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -175,57 +186,57 @@ public class SecurityHardeningIntegrationTest {
 
         @Test
         void testLogoutRevokesTokenServerSide() {
-                String ownerCookie = loginAndGetCookie("owner1@alpha.test", "password123");
-                String csrfToken = fetchCsrfToken(ownerCookie);
+                AuthSession session = login("owner1@alpha.test", "password123");
 
                 // Before logout, access works
                 HttpHeaders authHeaders = new HttpHeaders();
-                authHeaders.add(HttpHeaders.COOKIE, ownerCookie);
+                authHeaders.add(HttpHeaders.COOKIE, session.cookieHeader());
                 ResponseEntity<Map<String, Object>> checkBefore = rest.exchange(
-                                "/api/subscription/current", HttpMethod.GET, new HttpEntity<>(authHeaders),
-                                MAP_RESPONSE);
+                                "/api/subscription/current", HttpMethod.GET, new HttpEntity<>(authHeaders), MAP_RESPONSE);
                 assertThat(checkBefore.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-                // Perform logout with CSRF token
-                HttpHeaders logoutHeaders = new HttpHeaders();
-                logoutHeaders.add(HttpHeaders.COOKIE, ownerCookie);
-                logoutHeaders.add("X-XSRF-TOKEN", csrfToken);
+                // Perform logout with CSRF token and cookies
                 ResponseEntity<Void> logoutResponse = rest.exchange(
-                                "/api/auth/logout", HttpMethod.POST, new HttpEntity<>(logoutHeaders), Void.class);
+                                "/api/auth/logout", HttpMethod.POST, new HttpEntity<>(authHeaders(session)), Void.class);
                 assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-                // Try using the original cookie again -> MUST be rejected because tokenVersion
-                // was incremented
+                // Try using the original cookie again -> MUST be rejected because tokenVersion was incremented
                 ResponseEntity<Map<String, Object>> checkAfter = rest.exchange(
-                                "/api/subscription/current", HttpMethod.GET, new HttpEntity<>(authHeaders),
-                                MAP_RESPONSE);
+                                "/api/subscription/current", HttpMethod.GET, new HttpEntity<>(authHeaders), MAP_RESPONSE);
                 assertThat(checkAfter.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
         }
 
         @Test
         void testCsrfProtectionEnforcedOnPasswordChange() {
-                String ownerCookie = loginAndGetCookie("owner1@alpha.test", "password123");
+                AuthSession session = login("owner1@alpha.test", "password123");
 
-                // Attempting to change password WITHOUT CSRF token
+                // Attempting to change password WITHOUT CSRF token header
                 HttpHeaders noCsrfHeaders = new HttpHeaders();
-                noCsrfHeaders.add(HttpHeaders.COOKIE, ownerCookie);
+                noCsrfHeaders.add(HttpHeaders.COOKIE, session.cookieHeader());
 
                 ResponseEntity<Map<String, Object>> response = rest.exchange(
                                 "/api/auth/change-password",
                                 HttpMethod.POST,
-                                new HttpEntity<>(new PasswordChangeRequest("password123", "newPassword456!"),
-                                                noCsrfHeaders),
+                                new HttpEntity<>(new PasswordChangeRequest("password123", "newPassword456!"), noCsrfHeaders),
                                 MAP_RESPONSE);
 
                 assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+                // With valid CSRF token header, change-password succeeds
+                ResponseEntity<Map<String, Object>> validResponse = rest.exchange(
+                                "/api/auth/change-password",
+                                HttpMethod.POST,
+                                new HttpEntity<>(new PasswordChangeRequest("password123", "newPassword456!"), authHeaders(session)),
+                                MAP_RESPONSE);
+                assertThat(validResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         }
 
         @Test
         void testMemberPinIsRedactedFromMembershipDtos() {
-                String ptCookie = loginAndGetCookie("pt1@alpha.test", "password123");
+                AuthSession ptSession = login("pt1@alpha.test", "password123");
 
                 HttpHeaders headers = new HttpHeaders();
-                headers.add(HttpHeaders.COOKIE, ptCookie);
+                headers.add(HttpHeaders.COOKIE, ptSession.cookieHeader());
 
                 ResponseEntity<List<Map<String, Object>>> response = rest.exchange(
                                 "/api/pt/me/trainees",
@@ -242,18 +253,13 @@ public class SecurityHardeningIntegrationTest {
 
         @Test
         void testMemberCanUpdateTheirPinAndOthersCannot() {
-                String memberCookie = loginAndGetCookie("member1@alpha.test", "password123");
-                String csrfToken = fetchCsrfToken(memberCookie);
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.add(HttpHeaders.COOKIE, memberCookie);
-                headers.add("X-XSRF-TOKEN", csrfToken);
+                AuthSession memberSession = login("member1@alpha.test", "password123");
 
                 // Member updates their own PIN
                 ResponseEntity<Void> updateRes = rest.exchange(
                                 "/api/memberships/my-pin",
                                 HttpMethod.PUT,
-                                new HttpEntity<>(new UpdatePinRequest("7890"), headers),
+                                new HttpEntity<>(new UpdatePinRequest("7890"), authHeaders(memberSession)),
                                 Void.class);
                 assertThat(updateRes.getStatusCode()).isEqualTo(HttpStatus.OK);
 
@@ -261,29 +267,19 @@ public class SecurityHardeningIntegrationTest {
                 assertThat(updatedMember.getMemberPin()).isEqualTo("7890");
 
                 // An OWNER or PT calling /api/memberships/my-pin is forbidden
-                String ptCookie = loginAndGetCookie("pt1@alpha.test", "password123");
-                String ptCsrf = fetchCsrfToken(ptCookie);
-                HttpHeaders ptHeaders = new HttpHeaders();
-                ptHeaders.add(HttpHeaders.COOKIE, ptCookie);
-                ptHeaders.add("X-XSRF-TOKEN", ptCsrf);
+                AuthSession ptSession = login("pt1@alpha.test", "password123");
 
                 ResponseEntity<Void> ptAttempt = rest.exchange(
                                 "/api/memberships/my-pin",
                                 HttpMethod.PUT,
-                                new HttpEntity<>(new UpdatePinRequest("1111"), ptHeaders),
+                                new HttpEntity<>(new UpdatePinRequest("1111"), authHeaders(ptSession)),
                                 Void.class);
                 assertThat(ptAttempt.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         }
 
         @Test
         void testBolaCrossOrganizationBookingForbidden() {
-                // User from Org 1 attempts to book session on membership from Org 2
-                String owner1Cookie = loginAndGetCookie("owner1@alpha.test", "password123");
-                String csrf = fetchCsrfToken(owner1Cookie);
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.add(HttpHeaders.COOKIE, owner1Cookie);
-                headers.add("X-XSRF-TOKEN", csrf);
+                AuthSession session = login("owner1@alpha.test", "password123");
 
                 PtSessionBookRequest crossOrgBooking = new PtSessionBookRequest(
                                 membership2.getId(), // Belongs to Beta Gym
@@ -295,7 +291,7 @@ public class SecurityHardeningIntegrationTest {
                 ResponseEntity<Map<String, Object>> response = rest.exchange(
                                 "/api/pt/sessions",
                                 HttpMethod.POST,
-                                new HttpEntity<>(crossOrgBooking, headers),
+                                new HttpEntity<>(crossOrgBooking, authHeaders(session)),
                                 MAP_RESPONSE);
 
                 assertThat(response.getStatusCode()).isIn(HttpStatus.NOT_FOUND, HttpStatus.FORBIDDEN);
@@ -311,13 +307,7 @@ public class SecurityHardeningIntegrationTest {
                                                 LocalDate.now().plusMonths(1), plan1.getPrice(), plan1.getPrice(),
                                                 BigDecimal.ZERO, null, pt1));
 
-                // Member 1 attempts to book session using other member's membership ID
-                String member1Cookie = loginAndGetCookie("member1@alpha.test", "password123");
-                String csrf = fetchCsrfToken(member1Cookie);
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.add(HttpHeaders.COOKIE, member1Cookie);
-                headers.add("X-XSRF-TOKEN", csrf);
+                AuthSession member1Session = login("member1@alpha.test", "password123");
 
                 PtSessionBookRequest attackBooking = new PtSessionBookRequest(
                                 otherMembership.getId(),
@@ -329,7 +319,7 @@ public class SecurityHardeningIntegrationTest {
                 ResponseEntity<Map<String, Object>> response = rest.exchange(
                                 "/api/pt/sessions",
                                 HttpMethod.POST,
-                                new HttpEntity<>(attackBooking, headers),
+                                new HttpEntity<>(attackBooking, authHeaders(member1Session)),
                                 MAP_RESPONSE);
 
                 assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
@@ -348,19 +338,14 @@ public class SecurityHardeningIntegrationTest {
                 member1.updateMemberPin("4321");
                 users.save(member1);
 
-                String ptCookie = loginAndGetCookie("pt1@alpha.test", "password123");
-                String csrf = fetchCsrfToken(ptCookie);
-
-                HttpHeaders headers = new HttpHeaders();
-                headers.add(HttpHeaders.COOKIE, ptCookie);
-                headers.add("X-XSRF-TOKEN", csrf);
+                AuthSession ptSession = login("pt1@alpha.test", "password123");
 
                 // Attempt completion with wrong PIN -> Bad Request
                 PtSessionCompleteRequest badPinReq = new PtSessionCompleteRequest("Completed workout", "0000");
                 ResponseEntity<Map<String, Object>> badResponse = rest.exchange(
                                 "/api/pt/sessions/" + session.getId() + "/complete",
                                 HttpMethod.POST,
-                                new HttpEntity<>(badPinReq, headers),
+                                new HttpEntity<>(badPinReq, authHeaders(ptSession)),
                                 MAP_RESPONSE);
                 assertThat(badResponse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
 
@@ -369,7 +354,7 @@ public class SecurityHardeningIntegrationTest {
                 ResponseEntity<PtSessionDto> goodResponse = rest.exchange(
                                 "/api/pt/sessions/" + session.getId() + "/complete",
                                 HttpMethod.POST,
-                                new HttpEntity<>(goodPinReq, headers),
+                                new HttpEntity<>(goodPinReq, authHeaders(ptSession)),
                                 PtSessionDto.class);
                 assertThat(goodResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
                 assertThat(goodResponse.getBody().status()).isEqualTo("COMPLETED");
