@@ -21,7 +21,7 @@
           </nav>
           <div class="public-actions">
             <button class="public-signin" type="button" (click)="showLogin()">Sign in</button>
-            <button class="public-start" type="button" (click)="authMode.set('setup-owner')">Set up a club <span>↗</span></button>
+            <button class="public-start" type="button" (click)="authMode.set('register-gym')">Set up a club <span>↗</span></button>
           </div>
         </header>
         <div class="public-hero-content">
@@ -159,9 +159,6 @@
               Forgot password?</button
             ><button (click)="authMode.set('register-gym'); error.set(''); notice.set('')">
               Register New Gym
-            </button
-            ><button (click)="authMode.set('setup-owner'); error.set(''); notice.set('')">
-              Owner setup key
             </button>
           </div>
         } @else if (authMode() === 'register-gym') {
@@ -205,59 +202,6 @@
             <button (click)="authMode.set('login'); error.set('')">
               ← Already registered? Sign in
             </button>
-          </div>
-        } @else if (authMode() === 'setup-owner') {
-          <p class="eyebrow">ONE-TIME CLUB SETUP</p>
-          <h2>Register the owner.</h2>
-          <p class="muted">Available only until the first owner account is created.</p>
-          <form (ngSubmit)="setupOwner()" #ownerForm="ngForm">
-            <label
-              >Full name<input
-                name="ownerName"
-                [(ngModel)]="ownerDraft.fullName"
-                required
-                maxlength="100" /></label
-            ><label
-              >Email address<input
-                name="ownerEmail"
-                type="email"
-                [(ngModel)]="ownerDraft.email"
-                required /></label
-            ><label
-              >Phone number<input
-                name="ownerPhone"
-                type="tel"
-                [(ngModel)]="ownerDraft.phoneNumber"
-                placeholder="+91 98765 43210" /></label
-            ><label
-              >Password<input
-                name="ownerPassword"
-                type="password"
-                [(ngModel)]="ownerDraft.password"
-                required
-                minlength="8"
-                maxlength="72" /></label
-            ><label
-              >Setup key<input
-                name="setupKey"
-                type="password"
-                [(ngModel)]="ownerDraft.setupKey"
-                required
-                autocomplete="off"
-            /></label>
-            @if (error()) {
-              <p class="form-error" role="alert">{{ error() }}</p>
-            }
-            <button
-              class="button button-dark button-wide"
-              type="submit"
-              [disabled]="busy() || ownerForm.invalid"
-            >
-              {{ busy() ? 'Creating owner…' : 'Create owner account' }} <span>↗</span>
-            </button>
-          </form>
-          <div class="auth-links">
-            <button (click)="showLogin()">← Back to sign in</button>
           </div>
         } @else {
           <p class="eyebrow">ACCOUNT RECOVERY</p>

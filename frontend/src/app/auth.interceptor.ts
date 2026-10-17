@@ -7,7 +7,6 @@ import { CsrfTokenService } from './csrf-token.service';
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const isPublicAuth = [
     '/api/auth/login',
-    '/api/auth/setup-owner',
     '/api/auth/register-gym',
     '/api/auth/password-reset/request',
     '/api/auth/password-reset/confirm',
@@ -40,7 +39,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   return securedRequest$.pipe(
     catchError((error: unknown) => {
       if (error instanceof HttpErrorResponse && error.status === 401 && typeof sessionStorage !== 'undefined') {
-        const isPublicAuthRequest = ['/auth/login', '/auth/setup-owner', '/auth/password-reset/request',
+        const isPublicAuthRequest = ['/auth/login', '/auth/register-gym', '/auth/password-reset/request',
           '/auth/password-reset/confirm'].some((path) => request.url.endsWith(path));
         
         if (!isPublicAuthRequest) {

@@ -27,7 +27,6 @@ public class AuthController {
     private final JwtService jwtService;
     private final GymService gymService;
     private final PasswordResetService passwordResetService;
-    private final String ownerSetupKey;
 
     @Value("${gym.app.url:http://localhost:4200}")
     private String appUrl;
@@ -36,14 +35,12 @@ public class AuthController {
     private Boolean cookieSecureConfig;
 
     public AuthController(AuthenticationManager authenticationManager, UserRepository users, JwtService jwtService,
-            GymService gymService, PasswordResetService passwordResetService,
-            @Value("${gym.owner-setup.key:}") String ownerSetupKey) {
+            GymService gymService, PasswordResetService passwordResetService) {
         this.authenticationManager = authenticationManager;
         this.users = users;
         this.jwtService = jwtService;
         this.gymService = gymService;
         this.passwordResetService = passwordResetService;
-        this.ownerSetupKey = ownerSetupKey;
     }
 
     private boolean isSecureCookie(jakarta.servlet.http.HttpServletRequest request) {
@@ -84,19 +81,6 @@ public class AuthController {
         attachJwtCookie(response, httpRequest, token, (int) (jwtService.getExpirationMs() / 1000));
         
         return new LoginResponse(null, gymService.userDto(user.getEmail()));
-    }
-
-    @PostMapping("/setup-owner")
-    @ResponseStatus(HttpStatus.CREATED)
-    public LoginResponse setupOwner(@Valid @RequestBody SetupOwnerRequest request,
-            jakarta.servlet.http.HttpServletResponse response,
-            jakarta.servlet.http.HttpServletRequest httpRequest) {
-        UserDto created = gymService.createOwner(request, ownerSetupKey);
-        
-        String token = jwtService.generate(gymService.account(created.email()));
-        attachJwtCookie(response, httpRequest, token, (int) (jwtService.getExpirationMs() / 1000));
-        
-        return new LoginResponse(null, created);
     }
 
     @PostMapping("/register-gym")

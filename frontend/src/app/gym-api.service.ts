@@ -127,7 +127,6 @@ export interface MembershipPayload { fullName: string; email: string; phoneNumbe
 export interface RenewalPayload { planId: number; branchId: number | null; personalTrainerId?: number | null; discountPercent: number; startDate: string; }
 export interface StaffPayload { fullName: string; email: string; phoneNumber: string; password: string; branchId: number; }
 export interface ProfilePayload { fullName: string; email: string; phoneNumber: string; }
-export interface OwnerSetupPayload { fullName: string; email: string; phoneNumber: string; password: string; setupKey: string; organizationName?: string; branchName?: string; branchAddress?: string; }
 export interface ResetRequestResponse { message: string; developmentCode: string | null; }
 export interface ActionHistory { id: number; actorId: number; actorName: string; actorEmail: string; action: string; entityType: string; entityId: number; reason: string | null; beforeData: string | null; afterData: string | null; occurredAt: string; }
 export interface RenewalReminder { id: number; membershipId: number; memberName: string; recipientEmail: string; daysBefore: number; status: string; attempts: number; lastAttemptAt: string | null; nextAttemptAt: string; sentAt: string | null; lastError: string | null; }
@@ -287,7 +286,6 @@ export class GymApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api';
   login(email: string, password: string): Observable<Session> { return this.http.post<Session>(`${this.baseUrl}/auth/login`, { email, password }); }
-  setupOwner(payload: OwnerSetupPayload): Observable<Session> { return this.http.post<Session>(`${this.baseUrl}/auth/setup-owner`, payload); }
   registerGym(payload: GymRegistrationPayload): Observable<Session> { return this.http.post<Session>(`${this.baseUrl}/auth/register-gym`, payload); }
   currentSubscription(): Observable<SubscriptionStatus> { return this.http.get<SubscriptionStatus>(`${this.baseUrl}/subscription/current`); }
   upgradeSubscription(tier: 'PREMIUM' = 'PREMIUM'): Observable<SubscriptionStatus> { return this.http.post<SubscriptionStatus>(`${this.baseUrl}/subscription/upgrade`, { tier }); }

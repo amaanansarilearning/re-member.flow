@@ -26,13 +26,13 @@ If you chose a different `MYSQL_ROOT_PASSWORD`, use that same value for `SPRING_
 
 ## Docker deployment
 
-Copy `.env.example` to `.env`, replace the database passwords, `GYM_JWT_SECRET`, and `GYM_OWNER_SETUP_KEY`, then set real SMTP credentials to enable email. Generate the JWT key with `openssl rand -base64 32` (or generate 32 random bytes and Base64-encode them). Start the complete stack from the project root:
+Copy `.env.example` to `.env`, replace the database passwords and `GYM_JWT_SECRET`, then set real SMTP credentials to enable email. Generate the JWT key with `openssl rand -base64 32` (or generate 32 random bytes and Base64-encode them). Start the complete stack from the project root:
 
 ```sh
 docker compose up --build -d
 ```
 
-For a local smoke test on the Docker host, open `http://localhost:4200` and choose **First-time owner setup**. Use the value of `GYM_OWNER_SETUP_KEY` from `.env`; the production profile does not create demo users. The frontend and API share one origin, and nginx routes `/api` requests to Spring. The web port binds to `127.0.0.1` by default; for deployment, terminate TLS at a reverse proxy/ingress and forward HTTPS traffic to `http://127.0.0.1:4200`. Do not bind the web port to a public interface without TLS and appropriate access controls. MySQL data persists in the `gym-mysql-data` volume. Use `docker compose logs -f api` to inspect the backend and `docker compose down` to stop the stack without deleting data. Avoid `docker compose down -v` unless you intend to erase the database.
+For a local smoke test on the Docker host, open `http://localhost:4200` and choose **Set up a club** to register a new gym, or sign in with your credentials. The frontend and API share one origin, and nginx routes `/api` requests to Spring. The web port binds to `127.0.0.1` by default; for deployment, terminate TLS at a reverse proxy/ingress and forward HTTPS traffic to `http://127.0.0.1:4200`. Do not bind the web port to a public interface without TLS and appropriate access controls. MySQL data persists in the `gym-mysql-data` volume. Use `docker compose logs -f api` to inspect the backend and `docker compose down` to stop the stack without deleting data. Avoid `docker compose down -v` unless you intend to erase the database.
 
 Compose defaults Hibernate to `ddl-auto=update` to initialize a new self-hosted deployment. For an existing production database, apply the documented receipt and operations-feature schema changes before switching to `ddl-auto=validate`; use managed secrets and terminate TLS at a reverse proxy or ingress. The Maven integration tests use an isolated H2 database; H2 is not an application runtime database.
 
@@ -66,13 +66,13 @@ Owner reports accept date ranges up to 366 days and optional branch filtering. R
 
 The renewal reminder scheduler checks every 15 minutes in the configured business timezone and sends emails 7, 3, and 1 day before expiry to the member, organization owners, and staff assigned to the membership's branch. It skips memberships with a scheduled renewal. Per-recipient attempts, status, and errors are visible under **History**. Failed delivery is retried with increasing delays, capped at 24 hours, so SMTP must be configured for reminders to arrive. Override the scheduler with `GYM_RENEWAL_REMINDERS_CRON` if needed.
 
-## Owner setup and password recovery
+## Gym onboarding and password recovery
 
-The `dev` profile seeds `owner@gym.local` / `ChangeMe123!`, so first-owner setup is already closed locally. In a new production database, set `GYM_OWNER_SETUP_KEY` before starting the API and submit the one-time owner form with that key. Setup is rejected once an owner exists. Store the setup key as a secret and remove it after provisioning.
+The `dev` profile seeds `owner@gym.local` / `ChangeMe123!` and `admin@gymflow.io` / `AdminPassword123!`. In production, new gym owners onboard via the self-service registration form (`POST /api/auth/register-gym`) which provisions their gym organization, initial branch, and owner account.
 
 In `dev` (and tests), the reset code is returned to the UI for local testing. In production, configure SMTP with `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`, and `MAIL_SMTP_AUTH` / `MAIL_SMTP_STARTTLS`. Email OTP itself has no protocol fee, but actual delivery depends on an SMTP provider; many providers offer limited free tiers, while volume, custom domains, or deliverability features may cost money. Do not expose reset codes in production.
 
-Login, one-time owner setup, and password-reset request/confirmation are public; all other API routes require a signed bearer token. The browser sends login passwords in the JSON request body; DevTools displays that body, while HTTPS encrypts it in transit in production. Passwords and reset codes are BCrypt-hashed at rest. Never expose login over public HTTP. Tokens use HS256 and expire after 12 hours by default. Password changes/resets and account deletion invalidate existing tokens immediately. Change token expiration with `GYM_JWT_EXPIRATION_MS`.
+Login, gym registration (`/api/auth/register-gym`), and password-reset request/confirmation are public; all other API routes require a signed bearer token. The browser sends login passwords in the JSON request body; DevTools displays that body, while HTTPS encrypts it in transit in production. Passwords and reset codes are BCrypt-hashed at rest. Never expose login over public HTTP. Tokens use HS256 and expire after 12 hours by default. Password changes/resets and account deletion invalidate existing tokens immediately. Change token expiration with `GYM_JWT_EXPIRATION_MS`.
 
 ## Production configuration
 
@@ -99,7 +99,7 @@ CREATE TABLE membership_receipts (
 ## API overview
 
 - `POST /api/auth/login`
-- `POST /api/auth/setup-owner` (one-time; requires `GYM_OWNER_SETUP_KEY`)
+- `POST /api/auth/register-gym` (self-service gym onboarding)
 - `POST /api/auth/password-reset/request` and `/api/auth/password-reset/confirm`
 - `POST /api/auth/change-password`, `PUT /api/auth/profile` (authenticated)
 - `GET /api/dashboard` (owner)

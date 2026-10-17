@@ -39,16 +39,6 @@ public final class ApiDtos {
         public record LoginResponse(String token, UserDto user) {
         }
 
-        public record SetupOwnerRequest(@NotBlank @Size(max = 100) String fullName,
-                        @NotBlank @Email String email,
-                        @Size(max = 30) @Pattern(regexp = "^$|^\\+?[0-9][0-9 ()-]{6,19}$") String phoneNumber,
-                        @NotBlank @Size(min = 8, max = 72) String password,
-                        @Size(max = 120) String organizationName,
-                        @Size(max = 100) String branchName,
-                        @Size(max = 500) String branchAddress,
-                        @NotBlank String setupKey) {
-        }
-
         public record GymRegistrationRequest(
                         @NotBlank @Size(max = 100) String fullName,
                         @NotBlank @Email String email,

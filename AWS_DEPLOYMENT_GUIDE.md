@@ -263,9 +263,6 @@ MYSQL_PORT=3306
 GYM_JWT_SECRET=VKod+0eEuMJbI3OunRac4UN4MLW1GoTbcruKpbgy/7Q=
 GYM_JWT_EXPIRATION_MS=43200000
 
-# Secret key used once to create the first OWNER account from the UI:
-GYM_OWNER_SETUP_KEY=GymOwnerSecretSetupKey123!
-
 # ==========================================
 # BUSINESS & TAX RULES
 # ==========================================
@@ -338,7 +335,7 @@ Press `Ctrl + C` to exit log viewing (the application continues running in the b
 
 ---
 
-## 9. Step 7: Access the App & Complete First-Time Owner Setup
+## 9. Step 7: Access the App & Register Your Gym
 
 1. Open your web browser on your computer.
 2. Go to:
@@ -346,9 +343,9 @@ Press `Ctrl + C` to exit log viewing (the application continues running in the b
    http://13.49.145.53
    ```
 3. You will see the **GymFlow** application interface.
-4. Click **First-time owner setup** (or bootstrap link on the login page).
-5. Enter your Owner name, email, password, and the `GYM_OWNER_SETUP_KEY` you wrote in your `.env` (e.g. `GymOwnerSecretSetupKey123!`).
-6. Submit the form. Your initial Owner account is now activated!
+4. Click **Set up a club** (or "Register New Gym" on the sign-in modal).
+5. Enter your Gym / Organization name, a unique gym code (e.g. `IRONPEAK`), branch name, your full name, owner email, and password.
+6. Submit the form. Your gym workspace and Owner account are automatically provisioned and activated!
 7. Sign in with your owner credentials and explore your dashboard, branch management, membership packages, and team controls.
 
 ---

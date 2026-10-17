@@ -6,7 +6,7 @@ import { GymApiService, ActionHistory, Analytics, Branch, BranchPayload, BranchT
 import { CsrfTokenService } from './csrf-token.service';
 
 type View = 'overview' | 'members' | 'packages' | 'register' | 'team' | 'account' | 'branches' | 'reports' | 'history' | 'pt-management' | 'pt-dashboard' | 'pt-earnings' | 'platform-admin';
-type AuthMode = 'home' | 'login' | 'setup-owner' | 'forgot-password' | 'register-gym';
+type AuthMode = 'home' | 'login' | 'forgot-password' | 'register-gym';
 type MemberFilter = 'all' | 'active' | 'expiring' | 'cancelled';
 type PlanFilter = 'active' | 'archived' | 'all';
 type AdjustmentMode = 'freeze' | 'transfer' | 'correct' | 'cancel-freeze' | 'end-freeze';
@@ -267,7 +267,6 @@ export class App {
   ptDraft = { id: 0, fullName: '', email: '', phoneNumber: '', password: '', branchId: '', specializations: '', bio: '', sessionFeePerHour: 500, commissionPercent: 70 };
   ptPayoutDraft = { ptId: 0, ptName: '', periodFrom: this.addDays(this.todayDate(), -30), periodTo: this.todayDate(), notes: '' };
   receiptFile: File | null = null;
-  ownerDraft = { fullName: '', email: '', phoneNumber: '', password: '', setupKey: '' };
   resetDraft = { email: '', code: '', newPassword: '' };
   profileDraft = { fullName: '', email: '', phoneNumber: '' };
   passwordDraft = { currentPassword: '', newPassword: '' };
@@ -654,19 +653,6 @@ export class App {
     this.error.set('');
     this.notice.set('');
     this.authMode.set('login');
-  }
-
-  async setupOwner(): Promise<void> {
-    this.error.set('');
-    this.busy.set(true);
-    try {
-      const session = await firstValueFrom(this.api.setupOwner(this.ownerDraft));
-      this.startSession(session);
-    } catch (error) {
-      this.error.set(this.api.message(error, 'Owner setup failed. Check the bootstrap key and account details.'));
-    } finally {
-      this.busy.set(false);
-    }
   }
 
   async registerGym(): Promise<void> {

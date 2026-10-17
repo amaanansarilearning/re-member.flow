@@ -216,38 +216,6 @@ public class GymService {
         return toUserDto(account);
     }
 
-    public synchronized UserDto createOwner(SetupOwnerRequest request, String expectedSetupKey) {
-        if (expectedSetupKey == null || expectedSetupKey.isBlank()
-                || !MessageDigest.isEqual(expectedSetupKey.getBytes(StandardCharsets.UTF_8),
-                        request.setupKey().getBytes(StandardCharsets.UTF_8))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Owner setup is not authorized");
-        }
-
-        if (users.countByRole(Role.OWNER) > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "An owner account is already registered");
-        }
-        if (users.existsByEmailIgnoreCase(request.email())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
-        }
-        GymOrganization organization = organizations.findFirstByOrderByIdAsc()
-                .orElseGet(() -> organizations.save(new GymOrganization(
-                        request.organizationName() == null ? "My Gym" : request.organizationName(), "FORM")));
-        if (request.organizationName() != null && !request.organizationName().isBlank()) {
-            organization.rename(request.organizationName());
-        }
-        GymBranch mainBranch = branches.findByOrganizationIdAndCodeIgnoreCase(organization.getId(), "MAIN")
-                .orElseGet(() -> branches.save(new GymBranch(organization,
-                        request.branchName() == null ? "Main branch" : request.branchName(), "MAIN",
-                        BranchType.COMPANY_OWNED, request.branchAddress(), request.phoneNumber())));
-        if (request.branchName() != null && !request.branchName().isBlank()) {
-            mainBranch.update(request.branchName(), mainBranch.getCode(), BranchType.COMPANY_OWNED,
-                    request.branchAddress(), request.phoneNumber(), true);
-        }
-        UserAccount owner = users.save(new UserAccount(request.fullName(), request.email(), request.phoneNumber(),
-                passwordEncoder.encode(request.password()), Role.OWNER, organization, null));
-        return toUserDto(owner);
-    }
-
     public synchronized UserDto registerGym(GymRegistrationRequest request) {
         if (users.existsByEmailIgnoreCase(request.email())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
