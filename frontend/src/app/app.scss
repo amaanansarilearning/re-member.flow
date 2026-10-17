@@ -1445,6 +1445,22 @@ tbody tr:last-child td { border-bottom: 0; }
   flex-wrap: wrap;
   gap: 10px;
   margin: 12px 0 16px;
+
+  @media (max-width: 760px) {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: 4px;
+    gap: 8px;
+
+    .quick-launch-chip {
+      white-space: nowrap;
+      flex-shrink: 0;
+      padding: 7px 14px;
+      font-size: 11px;
+    }
+  }
 }
 .quick-launch-chip {
   display: inline-flex;
@@ -2741,21 +2757,25 @@ details[open] .summary-arrow { transform: rotate(180deg); }
   position: fixed;
   z-index: 1000;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 16px;
   background: rgba(15, 23, 42, 0.68);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .renewal-dialog {
   width: min(100%, 520px);
-  max-height: min(90vh, 760px);
+  max-height: min(90vh, 90dvh, 760px);
+  margin: auto;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--border);
   border-top: 3px solid var(--accent);
   border-radius: var(--r-xl);
@@ -3154,10 +3174,34 @@ details[open] .summary-arrow { transform: rotate(180deg); }
 }
 
 @media (max-width: 600px) {
+  .page-heading { flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 16px; }
+  .page-heading > .button { width: 100%; min-height: 44px; justify-content: center; font-size: 13px; padding-inline: 14px; }
   .pt-hero-card { flex-direction: column; align-items: flex-start; padding: 16px; }
   .pt-hero-profile { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .renewal-backdrop { padding: 8px; }
-  .renewal-dialog { width: 100%; max-height: 94vh; border-radius: var(--r-lg); }
+  .renewal-backdrop { padding: 8px; align-items: flex-start; }
+  .renewal-dialog {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: var(--r-lg);
+    margin: auto 0;
+  }
+  .renewal-form, .adjustment-form { padding: 16px 14px 20px; gap: 12px; }
+  .renewal-dialog .form-actions,
+  .renewal-form .form-actions,
+  .adjustment-form .form-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+    width: 100%;
+    button, .button {
+      width: 100%;
+      min-height: 44px;
+      justify-content: center;
+      text-align: center;
+      white-space: normal;
+    }
+  }
   .renewal-current, .renewal-summary { grid-template-columns: 1fr; }
   .audit-card-top { flex-wrap: wrap; }
   .audit-top-meta { flex-wrap: wrap; }
@@ -3233,7 +3277,8 @@ details[open] .summary-arrow { transform: rotate(180deg); }
 /* ─── Ultra-Modern Commercial SaaS Upgrade Modal ─── */
 .upgrade-modal-dialog {
   width: min(94vw, 720px);
-  max-height: min(90vh, 840px);
+  max-height: min(90vh, 90dvh, 840px);
+  margin: auto;
   display: flex;
   flex-direction: column;
   background: var(--surface);
@@ -3366,8 +3411,10 @@ details[open] .summary-arrow { transform: rotate(180deg); }
 }
 
 .upgrade-modal-scroll-body {
-  flex: 1;
+  flex: 1 1 0%;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
@@ -3684,8 +3731,10 @@ details[open] .summary-arrow { transform: rotate(180deg); }
   flex-shrink: 0;
 
   @media (max-width: 640px) {
+    padding: 12px 14px;
     flex-direction: column-reverse;
     align-items: stretch;
+    gap: 8px;
   }
 
   .footer-trust {
@@ -3694,6 +3743,12 @@ details[open] .summary-arrow { transform: rotate(180deg); }
     display: flex;
     align-items: center;
     gap: 6px;
+
+    @media (max-width: 640px) {
+      justify-content: center;
+      font-size: 10.5px;
+      text-align: center;
+    }
   }
 
   .footer-actions {
@@ -3703,10 +3758,113 @@ details[open] .summary-arrow { transform: rotate(180deg); }
 
     @media (max-width: 640px) {
       width: 100%;
+      flex-direction: column-reverse;
+      gap: 8px;
+
       button {
-        flex: 1;
+        width: 100%;
+        min-height: 44px;
+        justify-content: center;
+        text-align: center;
+        white-space: normal;
+        padding: 10px 14px;
+        font-size: 13px;
       }
     }
+  }
+}
+
+.upgrade-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .upgrade-modal-dialog {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100vh - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: var(--r-lg);
+    margin: auto 0;
+  }
+
+  .upgrade-modal-header {
+    padding: 14px 16px 12px;
+
+    .upgrade-brand-badge {
+      font-size: 8.5px;
+      padding: 2px 7px;
+    }
+
+    h2 {
+      font-size: 16px;
+    }
+
+    .dialog-subtitle {
+      font-size: 11px;
+    }
+  }
+
+  .upgrade-segmented-nav {
+    padding: 8px 12px;
+
+    .upgrade-segmented-btn {
+      padding: 7px 6px;
+      font-size: 11.5px;
+      gap: 5px;
+    }
+  }
+
+  .upgrade-modal-scroll-body {
+    padding: 14px 14px 18px;
+    gap: 14px;
+  }
+
+  .upgrade-highlight-banner {
+    padding: 12px 14px;
+    gap: 10px;
+
+    .highlight-icon {
+      font-size: 20px;
+    }
+
+    strong {
+      font-size: 12.5px;
+    }
+
+    p {
+      font-size: 11px;
+    }
+  }
+
+  .billing-plans-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .plan-select-card {
+    padding: 12px 14px;
+    gap: 4px;
+  }
+
+  .upgrade-quote-summary {
+    padding: 12px 14px;
+
+    .quote-row {
+      font-size: 11.5px;
+    }
+  }
+
+  .settlement-account-card {
+    padding: 12px 14px;
   }
 }
 
