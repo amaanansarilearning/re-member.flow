@@ -347,7 +347,10 @@ describe('App', () => {
       enabledFeatures: ['CORE_MANAGEMENT', 'PERSONAL_TRAINERS', 'ACTION_HISTORY']
     };
 
-    vi.spyOn(api, 'upgradeSubscription').mockReturnValue(of(mockSubStatus));
+    vi.spyOn(api, 'redeemActivationCode').mockReturnValue(of({
+      ...mockSubStatus,
+      daysRemaining: 365
+    }));
 
     app.user.set({
       id: 2,
@@ -367,9 +370,10 @@ describe('App', () => {
     expect(app.upgradeModalOpen()).toBe(true);
     expect(app.upgradeFeatureTarget()).toBe('pt');
 
-    await app.upgradeToPremium();
+    app.redeemCodeInput.set('GF-PRO-TEST123');
+    await app.submitRedeemCode();
 
-    expect(api.upgradeSubscription).toHaveBeenCalledWith('PREMIUM');
+    expect(api.redeemActivationCode).toHaveBeenCalledWith('GF-PRO-TEST123');
     expect(app.user()?.subscriptionTier).toBe('PREMIUM');
     expect(app.isPremium()).toBe(true);
     expect(app.upgradeModalOpen()).toBe(false);

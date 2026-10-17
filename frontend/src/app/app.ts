@@ -906,6 +906,11 @@ export class App {
       this.redeemModalOpen.set(false);
       this.upgradeModalOpen.set(false);
       this.notice.set(`Success! Activation code redeemed. Your gym is now on ${sub.subscriptionTier} tier.`);
+      if (this.upgradeFeatureTarget() === 'pt') {
+        this.navigate('pt-management');
+      } else if (this.upgradeFeatureTarget() === 'history') {
+        this.navigate('history');
+      }
     } catch (err) {
       this.error.set(this.api.message(err, 'Failed to redeem activation code.'));
     } finally {

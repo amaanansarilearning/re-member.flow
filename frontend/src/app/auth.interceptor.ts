@@ -13,6 +13,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
     '/api/auth/password-reset/confirm',
   ].some((path) => request.url.startsWith(path) || request.url.endsWith(path));
 
+  const unsafeMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method);
   const isProtectedApiWrite = unsafeMethod
     && request.url.startsWith('/api/')
     && !request.url.startsWith('/api/csrf')
