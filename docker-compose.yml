@@ -1,0 +1,66 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-gymdb}
+      MYSQL_USER: ${MYSQL_USER:-gymflow}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+    # ports:
+    #   - "${MYSQL_PORT:-3306}:3306"  # Uncomment only for local development
+    expose:
+      - "3306"
+    volumes:
+      - gym-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-gymdb}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-gymflow}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      SPRING_JPA_DDL_AUTO: ${SPRING_JPA_DDL_AUTO:-update}
+      GYM_JWT_SECRET: ${GYM_JWT_SECRET:?Set GYM_JWT_SECRET in .env}
+      GYM_JWT_EXPIRATION_MS: ${GYM_JWT_EXPIRATION_MS:-43200000}
+      GYM_OWNER_SETUP_KEY: ${GYM_OWNER_SETUP_KEY:?Set GYM_OWNER_SETUP_KEY in .env}
+      GYM_CORS_ORIGIN: ${GYM_CORS_ORIGIN:-http://localhost:4200}
+      GYM_APP_URL: ${GYM_APP_URL:-http://localhost:4200}
+      GYM_BUSINESS_ZONE: ${GYM_BUSINESS_ZONE:-Asia/Kolkata}
+      GYM_TAX_CGST_RATE: ${GYM_TAX_CGST_RATE:-9.00}
+      GYM_TAX_SGST_RATE: ${GYM_TAX_SGST_RATE:-9.00}
+      GYM_TAX_IGST_RATE: ${GYM_TAX_IGST_RATE:-18.00}
+      GYM_TAX_INTERSTATE: ${GYM_TAX_INTERSTATE:-false}
+      GYM_RENEWAL_REMINDERS_CRON: "${GYM_RENEWAL_REMINDERS_CRON:-0 */15 * * * *}"
+      MAIL_HOST: ${MAIL_HOST:-localhost}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-noreply@gym.local}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-true}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-true}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    expose:
+      - "8080"
+
+  web:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_BIND_ADDRESS:-0.0.0.0}:${WEB_PORT:-80}:80"
+
+volumes:
+  gym-mysql-data:

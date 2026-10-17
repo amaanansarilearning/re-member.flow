@@ -1,0 +1,6 @@
+backend/target/
+frontend/.angular/
+frontend/dist/
+frontend/node_modules/
+.env
+*.log
