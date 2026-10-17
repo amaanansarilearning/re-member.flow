@@ -28,6 +28,7 @@ Before deployment, the following changes were already updated in your project:
 ## 2. AWS Free Tier Limits & Best Practices
 
 To guarantee you **never incur charges**:
+
 - **EC2 Compute**: 750 hours/month of `t2.micro` (or `t3.micro` where t2 is unavailable) for 12 months. Since 1 month has 744 hours max, **one instance running 24/7 is 100% free**.
 - **EBS Storage**: Up to 30 GB of gp2/gp3 SSD storage is free. We will configure 25 GB.
 - **Instance Count**: Keep only **1** EC2 instance running.
@@ -43,17 +44,17 @@ To guarantee you **never incur charges**:
 4. Click the orange **Launch Instance** button.
 5. Fill in the launch form:
 
-| Setting | Value | Why / Notes |
-| :--- | :--- | :--- |
-| **Name** | `gym-server` | Any descriptive name |
-| **OS Image (AMI)** | **Ubuntu Server 24.04 LTS** (HVM), SSD Volume Type | Free Tier eligible, 64-bit (x86) |
-| **Instance Type** | **t3.micro** *(or **t2.micro**)* | Marked **Free tier eligible** (2 vCPUs, 1 GB RAM) |
-| **Key pair (login)** | Click **Create new key pair** | Name: `gym-key`<br>Type: `RSA`<br>Format: `.pem`<br>Save the downloaded `.pem` file to `Downloads` on your PC. *(Only needed if connecting via PowerShell/SSH)* |
-| **Network Settings** | Select **Create security group** | Check the following: |
-| | ✔ **Allow SSH traffic from** | `Anywhere` (or `My IP`) |
-| | ✔ **Allow HTTP traffic from the internet** (Port 80) | Required for public web access |
-| | ✔ **Allow HTTPS traffic from the internet** (Port 443) | For future SSL/TLS |
-| **Configure Storage** | **25 GiB** `gp3` | Free Tier includes up to 30 GiB |
+| Setting               | Value                                                  | Why / Notes                                                                                                                                                     |
+| :-------------------- | :----------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Name**              | `gym-server`                                           | Any descriptive name                                                                                                                                            |
+| **OS Image (AMI)**    | **Ubuntu Server 24.04 LTS** (HVM), SSD Volume Type     | Free Tier eligible, 64-bit (x86)                                                                                                                                |
+| **Instance Type**     | **t3.micro** _(or **t2.micro**)_                       | Marked **Free tier eligible** (2 vCPUs, 1 GB RAM)                                                                                                               |
+| **Key pair (login)**  | Click **Create new key pair**                          | Name: `gym-key`<br>Type: `RSA`<br>Format: `.pem`<br>Save the downloaded `.pem` file to `Downloads` on your PC. _(Only needed if connecting via PowerShell/SSH)_ |
+| **Network Settings**  | Select **Create security group**                       | Check the following:                                                                                                                                            |
+|                       | ✔ **Allow SSH traffic from**                           | `Anywhere` (or `My IP`)                                                                                                                                         |
+|                       | ✔ **Allow HTTP traffic from the internet** (Port 80)   | Required for public web access                                                                                                                                  |
+|                       | ✔ **Allow HTTPS traffic from the internet** (Port 443) | For future SSL/TLS                                                                                                                                              |
+| **Configure Storage** | **25 GiB** `gp3`                                       | Free Tier includes up to 30 GiB                                                                                                                                 |
 
 > [!NOTE]
 > **About `t3.micro` Memory:**
@@ -70,6 +71,7 @@ To guarantee you **never incur charges**:
 ## 4. Step 2: Connect to Your EC2 Server
 
 ### 🤔 Why do we need this step?
+
 Your EC2 instance is a brand-new, empty virtual Linux computer running in AWS data centers with no screen, keyboard, or mouse.
 Because **you don't have Docker on your local Windows PC**, the actual Docker installation, git cloning, building, and running of your app **must happen directly inside this remote Linux computer**.
 
@@ -78,6 +80,7 @@ Connecting allows you to type terminal commands directly into the EC2 machine. Y
 ---
 
 ### Method A (Recommended — 1-Click via Browser, No PowerShell or Keys needed!)
+
 AWS provides a built-in web terminal so you don't even need to open PowerShell or manage `.pem` keys:
 
 1. In the **AWS EC2 Console**, go to **Instances**.
@@ -91,14 +94,17 @@ AWS provides a built-in web terminal so you don't even need to open PowerShell o
 ---
 
 ### Method B (From Windows PowerShell using SSH)
+
 If you prefer running commands from your local Windows PowerShell terminal:
 
 1. Open **PowerShell** on your Windows PC and navigate to where your key pair was saved:
+
    ```powershell
    cd C:\Users\HP\Downloads
    ```
 
 2. Restrict `.pem` file permissions (Windows OpenSSH requires this):
+
    ```powershell
    icacls .\gym-key.pem /inheritance:r
    icacls .\gym-key.pem /grant:r "$($env:USERNAME):(R)"
@@ -108,7 +114,7 @@ If you prefer running commands from your local Windows PowerShell terminal:
    ```powershell
    ssh -i .\gym-key.pem ubuntu@<YOUR_EC2_PUBLIC_IP>
    ```
-   *(When prompted with `Are you sure you want to continue connecting (yes/no/[fingerprint])?`, type `yes` and hit Enter).*
+   _(When prompted with `Are you sure you want to continue connecting (yes/no/[fingerprint])?`, type `yes` and hit Enter)._
 
 ---
 
@@ -117,9 +123,11 @@ If you prefer running commands from your local Windows PowerShell terminal:
 Once inside the Ubuntu terminal (`ubuntu@ip-...:~$`), run these commands:
 
 ### 1. Enable 3 GB Swap File (Safety Net for Build & DB)
+
 Even with 2 vCPUs on `t3.micro`, compiling Angular and Spring Boot inside Docker while running MySQL 8.4 can consume 1.5–2.5 GB of memory temporarily. A 3 GB swap file allocates space on your 25 GB SSD as virtual memory so builds never crash or run out of memory.
 
 Run this block in the EC2 terminal:
+
 ```bash
 sudo fallocate -l 3G /swapfile
 sudo chmod 600 /swapfile
@@ -129,14 +137,17 @@ echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 ```
 
 Verify swap is enabled:
+
 ```bash
 free -h
 ```
-*(You will see `Swap: 3.0Gi`)*.
+
+_(You will see `Swap: 3.0Gi`)_.
 
 ---
 
 ### 2. Install Docker and Docker Compose on EC2
+
 Run this block to install the latest Docker engine:
 
 ```bash
@@ -163,16 +174,19 @@ sudo usermod -aG docker ubuntu
 ```
 
 Log out and reconnect so permissions take effect:
+
 ```bash
 exit
 ```
 
 Reconnect from PowerShell:
+
 ```powershell
 ssh -i .\gym-key.pem ubuntu@<YOUR_EC2_PUBLIC_IP>
 ```
 
 Verify Docker is working without sudo:
+
 ```bash
 docker --version
 docker compose version
@@ -185,13 +199,16 @@ docker compose version
 You have two simple options. Choose whichever you prefer:
 
 ### Option A: Using Git (Easiest)
+
 If your project is pushed to GitHub/GitLab:
+
 ```bash
 git clone https://github.com/<your-username>/<your-repo-name>.git gym-app
 cd gym-app
 ```
 
 ### Option B: Upload Directly from Windows PowerShell (No Git required)
+
 If you haven't pushed to GitHub, open a **new PowerShell window** on your Windows PC and upload the project files using `scp`:
 
 ```powershell
@@ -204,6 +221,7 @@ scp -i C:\Users\HP\Downloads\gym-key.pem -r `
 ```
 
 Then on your EC2 terminal:
+
 ```bash
 cd ~/gym-app
 ```
@@ -213,12 +231,15 @@ cd ~/gym-app
 ## 7. Step 5: Configure the Production `.env` File on EC2
 
 Generate a secure 32-byte JWT secret right on your EC2 terminal:
+
 ```bash
 openssl rand -base64 32
 ```
+
 Copy the output string.
 
 Now create and open the `.env` file on EC2:
+
 ```bash
 nano .env
 ```
@@ -239,7 +260,7 @@ MYSQL_PORT=3306
 # JWT & APP SECURITY
 # ==========================================
 # Paste your generated 32-byte Base64 key here:
-GYM_JWT_SECRET=PASTE_YOUR_GENERATED_OPENSSL_STRING_HERE
+GYM_JWT_SECRET=VKod+0eEuMJbI3OunRac4UN4MLW1GoTbcruKpbgy/7Q=
 GYM_JWT_EXPIRATION_MS=43200000
 
 # Secret key used once to create the first OWNER account from the UI:
@@ -276,6 +297,7 @@ MAIL_SMTP_STARTTLS=false
 ```
 
 Save and exit `nano`:
+
 - Press `Ctrl + O`, then hit `Enter`.
 - Press `Ctrl + X`.
 
@@ -293,18 +315,23 @@ docker compose up --build -d
 > The initial build downloads Maven and Node.js dependencies inside the container and compiles both the Angular frontend and Spring Boot backend. Because of the swap memory we configured, this will build cleanly on the 1 GB instance in about 3–5 minutes.
 
 Check the running containers:
+
 ```bash
 docker compose ps
 ```
+
 You should see 3 running containers:
+
 - `gym-app-mysql-1` (Up, healthy)
 - `gym-app-api-1` (Up)
 - `gym-app-web-1` (Up, `0.0.0.0:80->80/tcp`)
 
 To view live backend startup logs:
+
 ```bash
 docker compose logs -f api
 ```
+
 Look for:
 `Started GymManagementApplication in ... seconds`
 Press `Ctrl + C` to exit log viewing (the application continues running in the background).
@@ -316,7 +343,7 @@ Press `Ctrl + C` to exit log viewing (the application continues running in the b
 1. Open your web browser on your computer.
 2. Go to:
    ```
-   http://<YOUR_EC2_PUBLIC_IP>
+   http://13.49.145.53
    ```
 3. You will see the **GymFlow** application interface.
 4. Click **First-time owner setup** (or bootstrap link on the login page).
@@ -336,7 +363,7 @@ To make 100% sure you never get billed unexpectedly:
 4. Give it a name: `FreeTierProtection`.
 5. Enter your email address under **Email recipients**.
 6. Click **Create budget**.
-AWS will email you immediately if your usage exceeds \$0.01.
+   AWS will email you immediately if your usage exceeds \$0.01.
 
 ---
 
@@ -344,16 +371,15 @@ AWS will email you immediately if your usage exceeds \$0.01.
 
 Run these commands inside `~/gym-app` on EC2:
 
-| Action | Command |
-| :--- | :--- |
-| **Check container status** | `docker compose ps` |
-| **View backend logs** | `docker compose logs -f api` |
-| **View web / Nginx logs** | `docker compose logs -f web` |
-| **View database logs** | `docker compose logs -f mysql` |
-| **Restart the app** | `docker compose restart` |
-| **Stop the app** | `docker compose down` |
+| Action                         | Command                        |
+| :----------------------------- | :----------------------------- |
+| **Check container status**     | `docker compose ps`            |
+| **View backend logs**          | `docker compose logs -f api`   |
+| **View web / Nginx logs**      | `docker compose logs -f web`   |
+| **View database logs**         | `docker compose logs -f mysql` |
+| **Restart the app**            | `docker compose restart`       |
+| **Stop the app**               | `docker compose down`          |
 | **Rebuild after code changes** | `docker compose up --build -d` |
-| **Check memory usage** | `free -h` or `docker stats` |
+| **Check memory usage**         | `free -h` or `docker stats`    |
 
-*(Note: Never run `docker compose down -v` unless you want to delete your database volume).*
-
+_(Note: Never run `docker compose down -v` unless you want to delete your database volume)._

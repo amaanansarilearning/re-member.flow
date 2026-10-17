@@ -29,6 +29,12 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final String ownerSetupKey;
 
+    @Value("${gym.app.url:http://localhost:4200}")
+    private String appUrl;
+
+    @Value("${gym.auth.cookie-secure:#{null}}")
+    private Boolean cookieSecureConfig;
+
     public AuthController(AuthenticationManager authenticationManager, UserRepository users, JwtService jwtService,
             GymService gymService, PasswordResetService passwordResetService,
             @Value("${gym.owner-setup.key:}") String ownerSetupKey) {
@@ -40,52 +46,66 @@ public class AuthController {
         this.ownerSetupKey = ownerSetupKey;
     }
 
+    private boolean isSecureCookie(jakarta.servlet.http.HttpServletRequest request) {
+        if (cookieSecureConfig != null) {
+            return cookieSecureConfig;
+        }
+        if (appUrl != null && appUrl.toLowerCase().startsWith("https://")) {
+            return true;
+        }
+        if (request == null) {
+            return false;
+        }
+        return request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
+    }
+
+    private void attachJwtCookie(jakarta.servlet.http.HttpServletResponse response,
+            jakarta.servlet.http.HttpServletRequest request, String token, int maxAgeSeconds) {
+        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("gym_jwt", token);
+        cookie.setHttpOnly(true);
+        cookie.setSecure(isSecureCookie(request));
+        cookie.setPath("/");
+        cookie.setMaxAge(maxAgeSeconds);
+        response.addCookie(cookie);
+    }
+
     @PostMapping("/login")
-    public LoginResponse login(@Valid @RequestBody LoginRequest request, jakarta.servlet.http.HttpServletResponse response) {
+    public LoginResponse login(@Valid @RequestBody LoginRequest request,
+            jakarta.servlet.http.HttpServletResponse response,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
         authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(request.email(), request.password()));
         var user = users.findByEmailIgnoreCase(request.email())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
         
         String token = jwtService.generate(user);
-        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("gym_jwt", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge((int) (jwtService.getExpirationMs() / 1000));
-        response.addCookie(cookie);
+        attachJwtCookie(response, httpRequest, token, (int) (jwtService.getExpirationMs() / 1000));
         
         return new LoginResponse(null, gymService.userDto(user.getEmail()));
     }
 
     @PostMapping("/setup-owner")
     @ResponseStatus(HttpStatus.CREATED)
-    public LoginResponse setupOwner(@Valid @RequestBody SetupOwnerRequest request, jakarta.servlet.http.HttpServletResponse response) {
+    public LoginResponse setupOwner(@Valid @RequestBody SetupOwnerRequest request,
+            jakarta.servlet.http.HttpServletResponse response,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
         UserDto created = gymService.createOwner(request, ownerSetupKey);
         
         String token = jwtService.generate(gymService.account(created.email()));
-        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("gym_jwt", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge((int) (jwtService.getExpirationMs() / 1000));
-        response.addCookie(cookie);
+        attachJwtCookie(response, httpRequest, token, (int) (jwtService.getExpirationMs() / 1000));
         
         return new LoginResponse(null, created);
     }
 
     @PostMapping("/register-gym")
     @ResponseStatus(HttpStatus.CREATED)
-    public LoginResponse registerGym(@Valid @RequestBody GymRegistrationRequest request, jakarta.servlet.http.HttpServletResponse response) {
+    public LoginResponse registerGym(@Valid @RequestBody GymRegistrationRequest request,
+            jakarta.servlet.http.HttpServletResponse response,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
         UserDto created = gymService.registerGym(request);
         
         String token = jwtService.generate(gymService.account(created.email()));
-        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("gym_jwt", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge((int) (jwtService.getExpirationMs() / 1000));
-        response.addCookie(cookie);
+        attachJwtCookie(response, httpRequest, token, (int) (jwtService.getExpirationMs() / 1000));
         
         return new LoginResponse(null, created);
     }
@@ -107,42 +127,32 @@ public class AuthController {
 
     @PostMapping("/change-password")
     public LoginResponse changePassword(
-            Principal principal, @Valid @RequestBody PasswordChangeRequest request, jakarta.servlet.http.HttpServletResponse response) {
+            Principal principal, @Valid @RequestBody PasswordChangeRequest request,
+            jakarta.servlet.http.HttpServletResponse response,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
         UserDto user = gymService.changePassword(principal.getName(), request);
         
         String token = jwtService.generate(gymService.account(user.email()));
-        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("gym_jwt", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge((int) (jwtService.getExpirationMs() / 1000));
-        response.addCookie(cookie);
+        attachJwtCookie(response, httpRequest, token, (int) (jwtService.getExpirationMs() / 1000));
         
         return new LoginResponse(null, user);
     }
 
     @PutMapping("/profile")
-    public LoginResponse updateProfile(Principal principal, @Valid @RequestBody ProfileRequest request, jakarta.servlet.http.HttpServletResponse response) {
+    public LoginResponse updateProfile(Principal principal, @Valid @RequestBody ProfileRequest request,
+            jakarta.servlet.http.HttpServletResponse response,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
         UserDto updated = gymService.updateProfile(principal.getName(), request);
         
         String token = jwtService.generate(gymService.account(updated.email()));
-        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("gym_jwt", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge((int) (jwtService.getExpirationMs() / 1000));
-        response.addCookie(cookie);
+        attachJwtCookie(response, httpRequest, token, (int) (jwtService.getExpirationMs() / 1000));
         
         return new LoginResponse(null, updated);
     }
 
     @PostMapping("/logout")
-    public void logout(jakarta.servlet.http.HttpServletResponse response) {
-        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("gym_jwt", "");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(0);
-        response.addCookie(cookie);
+    public void logout(jakarta.servlet.http.HttpServletResponse response,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        attachJwtCookie(response, httpRequest, "", 0);
     }
 }
