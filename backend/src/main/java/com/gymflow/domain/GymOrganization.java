@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.Lob;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,10 @@ public class GymOrganization {
 
     @Column(nullable = false, unique = true, length = 40)
     private String code;
+
+    @Lob
+    @Column(name = "logo_data", columnDefinition = "LONGTEXT")
+    private String logoData;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -65,6 +70,14 @@ public class GymOrganization {
         return code;
     }
 
+    public String getLogoData() {
+        return logoData;
+    }
+
+    public void updateLogo(String logoData) {
+        this.logoData = logoData;
+    }
+
     public SubscriptionTier getSubscriptionTier() {
         return subscriptionTier;
     }
@@ -103,18 +116,35 @@ public class GymOrganization {
         }
         return switch (feature) {
             case CORE_MANAGEMENT -> true;
-            case PERSONAL_TRAINERS, ACTION_HISTORY -> subscriptionTier == SubscriptionTier.PREMIUM;
+            case CUSTOM_BRANDING -> subscriptionTier == SubscriptionTier.STARTER
+                    || subscriptionTier == SubscriptionTier.PRO
+                    || subscriptionTier == SubscriptionTier.ENTERPRISE
+                    || subscriptionTier == SubscriptionTier.PREMIUM;
+            case RECEIPT_IMAGE_UPLOAD, ACTION_HISTORY -> subscriptionTier == SubscriptionTier.PRO
+                    || subscriptionTier == SubscriptionTier.ENTERPRISE
+                    || subscriptionTier == SubscriptionTier.PREMIUM;
+            case PERSONAL_TRAINERS, ANALYTICS -> subscriptionTier == SubscriptionTier.ENTERPRISE
+                    || subscriptionTier == SubscriptionTier.PREMIUM;
         };
     }
 
     public List<String> getEnabledFeatures() {
         List<String> list = new ArrayList<>();
         list.add("CORE_MANAGEMENT");
-        if (hasFeature(AppFeature.PERSONAL_TRAINERS)) {
-            list.add("PERSONAL_TRAINERS");
+        if (hasFeature(AppFeature.CUSTOM_BRANDING)) {
+            list.add("CUSTOM_BRANDING");
+        }
+        if (hasFeature(AppFeature.RECEIPT_IMAGE_UPLOAD)) {
+            list.add("RECEIPT_IMAGE_UPLOAD");
         }
         if (hasFeature(AppFeature.ACTION_HISTORY)) {
             list.add("ACTION_HISTORY");
+        }
+        if (hasFeature(AppFeature.PERSONAL_TRAINERS)) {
+            list.add("PERSONAL_TRAINERS");
+        }
+        if (hasFeature(AppFeature.ANALYTICS)) {
+            list.add("ANALYTICS");
         }
         return list;
     }

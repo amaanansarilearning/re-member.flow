@@ -65,12 +65,21 @@ public class SubscriptionService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Gym organization not found"));
         if (!organization.hasFeature(feature)) {
             String featureName = switch (feature) {
-                case PERSONAL_TRAINERS -> "Personal Trainer Management";
+                case CUSTOM_BRANDING -> "Custom Branding (Logo & Gym Name)";
+                case RECEIPT_IMAGE_UPLOAD -> "Receipt Image Upload";
                 case ACTION_HISTORY -> "Audit History & Logs";
+                case PERSONAL_TRAINERS -> "Personal Trainer Management";
+                case ANALYTICS -> "Advanced Analytics & Business Intelligence";
                 default -> feature.name();
             };
+            String requiredTier = switch (feature) {
+                case CUSTOM_BRANDING -> "Starter, Pro, or Enterprise";
+                case RECEIPT_IMAGE_UPLOAD, ACTION_HISTORY -> "Pro or Enterprise";
+                case PERSONAL_TRAINERS, ANALYTICS -> "Enterprise";
+                default -> "Premium";
+            };
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    featureName + " is a Premium feature. Please upgrade your gym's subscription to access it.");
+                    featureName + " is a Premium feature. Please upgrade your gym's subscription to access it (" + requiredTier + " plan required).");
         }
     }
 
@@ -205,7 +214,7 @@ public class SubscriptionService {
         long totalGyms = organizations.count();
         List<GymOrganization> allOrgs = organizations.findAll();
         long activePremiumGyms = allOrgs.stream()
-                .filter(o -> o.getSubscriptionTier() == SubscriptionTier.PREMIUM && o.getSubscriptionStatus() == SubscriptionStatus.ACTIVE)
+                .filter(o -> o.getSubscriptionTier() != SubscriptionTier.STANDARD && o.getSubscriptionStatus() == SubscriptionStatus.ACTIVE)
                 .count();
         long standardGyms = totalGyms - activePremiumGyms;
         long totalMembersAcrossGyms = users.countByRole(Role.MEMBER);
@@ -301,12 +310,24 @@ public class SubscriptionService {
                     "An upgrade request for your gym is already pending review. Our accounts team will contact you shortly.");
         }
 
+        SubscriptionTier targetTier = SubscriptionTier.PREMIUM;
+        if (request.targetTier() != null && !request.targetTier().isBlank()) {
+            try {
+                targetTier = SubscriptionTier.valueOf(request.targetTier().trim().toUpperCase());
+            } catch (IllegalArgumentException ignored) {
+            }
+        } else if (request.billingPlan() != null && request.billingPlan().toUpperCase().contains("ENTERPRISE")) {
+            targetTier = SubscriptionTier.ENTERPRISE;
+        } else if (request.billingPlan() != null && request.billingPlan().toUpperCase().contains("STARTER")) {
+            targetTier = SubscriptionTier.STARTER;
+        }
+
         UpgradeRequest upgradeReq = new UpgradeRequest(
                 org,
                 user.getEmail(),
                 user.getFullName(),
                 user.getPhoneNumber(),
-                SubscriptionTier.PREMIUM,
+                targetTier,
                 request.durationDays(),
                 request.billingPlan(),
                 request.paymentMethod(),
@@ -436,7 +457,11 @@ public class SubscriptionService {
         for (byte b : bytes) {
             hex.append(String.format("%02X", b));
         }
-        String prefix = tier == SubscriptionTier.PREMIUM ? "GF-PRO" : "GF-STD";
+        String prefix = switch (tier != null ? tier : SubscriptionTier.PRO) {
+            case STARTER -> "GF-STR";
+            case PRO, ENTERPRISE, PREMIUM -> "GF-PRO";
+            default -> "GF-STD";
+        };
         return prefix + "-" + hex.substring(0, 4) + "-" + hex.substring(4, 8);
     }
 
@@ -445,11 +470,15 @@ public class SubscriptionService {
                 org.getId(),
                 org.getName(),
                 org.getCode(),
+                org.getLogoData(),
                 org.getSubscriptionTier(),
                 org.getSubscriptionStatus(),
                 org.getSubscriptionExpiresAt(),
-                org.hasFeature(AppFeature.PERSONAL_TRAINERS),
+                org.hasFeature(AppFeature.CUSTOM_BRANDING),
+                org.hasFeature(AppFeature.RECEIPT_IMAGE_UPLOAD),
                 org.hasFeature(AppFeature.ACTION_HISTORY),
+                org.hasFeature(AppFeature.PERSONAL_TRAINERS),
+                org.hasFeature(AppFeature.ANALYTICS),
                 org.getEnabledFeatures()
         );
     }
@@ -484,6 +513,7 @@ public class SubscriptionService {
                 org.getId(),
                 org.getName(),
                 org.getCode(),
+                org.getLogoData(),
                 org.getSubscriptionTier(),
                 org.getSubscriptionStatus(),
                 org.getSubscriptionExpiresAt(),

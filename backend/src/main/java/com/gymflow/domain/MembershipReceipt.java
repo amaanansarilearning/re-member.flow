@@ -23,7 +23,7 @@ public class MembershipReceipt {
     private Membership membership;
 
     @Lob
-    @Column(name = "receipt_image", nullable = false)
+    @Column(name = "receipt_image", nullable = false, columnDefinition = "LONGBLOB")
     private byte[] image;
 
     @Column(name = "receipt_image_content_type", nullable = false, length = 32)

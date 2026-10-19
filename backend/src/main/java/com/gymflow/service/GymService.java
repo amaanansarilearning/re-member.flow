@@ -360,12 +360,32 @@ public class GymService {
                     .filter(PersonalTrainer::isActive)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active personal trainer not found"));
         }
+
+        String paymentMethod = (request.paymentMethod() == null || request.paymentMethod().isBlank())
+                ? "CASH"
+                : request.paymentMethod().trim().toUpperCase();
+        String transactionId = (request.transactionId() == null || request.transactionId().isBlank())
+                ? null
+                : request.transactionId().trim();
+
+        if (!"CASH".equalsIgnoreCase(paymentMethod) && !"OFFLINE".equalsIgnoreCase(paymentMethod)) {
+            if (transactionId == null || transactionId.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Transaction ID is required for online payments (" + paymentMethod + ")");
+            }
+        }
+
         Membership membership = memberships.save(new Membership(member, plan, branch, startDate,
-                endDate(startDate, plan), plan.getPrice(), amount, discount, null, pt));
-        MembershipEmailService.ReceiptAttachment receipt = receiptAttachment(request.receiptImageData());
-        if (receipt != null) {
-            receipts.save(new com.gymflow.domain.MembershipReceipt(membership, receipt.content(),
-                    receipt.contentType(), receipt.filename()));
+                endDate(startDate, plan), plan.getPrice(), amount, discount, null, pt, paymentMethod, transactionId));
+
+        MembershipEmailService.ReceiptAttachment receipt = null;
+        if (request.receiptImageData() != null && !request.receiptImageData().isBlank()) {
+            subscriptionService.requireFeature(actor, AppFeature.RECEIPT_IMAGE_UPLOAD);
+            receipt = receiptAttachment(request.receiptImageData());
+            if (receipt != null) {
+                receipts.save(new com.gymflow.domain.MembershipReceipt(membership, receipt.content(),
+                        receipt.contentType(), receipt.filename()));
+            }
         }
         String ownerEmail = users.findByOrganizationIdAndRoleOrderByFullNameAsc(organization.getId(), Role.OWNER)
                 .stream().findFirst().map(UserAccount::getEmail).orElse(null);
@@ -725,8 +745,22 @@ public class GymService {
         } else if (previous.getPersonalTrainer() != null && previous.getPersonalTrainer().isActive()) {
             pt = previous.getPersonalTrainer();
         }
+        String paymentMethod = (request.paymentMethod() == null || request.paymentMethod().isBlank())
+                ? "CASH"
+                : request.paymentMethod().trim().toUpperCase();
+        String transactionId = (request.transactionId() == null || request.transactionId().isBlank())
+                ? null
+                : request.transactionId().trim();
+
+        if (!"CASH".equalsIgnoreCase(paymentMethod) && !"OFFLINE".equalsIgnoreCase(paymentMethod)) {
+            if (transactionId == null || transactionId.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Transaction ID is required for online payments (" + paymentMethod + ")");
+            }
+        }
+
         Membership renewal = memberships.save(new Membership(previous.getMember(), plan, targetBranch, startDate,
-                renewalEndDate, plan.getPrice(), amount, discount, previous, pt));
+                renewalEndDate, plan.getPrice(), amount, discount, previous, pt, paymentMethod, transactionId));
         MembershipDto before = toMembershipDto(previous);
         previous.scheduleRenewal(startDate);
         actionHistory.record(actor, "MEMBERSHIP_RENEWED", "MEMBERSHIP", renewal.getId(), null,
@@ -841,7 +875,9 @@ public class GymService {
                 membership.getPlanDurationMonthsSnapshot(), membership.getPlanDurationDaysSnapshot(), frozen,
                 membershipFreezes,
                 ptId, ptName, membership.getPtSessionsIncluded(), membership.getPtSessionsUsed(),
-                null);
+                null,
+                membership.getPaymentMethod(),
+                membership.getTransactionId());
     }
 
     private BigDecimal money(BigDecimal value) {
@@ -849,17 +885,42 @@ public class GymService {
                 : value.setScale(2, RoundingMode.HALF_UP);
     }
 
-    private UserDto toUserDto(UserAccount user) {
+    public UserDto toUserDto(UserAccount user) {
         GymBranch branch = user.getBranch();
         GymOrganization org = user.getOrganization();
         return new UserDto(user.getId(), user.getFullName(), user.getEmail(), user.getPhoneNumber(), user.getRole(),
                 branch == null ? null : branch.getId(), branch == null ? null : branch.getName(),
                 org == null ? null : org.getId(), org == null ? null : org.getName(),
+                org == null ? null : org.getLogoData(),
                 org == null ? SubscriptionTier.STANDARD : org.getSubscriptionTier(),
                 org == null ? List.of("CORE_MANAGEMENT") : org.getEnabledFeatures(),
                 org == null ? SubscriptionStatus.ACTIVE : org.getSubscriptionStatus(),
                 org == null ? null : org.getSubscriptionExpiresAt(),
                 user.getMemberPin());
+    }
+
+    @Transactional
+    public UserDto updateBranding(String ownerEmail, BrandingUpdateRequest request) {
+        UserAccount owner = account(ownerEmail);
+        GymOrganization org = requireOrganization(owner);
+        subscriptionService.requireFeature(owner, AppFeature.CUSTOM_BRANDING);
+        Map<String, Object> before = Map.of(
+                "name", org.getName(),
+                "hasCustomLogo", org.getLogoData() != null
+        );
+        if (request.name() != null && !request.name().isBlank()) {
+            org.rename(request.name().trim());
+        }
+        if (request.logoData() != null) {
+            org.updateLogo(request.logoData().isBlank() ? null : request.logoData().trim());
+        }
+        organizations.save(org);
+        Map<String, Object> after = Map.of(
+                "name", org.getName(),
+                "hasCustomLogo", org.getLogoData() != null
+        );
+        actionHistory.record(owner, "ORGANIZATION_BRANDING_UPDATED", "ORGANIZATION", org.getId(), null, before, after);
+        return toUserDto(owner);
     }
 
     private BranchDto toBranchDto(GymBranch branch) {

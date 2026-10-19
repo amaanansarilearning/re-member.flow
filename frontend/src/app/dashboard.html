@@ -335,23 +335,33 @@
 } @else {
   <div class="app-shell" [class.has-open-modal]="isAnyModalOpen()">
     <aside class="sidebar">
-      <a class="brand" href="#overview" (click)="$event.preventDefault(); navigate('overview')"
-        ><img class="brand-mark" src="/form-mark.svg" alt="" /><span class="brand-name">Re-member Flow</span></a
-      >
-      <div class="club-label">
-        <span class="club-dot"></span> {{ isSuperAdmin() ? 'SAAS PLATFORM OPERATOR' : (user()?.organizationName || 'CLUB OPERATIONS') }}
-        @if (isSuperAdmin()) {
-          <span class="tier-pill tier-premium">👑 SUPER ADMIN</span>
-        } @else if (isPremium()) {
-          <span class="tier-pill tier-premium">⭐ PRO</span>
-        } @else {
-          <span class="tier-pill tier-standard">STANDARD</span>
-          @if (user()!.role === 'OWNER') {
-            <button type="button" class="sidebar-upgrade-pill" (click)="openUpgradeModal('general')" title="Upgrade to Premium PRO">
-              ★ Upgrade ↗
-            </button>
-          }
-        }
+      <div class="sidebar-brand-card">
+        <a class="brand" href="#overview" (click)="$event.preventDefault(); navigate('overview')" [title]="(hasBrandingAccess() && user()?.organizationName) ? user()!.organizationName : 'Re-member Flow'">
+          <div class="brand-badge">
+            <img class="brand-mark" [src]="(hasBrandingAccess() && user()?.organizationLogo) ? user()!.organizationLogo : '/form-mark.svg'" alt="Gym Logo" />
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">{{ (hasBrandingAccess() && user()?.organizationName) ? user()!.organizationName : 'Re-member Flow' }}</span>
+            <div class="brand-meta">
+              @if (isSuperAdmin()) {
+                <span class="tier-chip tier-chip-enterprise">👑 Super Admin</span>
+              } @else {
+                <span class="tier-chip" [ngClass]="'tier-chip-' + tierPillClass(user()?.subscriptionTier).replace('tier-', '')">
+                  {{ tierBadgeLabel(user()?.subscriptionTier) }}
+                </span>
+                @if (canUpgradeTier()) {
+                  <button type="button" class="sidebar-upgrade-link" (click)="$event.stopPropagation(); openUpgradeModal('general')" title="Upgrade Subscription">
+                    Upgrade ↗
+                  </button>
+                } @else {
+                  <span class="tier-status-active" title="Active & Entitled">
+                    <span class="pulse-dot"></span> Active
+                  </span>
+                }
+              }
+            </div>
+          </div>
+        </a>
       </div>
       <nav class="side-nav" aria-label="Main navigation">
         @if (user()!.role === 'SUPER_ADMIN') {
@@ -385,8 +395,8 @@
         @if (user()!.role === 'OWNER') {
           <button type="button" [class.active]="view() === 'pt-management'" [attr.aria-current]="view() === 'pt-management' ? 'page' : null" (click)="navigate('pt-management')" title="Trainers & Commissions">
             <span class="nav-icon">🏋</span> Trainers
-            @if (!isPremium()) {
-              <span class="pro-tag">PRO</span>
+            @if (!hasPtAccess()) {
+              <span class="pro-tag" style="background: linear-gradient(135deg, #a855f7, #ec4899);">👑 ENTERPRISE</span>
             }
           </button>
           <button type="button" [class.active]="view() === 'team'" [attr.aria-current]="view() === 'team' ? 'page' : null" (click)="navigate('team')" title="Staff Directory & RBAC">
@@ -397,11 +407,14 @@
           </button>
           <button type="button" [class.active]="view() === 'reports'" [attr.aria-current]="view() === 'reports' ? 'page' : null" (click)="navigate('reports')" title="Financial Analytics & GST">
             <span class="nav-icon">▦</span> Analytics
+            @if (!hasAnalyticsAccess()) {
+              <span class="pro-tag" style="background: linear-gradient(135deg, #a855f7, #ec4899);">👑 ENTERPRISE</span>
+            }
           </button>
           <button type="button" [class.active]="view() === 'history'" [attr.aria-current]="view() === 'history' ? 'page' : null" (click)="navigate('history')" title="Audit Trail & Notifications">
             <span class="nav-icon">◷</span> History
-            @if (!isPremium()) {
-              <span class="pro-tag">PRO</span>
+            @if (!hasHistoryAccess()) {
+              <span class="pro-tag">⚡ PRO</span>
             }
           </button>
         }
@@ -751,6 +764,9 @@
                           </td>
                           <td>
                             <strong class="amount-cell">{{ money(member.amountPaid) }}</strong>
+                            @if (member.paymentMethod) {
+                              <small class="branch-subtag" style="display: block; font-size: 10px; color: var(--muted); margin-top: 2px;">{{ member.paymentMethod }} @if (member.transactionId) { · Ref: #{{ member.transactionId }} }</small>
+                            }
                             @if (member.discountPercent > 0) {
                               <small class="branch-subtag" style="color: var(--emerald);">({{ member.discountPercent }}% off)</small>
                             }
@@ -1342,9 +1358,12 @@
                   <div class="card-metric-block metric-payment-block">
                     <span class="metric-caption">AMOUNT PAID</span>
                     <strong class="metric-primary-val payment-amount-val">{{ money(member.amountPaid) }}</strong>
+                    @if (member.paymentMethod) {
+                      <span class="metric-sub-val" style="font-weight: 600; font-size: 11px;">{{ member.paymentMethod }} @if (member.transactionId) { · #{{ member.transactionId }} }</span>
+                    }
                     @if (member.discountPercent > 0) {
                       <span class="discount-chip">−{{ member.discountPercent }}% off</span>
-                    } @else {
+                    } @else if (!member.paymentMethod) {
                       <span class="metric-sub-val">Full payment</span>
                     }
                   </div>
@@ -1453,6 +1472,8 @@
                               <span class="timeline-payment-badge">
                                 Paid {{ money(term.amountPaid) }}
                                 @if (term.discountPercent > 0) { ({{ term.discountPercent }}% off) }
+                                @if (term.paymentMethod) { · {{ term.paymentMethod }} }
+                                @if (term.transactionId) { · Ref: #{{ term.transactionId }} }
                               </span>
                               @if (term.personalTrainerName) {
                                 <span class="timeline-pt-badge">
@@ -1904,24 +1925,64 @@
                     /><span>% off</span><small>Apply a custom discount to this membership.</small>
                   </div></label
                 >
-                <div class="wide-field">
-                  <span class="field-label-text" style="font-size: 11px; font-weight: 700; color: var(--ink); margin-bottom: 6px; display: block;">Receipt photo <span class="label-note">OPTIONAL</span></span>
-                  <div class="modern-dropzone" (click)="receiptPicker.click()">
+                <!-- Payment Method Selection -->
+                <label>Payment Method
+                  <select name="memberPaymentMethod" [(ngModel)]="memberDraft.paymentMethod" required>
+                    <option value="CASH">Cash Payment</option>
+                    <option value="UPI">UPI / QR Code</option>
+                    <option value="CARD">Credit / Debit Card</option>
+                    <option value="BANK_TRANSFER">Bank Transfer (IMPS / NEFT)</option>
+                    <option value="CHEQUE">Cheque</option>
+                    <option value="OTHER">Other Online / POS</option>
+                  </select>
+                </label>
+
+                <!-- Transaction ID for Non-Cash Online Payments -->
+                @if (memberDraft.paymentMethod !== 'CASH') {
+                  <label>Transaction / Reference ID <span class="label-note">REQUIRED FOR ONLINE</span>
                     <input
-                      #receiptPicker
-                      name="receiptPhoto"
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      (change)="selectReceipt($event)"
+                      name="memberTransactionId"
+                      [(ngModel)]="memberDraft.transactionId"
+                      type="text"
+                      placeholder="e.g. UPI Ref / UTR / Auth Code / Txn #"
+                      required
                     />
-                    <span class="dropzone-icon">📷</span>
-                    <span class="dropzone-text">Click or drag a receipt image to upload</span>
-                    <span class="dropzone-hint">JPEG, PNG, or WebP up to 5 MB</span>
+                  </label>
+                }
+
+                <!-- Receipt photo upload (Gated to PRO / ENTERPRISE) -->
+                <div class="wide-field">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span class="field-label-text" style="font-size: 11px; font-weight: 700; color: var(--ink);">Receipt photo <span class="label-note">OPTIONAL</span></span>
+                    <span class="pro-tag" style="margin-left: 0;">⚡ PRO FEATURE</span>
                   </div>
-                  @if (receiptFile) {
-                    <div class="receipt-preview-card">
-                      <span class="receipt-file-info">📄 {{ receiptFile.name }}</span>
-                      <button type="button" class="receipt-remove-btn" (click)="removeReceipt(receiptPicker)">Remove</button>
+                  @if (hasReceiptUploadAccess()) {
+                    <div class="modern-dropzone" (click)="receiptPicker.click()">
+                      <input
+                        #receiptPicker
+                        name="receiptPhoto"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        (change)="selectReceipt($event)"
+                      />
+                      <span class="dropzone-icon">📷</span>
+                      <span class="dropzone-text">Click or drag a receipt image to upload</span>
+                      <span class="dropzone-hint">JPEG, PNG, or WebP up to 5 MB</span>
+                    </div>
+                    @if (receiptFile) {
+                      <div class="receipt-preview-card">
+                        <span class="receipt-file-info">📄 {{ receiptFile.name }}</span>
+                        <button type="button" class="receipt-remove-btn" (click)="removeReceipt(receiptPicker)">Remove</button>
+                      </div>
+                    }
+                  } @else {
+                    <div class="locked-feature-card" (click)="openUpgradeModal('receipt')" style="cursor: pointer; border: 1.5px dashed rgba(245, 158, 11, 0.4); border-radius: var(--r-md); padding: 18px; text-align: center; background: rgba(245, 158, 11, 0.05); transition: all 0.2s;">
+                      <span style="font-size: 24px; display: block; margin-bottom: 4px;">🔒</span>
+                      <strong style="color: #f59e0b; font-size: 13px; display: block;">Receipt Photo Upload is a Pro Feature</strong>
+                      <p style="font-size: 11.5px; color: var(--muted); margin: 4px 0 10px;">Upgrade your gym to Pro or Enterprise to attach and archive digital receipt images directly with memberships.</p>
+                      <button type="button" class="button button-dark" style="font-size: 11px; padding: 5px 12px;" (click)="openUpgradeModal('receipt'); $event.stopPropagation()">
+                        ★ Upgrade to Pro ↗
+                      </button>
                     </div>
                   }
                 </div>
@@ -2477,6 +2538,173 @@
             </section>
           </div>
 
+          @if (user()!.role === 'OWNER') {
+            <!-- Gym Branding & White-Label Customization -->
+            <section class="panel account-panel" style="margin-top: 16px;">
+              <div class="panel-heading">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <p class="eyebrow" style="margin: 0;">BRAND IDENTITY &amp; WHITE-LABEL</p>
+                    @if (hasBrandingAccess()) {
+                      <span class="tier-pill tier-starter" style="font-size: 9px; padding: 1.5px 7px; background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">
+                        ✓ ACTIVE ON {{ tierDisplayName(user()?.subscriptionTier).toUpperCase() }}
+                      </span>
+                    } @else {
+                      <span class="tier-pill tier-starter" style="font-size: 9px; padding: 1.5px 7px;">
+                        ⭐ REQUIRES STARTER+
+                      </span>
+                    }
+                  </div>
+                  <h2>Gym Branding &amp; Custom Logo</h2>
+                  <p class="page-subtitle">White-label your SaaS application with your own gym logo and business name.</p>
+                </div>
+              </div>
+
+              @if (!hasBrandingAccess()) {
+                <div class="locked-feature-card" style="margin-top: 12px; border: 1.5px dashed rgba(59, 130, 246, 0.4); border-radius: var(--r-md); padding: 20px; background: rgba(59, 130, 246, 0.05); text-align: center;">
+                  <span style="font-size: 26px; display: block; margin-bottom: 6px;">🏢</span>
+                  <strong style="color: #3b82f6; font-size: 14px; display: block;">Custom Branding is a Starter Tier Feature</strong>
+                  <p style="font-size: 12px; color: var(--muted); margin: 6px auto 14px; max-width: 480px; line-height: 1.45;">
+                    Upgrade to <strong>Starter</strong>, <strong>Pro</strong>, or <strong>Enterprise</strong> to replace the SaaS product logo with your custom gym logo and white-label your gym name across navigation, headers, and reports.
+                  </p>
+                  <button type="button" class="button button-dark" (click)="openUpgradeModal('branding')">
+                    ★ Upgrade to Starter Plan ↗
+                  </button>
+                </div>
+              } @else {
+                <form class="account-modern-form" (ngSubmit)="saveBranding()">
+                  <div class="branding-studio-grid">
+                    <!-- Column 1: Form Inputs & Guidelines -->
+                    <div class="branding-form-col">
+                      <label>Official Gym / Organization Name
+                        <div class="input-with-icon">
+                          <span class="input-icon">🏢</span>
+                          <input
+                            name="brandingGymName"
+                            [(ngModel)]="brandingDraft.name"
+                            required
+                            maxlength="120"
+                            placeholder="e.g. Iron Forge Fitness"
+                          />
+                        </div>
+                        <small>This custom gym name appears across your navigation bar, digital receipts, and member cards.</small>
+                      </label>
+
+                      <div>
+                        <span class="field-label-text" style="font-size: 11px; font-weight: 700; color: var(--ink); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.04em;">
+                          Gym Logo (Brand Mark)
+                        </span>
+                        <div class="branding-dropzone">
+                          <div class="branding-logo-box">
+                            @if (logoPreview()) {
+                              <img [src]="logoPreview()!" alt="Gym Logo Preview" />
+                            } @else {
+                              <img src="/form-mark.svg" alt="Default Mark" style="opacity: 0.5;" />
+                            }
+                          </div>
+                          <div style="flex: 1; min-width: 180px;">
+                            <input
+                              #brandingLogoInput
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                              style="display: none;"
+                              (change)="onLogoSelected($event)"
+                            />
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                              <button type="button" class="button button-outline" style="font-size: 12px; padding: 7px 14px; font-weight: 600;" (click)="brandingLogoInput.click()">
+                                📁 Choose Logo File
+                              </button>
+                              @if (logoPreview()) {
+                                <button type="button" class="button button-quiet" style="font-size: 12px; color: var(--crimson); padding: 7px 10px;" (click)="removeBrandingLogo()">
+                                  Remove Logo
+                                </button>
+                              }
+                            </div>
+                            <small style="display: block; margin-top: 6px; color: var(--muted); font-size: 11px;">
+                              PNG, JPG, SVG, or WebP up to 2 MB.
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Guidelines & Image Direction Box -->
+                      <div class="branding-guidelines-box">
+                        <span class="guide-title">
+                          💡 Logo Design &amp; Dimension Guidelines
+                        </span>
+                        <ul>
+                          <li><strong>Format</strong>: Transparent <code>PNG</code> or vector <code>SVG</code> is strongly recommended for the cleanest look.</li>
+                          <li><strong>Dimensions</strong>: Square (512×512 px) or Landscape up to 800×250 px.</li>
+                          <li><strong>Contrast</strong>: Because the sidebar navigation has a dark theme, logos with light/white icons or high contrast stand out best.</li>
+                        </ul>
+                      </div>
+
+                      @if (brandingSuccessNotice()) {
+                        <div style="padding: 10px 14px; border-radius: var(--r-md); background: rgba(16, 185, 129, 0.12); color: #10b981; font-size: 12px; font-weight: 600;">
+                          ✓ {{ brandingSuccessNotice() }}
+                        </div>
+                      }
+
+                      <div style="margin-top: 4px;">
+                        <button class="button button-dark" type="submit" [disabled]="brandingSaving() || !brandingDraft.name.trim()">
+                          {{ brandingSaving() ? 'Saving Branding…' : 'Save Gym Branding ↗' }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Column 2: Live Brand Previews -->
+                    <div class="branding-preview-col">
+                      <!-- Live Preview: Sidebar Header -->
+                      <div class="branding-preview-card">
+                        <div class="preview-card-header">
+                          <span>Live Preview: Sidebar Navigation</span>
+                          <span class="badge-live">Real-Time</span>
+                        </div>
+                        <div class="mock-sidebar-view">
+                          <div class="mock-sidebar-brand">
+                            <div class="brand-badge">
+                              <img class="brand-mark" [src]="logoPreview() || '/form-mark.svg'" alt="Logo Preview" />
+                            </div>
+                            <div class="brand-text">
+                              <span class="brand-name">{{ brandingDraft.name.trim() || 'Your Gym Name' }}</span>
+                              <span class="brand-sub">OFFICIAL CLUB</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Live Preview: Digital Receipt Header -->
+                      <div class="branding-preview-card">
+                        <div class="preview-card-header">
+                          <span>Live Preview: Customer Receipt</span>
+                          <span class="badge-live" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6;">Sample Illustration</span>
+                        </div>
+                        <div class="mock-receipt-view">
+                          <div class="mock-receipt-header">
+                            <div>
+                              <div class="mock-receipt-gym">{{ brandingDraft.name.trim() || 'Your Gym Name' }}</div>
+                              <div class="mock-receipt-meta">Membership Tax Invoice • Rec #8492</div>
+                            </div>
+                            <div class="mock-receipt-logo-wrap">
+                              <img [src]="logoPreview() || '/form-mark.svg'" alt="Receipt Logo Preview" />
+                            </div>
+                          </div>
+                          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 10px; color: #475569;">
+                            <span>Sample Package: Annual Strength Pass</span>
+                            <strong style="color: #0f172a;">₹12,499.00</strong>
+                          </div>
+                          <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dotted #e2e8f0; font-size: 10px; color: #64748b;">
+                            ⓘ Sample only — shows how your club name and logo will appear on invoices sent to your members.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              }
+            </section>
+          }
+
           <!-- Commercial SaaS Subscription & Entitlement Details -->
           <div class="account-subscription-card" [class.is-premium]="isPremium()">
             <div class="sub-header-row">
@@ -2485,8 +2713,8 @@
                 <h3>{{ user()!.organizationName || 'GymFlow Network' }} Membership</h3>
                 <div class="sub-tier-display">
                   <span>Current Tier:</span>
-                  <span class="tier-pill" [class.tier-premium]="isPremium()" [class.tier-standard]="!isPremium()">
-                    {{ isPremium() ? '★ PREMIUM PRO' : '⚡ STANDARD' }}
+                  <span class="tier-pill" [ngClass]="tierPillClass(user()?.subscriptionTier)">
+                    {{ tierBadgeLabel(user()?.subscriptionTier) }}
                   </span>
                   @if (isPremium()) {
                     <span class="premium-active-badge">✓ Active & Entitled</span>
@@ -2495,15 +2723,16 @@
               </div>
               @if (user()!.role === 'OWNER') {
                 <div class="sub-action-buttons">
-                  @if (!isPremium()) {
+                  @if (user()?.subscriptionTier !== 'ENTERPRISE') {
                     <button
                       type="button"
                       class="button upgrade-cta-btn"
                       (click)="openUpgradeModal('general')"
                     >
-                      ★ Upgrade to Premium PRO ↗
+                      ★ Upgrade Plan ↗
                     </button>
-                  } @else {
+                  }
+                  @if (isPremium()) {
                     <button
                       type="button"
                       class="button button-quiet"
@@ -2525,26 +2754,33 @@
               }
             </div>
 
-            <div class="sub-features-row">
+            <div class="sub-features-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px;">
               <div class="sub-feature-item">
                 <div class="feat-status-dot"></div>
                 <div>
-                  <strong>Core Gym Operations</strong>
-                  <p>Members, memberships, multi-branch, POS invoices, basic analytics.</p>
+                  <strong>Core Management (Standard)</strong>
+                  <p>Members, branches, packages, check-in access, and cash receipts.</p>
                 </div>
               </div>
-              <div class="sub-feature-item" [class.locked]="!hasPtAccess()">
+              <div class="sub-feature-item" [class.locked]="!hasBrandingAccess()">
                 <div class="feat-status-dot"></div>
                 <div>
-                  <strong>Personal Trainers & Commission (PRO)</strong>
-                  <p>{{ hasPtAccess() ? 'Active: Trainer rosters, booking calendar, commission payouts.' : 'Locked: Requires Premium PRO plan.' }}</p>
+                  <strong>Custom Branding & Logo (Starter)</strong>
+                  <p>{{ hasBrandingAccess() ? 'Active: White-label gym name & custom logo upload.' : 'Locked: Requires Starter plan.' }}</p>
                 </div>
               </div>
-              <div class="sub-feature-item" [class.locked]="!hasHistoryAccess()">
+              <div class="sub-feature-item" [class.locked]="!hasReceiptUploadAccess() || !hasHistoryAccess()">
                 <div class="feat-status-dot"></div>
                 <div>
-                  <strong>Audit History & Activity Logs (PRO)</strong>
-                  <p>{{ hasHistoryAccess() ? 'Active: Real-time action audit trail with actor details.' : 'Locked: Requires Premium PRO plan.' }}</p>
+                  <strong>Receipts & Audit History (Pro)</strong>
+                  <p>{{ (hasReceiptUploadAccess() && hasHistoryAccess()) ? 'Active: Digital receipt attachments & live audit trail logs.' : 'Locked: Requires Pro plan.' }}</p>
+                </div>
+              </div>
+              <div class="sub-feature-item" [class.locked]="!hasPtAccess() || !hasAnalyticsAccess()">
+                <div class="feat-status-dot"></div>
+                <div>
+                  <strong>Trainers & Analytics (Enterprise)</strong>
+                  <p>{{ (hasPtAccess() && hasAnalyticsAccess()) ? 'Active: Trainer rosters, PIN attendance, commission payouts & analytics.' : 'Locked: Requires Enterprise plan.' }}</p>
                 </div>
               </div>
             </div>
@@ -2553,7 +2789,7 @@
               <div class="cancellation-alert">
                 <span class="cancel-alert-icon">⚠️</span>
                 <div class="cancel-alert-copy">
-                  <strong>Cancellation Scheduled:</strong> Your subscription has been scheduled for cancellation. All Premium PRO features remain active during your grace period. None of your trainer or history data will be deleted.
+                  <strong>Cancellation Scheduled:</strong> Your subscription has been scheduled for cancellation. All tier features remain active during your grace period. None of your gym data will be deleted.
                 </div>
                 <button type="button" class="button button-dark" style="font-size: 11px; padding: 4px 10px;" (click)="reactivateSubscription()">
                   ↺ Reactivate Subscription
@@ -2805,7 +3041,14 @@
                 <tbody>
                   @for (org of platformOrganizations(); track org.id) {
                     <tr>
-                      <td><strong>{{ org.name }}</strong></td>
+                      <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          @if (org.logoData) {
+                            <img [src]="org.logoData" alt="" style="width: 24px; height: 24px; object-fit: contain; border-radius: 4px;" />
+                          }
+                          <strong>{{ org.name }}</strong>
+                        </div>
+                      </td>
                       <td><code>{{ org.code }}</code></td>
                       <td>
                         @if (org.ownerEmail) {
@@ -2818,8 +3061,8 @@
                       <td>{{ org.branchCount }}</td>
                       <td>{{ org.memberCount }}</td>
                       <td>
-                        <span class="tier-pill" [class.tier-premium]="org.subscriptionTier === 'PREMIUM'" [class.tier-standard]="org.subscriptionTier === 'STANDARD'">
-                          {{ org.subscriptionTier === 'PREMIUM' ? '⭐ PRO' : 'STANDARD' }}
+                        <span class="tier-pill" [ngClass]="tierPillClass(org.subscriptionTier)">
+                          {{ tierBadgeLabel(org.subscriptionTier) }}
                         </span>
                       </td>
                       <td>
@@ -2833,15 +3076,17 @@
                       <td>{{ org.subscriptionExpiresAt ? dateLabel(org.subscriptionExpiresAt) : 'Perpetual / Ongoing' }}</td>
                       <td>
                         <div class="table-actions-cell">
-                          @if (org.subscriptionTier === 'STANDARD') {
-                            <button type="button" class="btn-success" (click)="updateOrgTier(org.id, 'PREMIUM')">
-                              Upgrade to PRO
-                            </button>
-                          } @else {
-                            <button type="button" (click)="updateOrgTier(org.id, 'STANDARD')">
-                              Set Standard
-                            </button>
-                          }
+                          <select
+                            style="padding: 3px 6px; font-size: 11px; font-weight: 700; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); color: var(--ink);"
+                            [ngModel]="org.subscriptionTier"
+                            (ngModelChange)="updateOrgTier(org.id, $event)"
+                            title="Change Subscription Tier"
+                          >
+                            <option value="STANDARD">Standard</option>
+                            <option value="STARTER">Starter</option>
+                            <option value="PRO">Pro</option>
+                            <option value="ENTERPRISE">Enterprise</option>
+                          </select>
                           <button type="button" title="Extend subscription by 30 days" (click)="extendOrgSubscription(org.id, 30)">
                             +30d
                           </button>
@@ -2897,8 +3142,8 @@
                         </div>
                       </td>
                       <td>
-                        <span class="tier-pill" [class.tier-premium]="code.tier === 'PREMIUM'" [class.tier-standard]="code.tier === 'STANDARD'">
-                          {{ code.tier }}
+                        <span class="tier-pill" [ngClass]="tierPillClass(code.tier)">
+                          {{ tierBadgeLabel(code.tier) }}
                         </span>
                       </td>
                       <td>{{ code.durationDays ? (code.durationDays + ' Days') : 'Perpetual / Lifetime' }}</td>
@@ -4964,6 +5209,31 @@
                   }
                 </select>
               </label>
+
+              <!-- Payment Method Selection -->
+              <label>Payment Method
+                <select name="renewalPaymentMethod" [(ngModel)]="renewalDraft.paymentMethod" required>
+                  <option value="CASH">Cash Payment</option>
+                  <option value="UPI">UPI / QR Code</option>
+                  <option value="CARD">Credit / Debit Card</option>
+                  <option value="BANK_TRANSFER">Bank Transfer (IMPS / NEFT)</option>
+                  <option value="CHEQUE">Cheque</option>
+                  <option value="OTHER">Other Online / POS</option>
+                </select>
+              </label>
+
+              <!-- Transaction ID for Non-Cash Online Payments -->
+              @if (renewalDraft.paymentMethod !== 'CASH') {
+                <label>Transaction / Reference ID <span class="label-note">REQUIRED FOR ONLINE</span>
+                  <input
+                    name="renewalTransactionId"
+                    [(ngModel)]="renewalDraft.transactionId"
+                    type="text"
+                    placeholder="e.g. UPI Ref / UTR / Auth Code / Txn #"
+                    required
+                  />
+                </label>
+              }
               <p class="renewal-time-note">
                 Memberships are date-based: the new term begins at the start of the selected date.
                 Time of day is not tracked.
@@ -5106,9 +5376,9 @@
             <!-- Pinned Header -->
             <div class="upgrade-modal-header">
               <div>
-                <span class="upgrade-brand-badge">★ COMMERCIAL SAAS LICENSING · PRO UPGRADE</span>
-                <h2 id="upgrade-modal-title">Elevate Your Club with Premium PRO</h2>
-                <p class="dialog-subtitle">Unlock multi-trainer rosters, commission splits, member scheduling, and enterprise audit trails</p>
+                <span class="upgrade-brand-badge">★ COMMERCIAL SAAS LICENSING · {{ tierBadgeLabel(upgradeTargetTier()) }}</span>
+                <h2 id="upgrade-modal-title">Elevate Your Club with {{ tierDisplayName(upgradeTargetTier()) }}</h2>
+                <p class="dialog-subtitle">Unlock custom branding, digital receipt archiving, audit histories, and personal trainer economics</p>
               </div>
               <button
                 type="button"
@@ -5149,7 +5419,7 @@
                   <div class="pending-request-notice" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: var(--r-md); padding: 14px 16px;">
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
                       <span style="font-size: 16px;">⏳</span>
-                      <strong style="color: #f59e0b; font-size: 13.5px;">PRO License Request In Review (REQ-{{ pendingMyUpgradeRequest()!.id }})</strong>
+                      <strong style="color: #f59e0b; font-size: 13.5px;">{{ pendingMyUpgradeRequest()!.targetTier || 'PRO' }} License Request In Review (REQ-{{ pendingMyUpgradeRequest()!.id }})</strong>
                       <span class="badge badge-warning" style="margin-left: auto; font-size: 10px;">PENDING VERIFICATION</span>
                     </div>
                     <p style="margin: 0 0 8px; font-size: 12px; color: var(--muted); line-height: 1.45;">
@@ -5165,23 +5435,71 @@
                 <div class="upgrade-highlight-banner">
                   <span class="highlight-icon">⭐</span>
                   <div>
-                    @if (upgradeFeatureTarget() === 'pt') {
-                      <strong>Personal Trainers &amp; Commission Management (PRO Module)</strong>
-                      <p>Upgrade to recruit personal trainers, schedule member sessions, configure 40%-100% commission splits, and track mutual 4-digit PIN attendance.</p>
-                    } @else if (upgradeFeatureTarget() === 'history') {
-                      <strong>Audit Trail &amp; Financial Security Trail (PRO Module)</strong>
-                      <p>Upgrade to inspect real-time staff operations, attendance logs, member profile mutations, and complete audit compliance histories.</p>
+                    @if (upgradeTargetTier() === 'STARTER') {
+                      <strong>White-Label Gym Branding (Starter Plan)</strong>
+                      <p>Upgrade to upload your custom gym logo, replace SaaS branding, and white-label your gym name across the entire software interface.</p>
+                    } @else if (upgradeTargetTier() === 'PRO') {
+                      <strong>Pro Power: Receipts &amp; Audit Trail (Pro Plan)</strong>
+                      <p>Includes Starter features plus member payment receipt photo uploads, receipt management, and full real-time action audit trail logs.</p>
                     } @else {
-                      <strong>Enterprise Power for Your Entire Fitness Operation</strong>
-                      <p>Unlock our complete suite of advanced modules: Personal Trainers, Commission Economics, Trainee Workout Schedules, and Full Audit Logs.</p>
+                      <strong>Enterprise Suite: Personal Trainers &amp; Analytics (Enterprise Plan)</strong>
+                      <p>Includes Pro features plus personal trainer rosters, trainee scheduling, session attendance PINs, commission split economics, and executive business analytics.</p>
                     }
                   </div>
                 </div>
 
-                <!-- Plan Term Selection Cards -->
+                <!-- Step 1: Target Tier Selection -->
                 <div>
                   <label style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: block;">
-                    1. Select Billing Term
+                    1. Choose Subscription Tier
+                  </label>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 18px;">
+                    <button
+                      type="button"
+                      class="plan-select-card"
+                      [class.selected]="upgradeTargetTier() === 'STARTER'"
+                      (click)="setUpgradeTargetTier('STARTER')"
+                      style="text-align: left; padding: 12px;"
+                    >
+                      <div class="plan-radio-indicator" [class.active]="upgradeTargetTier() === 'STARTER'"></div>
+                      <strong style="display: block; font-size: 13px; color: var(--ink);">⭐ Starter</strong>
+                      <span style="font-size: 11px; color: var(--muted); display: block; margin-top: 4px;">Custom Logo &amp; White-Label Gym Name</span>
+                      <span style="font-size: 11px; color: var(--accent); font-weight: 700; display: block; margin-top: 6px;">From ₹833 / mo</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="plan-select-card"
+                      [class.selected]="upgradeTargetTier() === 'PRO'"
+                      (click)="setUpgradeTargetTier('PRO')"
+                      style="text-align: left; padding: 12px;"
+                    >
+                      <span class="plan-badge" style="top: 8px; right: 8px;">POPULAR</span>
+                      <div class="plan-radio-indicator" [class.active]="upgradeTargetTier() === 'PRO'"></div>
+                      <strong style="display: block; font-size: 13px; color: var(--ink);">⚡ Pro</strong>
+                      <span style="font-size: 11px; color: var(--muted); display: block; margin-top: 4px;">Starter + Receipt Upload + Audit History</span>
+                      <span style="font-size: 11px; color: var(--accent); font-weight: 700; display: block; margin-top: 6px;">From ₹2,000 / mo</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      class="plan-select-card"
+                      [class.selected]="upgradeTargetTier() === 'ENTERPRISE'"
+                      (click)="setUpgradeTargetTier('ENTERPRISE')"
+                      style="text-align: left; padding: 12px;"
+                    >
+                      <div class="plan-radio-indicator" [class.active]="upgradeTargetTier() === 'ENTERPRISE'"></div>
+                      <strong style="display: block; font-size: 13px; color: var(--ink);">👑 Enterprise</strong>
+                      <span style="font-size: 11px; color: var(--muted); display: block; margin-top: 4px;">Pro + Personal Trainers + Analytics</span>
+                      <span style="font-size: 11px; color: var(--accent); font-weight: 700; display: block; margin-top: 6px;">From ₹3,333 / mo</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 2: Plan Term Selection Cards -->
+                <div>
+                  <label style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: block;">
+                    2. Select Billing Term
                   </label>
                   <div class="billing-plans-grid">
                     <div
@@ -5191,10 +5509,14 @@
                     >
                       <span class="plan-badge">BEST VALUE · SAVE 33%</span>
                       <div class="plan-radio-indicator" [class.active]="upgradeBillingPlan() === 'ANNUAL'"></div>
-                      <span class="plan-name">Annual PRO</span>
-                      <div class="plan-price">₹24,000</div>
+                      <span class="plan-name">Annual {{ tierDisplayName(upgradeTargetTier()) }}</span>
+                      <div class="plan-price">
+                        {{ upgradeTargetTier() === 'STARTER' ? '₹9,999' : (upgradeTargetTier() === 'ENTERPRISE' ? '₹39,999' : '₹24,000') }}
+                      </div>
                       <span class="plan-term">365 Days Unlocked</span>
-                      <span class="plan-equiv">₹2,000 / mo</span>
+                      <span class="plan-equiv">
+                        {{ upgradeTargetTier() === 'STARTER' ? '₹833 / mo' : (upgradeTargetTier() === 'ENTERPRISE' ? '₹3,333 / mo' : '₹2,000 / mo') }}
+                      </span>
                     </div>
 
                     <div
@@ -5203,10 +5525,14 @@
                       (click)="setUpgradeBillingPlan('HALF_YEAR')"
                     >
                       <div class="plan-radio-indicator" [class.active]="upgradeBillingPlan() === 'HALF_YEAR'"></div>
-                      <span class="plan-name">Half-Year PRO</span>
-                      <div class="plan-price">₹14,000</div>
+                      <span class="plan-name">Half-Year {{ tierDisplayName(upgradeTargetTier()) }}</span>
+                      <div class="plan-price">
+                        {{ upgradeTargetTier() === 'STARTER' ? '₹5,999' : (upgradeTargetTier() === 'ENTERPRISE' ? '₹22,999' : '₹14,000') }}
+                      </div>
                       <span class="plan-term">180 Days Unlocked</span>
-                      <span class="plan-equiv">₹2,333 / mo</span>
+                      <span class="plan-equiv">
+                        {{ upgradeTargetTier() === 'STARTER' ? '₹1,000 / mo' : (upgradeTargetTier() === 'ENTERPRISE' ? '₹3,833 / mo' : '₹2,333 / mo') }}
+                      </span>
                     </div>
 
                     <div
@@ -5215,23 +5541,25 @@
                       (click)="setUpgradeBillingPlan('MONTHLY')"
                     >
                       <div class="plan-radio-indicator" [class.active]="upgradeBillingPlan() === 'MONTHLY'"></div>
-                      <span class="plan-name">Monthly PRO</span>
-                      <div class="plan-price">₹2,999</div>
+                      <span class="plan-name">Monthly {{ tierDisplayName(upgradeTargetTier()) }}</span>
+                      <div class="plan-price">
+                        {{ upgradeTargetTier() === 'STARTER' ? '₹1,199' : (upgradeTargetTier() === 'ENTERPRISE' ? '₹4,499' : '₹2,999') }}
+                      </div>
                       <span class="plan-term">30 Days Unlocked</span>
                       <span class="plan-equiv">Flexible Renewal</span>
                     </div>
                   </div>
                 </div>
 
-                <!-- Dynamic Live Quote / Order Summary -->
+                <!-- Step 3: Dynamic Live Quote / Order Summary -->
                 <div class="upgrade-quote-summary">
                   <div class="quote-heading">
-                    <span>2. Commercial Quote Summary</span>
+                    <span>3. Commercial Quote Summary</span>
                     <span style="color: var(--primary);">B2B SaaS License</span>
                   </div>
                   <div class="quote-row">
                     <span>Selected Plan:</span>
-                    <strong>{{ upgradeBillingPlan() === 'ANNUAL' ? 'Annual PRO (365 Days)' : upgradeBillingPlan() === 'HALF_YEAR' ? 'Half-Year PRO (180 Days)' : 'Monthly PRO (30 Days)' }}</strong>
+                    <strong>{{ upgradeBillingPlan() === 'ANNUAL' ? 'Annual ' + tierDisplayName(upgradeTargetTier()) + ' (365 Days)' : upgradeBillingPlan() === 'HALF_YEAR' ? 'Half-Year ' + tierDisplayName(upgradeTargetTier()) + ' (180 Days)' : 'Monthly ' + tierDisplayName(upgradeTargetTier()) + ' (30 Days)' }}</strong>
                   </div>
                   <div class="quote-row">
                     <span>Effective Monthly Rate:</span>
@@ -5242,7 +5570,7 @@
                     <span>Included in License Fee</span>
                   </div>
                   <div class="quote-row">
-                    <span>Estimated Pro Validity:</span>
+                    <span>Estimated Tier Validity:</span>
                     <span>Valid through {{ quotePlanEstimatedExpiry() }}</span>
                   </div>
                   <div class="quote-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border);">
@@ -5254,7 +5582,7 @@
                 <!-- Payment Method & Wire Details Form -->
                 <div>
                   <label style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: block;">
-                    3. Payment &amp; Invoicing Details
+                    4. Payment &amp; Invoicing Details
                   </label>
                   <div class="upgrade-form-grid">
                     <label>Settlement Method
@@ -5682,7 +6010,9 @@
             <form class="renewal-form" (ngSubmit)="createLicenseKey()" #generateKeyForm="ngForm">
               <label>Target Subscription Tier
                 <select name="genTier" [(ngModel)]="generateCodeDraft.tier" required>
-                  <option value="PREMIUM">PREMIUM (Premium PRO - PT & Audit Trail)</option>
+                  <option value="STARTER">STARTER (Custom Gym Logo &amp; White-Label Gym Name)</option>
+                  <option value="PRO">PRO (Starter + Receipt Upload + Audit History)</option>
+                  <option value="ENTERPRISE">ENTERPRISE (Pro + Personal Trainers + Advanced Analytics)</option>
                   <option value="STANDARD">STANDARD (Base Operations Tier)</option>
                 </select>
               </label>

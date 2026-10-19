@@ -69,3 +69,24 @@ CREATE TABLE renewal_reminders (
     CONSTRAINT fk_renewal_reminders_membership
         FOREIGN KEY (membership_id) REFERENCES memberships (id)
 );
+
+-- SaaS Tier Expansion & Custom Branding
+ALTER TABLE action_history MODIFY COLUMN before_data LONGTEXT NULL;
+ALTER TABLE action_history MODIFY COLUMN after_data LONGTEXT NULL;
+ALTER TABLE gym_organizations ADD COLUMN IF NOT EXISTS logo_data LONGTEXT NULL;
+ALTER TABLE gym_organizations MODIFY COLUMN logo_data LONGTEXT NULL;
+ALTER TABLE memberships ADD COLUMN IF NOT EXISTS payment_method VARCHAR(40) NULL;
+ALTER TABLE memberships ADD COLUMN IF NOT EXISTS transaction_id VARCHAR(120) NULL;
+
+CREATE TABLE IF NOT EXISTS membership_receipts (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    membership_id BIGINT NOT NULL UNIQUE,
+    receipt_image LONGBLOB NOT NULL,
+    receipt_image_content_type VARCHAR(32) NOT NULL,
+    receipt_image_filename VARCHAR(80) NOT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_membership_receipts_membership FOREIGN KEY (membership_id) REFERENCES memberships (id)
+);
+ALTER TABLE membership_receipts MODIFY COLUMN receipt_image LONGBLOB NOT NULL;
+
+

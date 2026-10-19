@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import java.time.Instant;
 
@@ -44,10 +45,12 @@ public class ActionHistory {
     @Column(length = 500)
     private String reason;
 
-    @Column(name = "before_data", columnDefinition = "text")
+    @Lob
+    @Column(name = "before_data", columnDefinition = "LONGTEXT")
     private String beforeData;
 
-    @Column(name = "after_data", columnDefinition = "text")
+    @Lob
+    @Column(name = "after_data", columnDefinition = "LONGTEXT")
     private String afterData;
 
     @Column(name = "occurred_at", nullable = false, updatable = false)

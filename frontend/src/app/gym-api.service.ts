@@ -13,7 +13,8 @@ export interface User {
   branchName: string | null;
   organizationId?: number | null;
   organizationName?: string | null;
-  subscriptionTier?: 'STANDARD' | 'PREMIUM';
+  organizationLogo?: string | null;
+  subscriptionTier?: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
   subscriptionStatus?: 'ACTIVE' | 'TRIAL' | 'EXPIRED' | 'CANCELLED' | 'SUSPENDED';
   subscriptionExpiresAt?: string | null;
   enabledFeatures?: string[];
@@ -28,23 +29,27 @@ export interface GymRegistrationPayload {
   organizationCode: string;
   branchName?: string;
   branchAddress?: string;
-  subscriptionTier?: 'STANDARD' | 'PREMIUM';
+  subscriptionTier?: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
 }
 export interface SubscriptionStatus {
   organizationId: number;
   organizationName: string;
   organizationCode: string;
-  subscriptionTier: 'STANDARD' | 'PREMIUM';
+  organizationLogo?: string | null;
+  subscriptionTier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
   subscriptionStatus: 'ACTIVE' | 'TRIAL' | 'EXPIRED' | 'CANCELLED' | 'SUSPENDED';
   expiresAt: string | null;
-  ptEnabled: boolean;
+  brandingEnabled?: boolean;
+  receiptUploadEnabled?: boolean;
   historyEnabled: boolean;
+  ptEnabled: boolean;
+  analyticsEnabled?: boolean;
   enabledFeatures: string[];
 }
 export interface ActivationCode {
   id: number;
   code: string;
-  tier: 'STANDARD' | 'PREMIUM';
+  tier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
   durationDays: number | null;
   status: 'AVAILABLE' | 'REDEEMED' | 'REVOKED' | 'EXPIRED';
   maxRedemptions: number;
@@ -66,7 +71,7 @@ export interface UpgradeRequest {
   requesterEmail: string;
   requesterName: string | null;
   requesterPhone: string | null;
-  targetTier: 'STANDARD' | 'PREMIUM';
+  targetTier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
   durationDays: number;
   billingPlanName: string;
   paymentMethod: string;
@@ -87,6 +92,7 @@ export interface UpgradeRequestPayload {
   gstNumber?: string;
   billingAddress?: string;
   notes?: string;
+  targetTier?: string;
 }
 export interface PlatformMetrics {
   totalGyms: number;
@@ -100,7 +106,8 @@ export interface PlatformOrganization {
   id: number;
   name: string;
   code: string;
-  subscriptionTier: 'STANDARD' | 'PREMIUM';
+  logoData?: string | null;
+  subscriptionTier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
   subscriptionStatus: 'ACTIVE' | 'TRIAL' | 'EXPIRED' | 'CANCELLED' | 'SUSPENDED';
   subscriptionExpiresAt: string | null;
   createdAt: string;
@@ -116,15 +123,15 @@ export interface BranchPayload { name: string; code: string; type: BranchType; a
 export type PtPackageType = 'NONE' | 'PT_ONLY' | 'COMBINED';
 export interface Plan { id: number; name: string; description: string; price: number; durationMonths: number | null; durationDays: number | null; branchId: number | null; branchName: string | null; active: boolean; usageCount: number; ptPackageType?: PtPackageType; includedPtSessions?: number | null; ptFeeIncluded?: number | null; }
 export interface Freeze { id: number; startDate: string; endDate: string; reason: string; createdBy: string; createdAt: string; cancelledAt: string | null; endedEarlyAt: string | null; }
-export interface Membership { id: number; memberName: string; email: string; phoneNumber: string | null; planId: number; planName: string; branchId: number | null; branchName: string | null; startDate: string; endDate: string; listPrice: number; discountPercent: number; amountPaid: number; status: 'ACTIVE' | 'CANCELLED'; renewalStartDate: string | null; createdAt: string; lastActivityAt: string; cancelledAt: string | null; planDurationMonths: number | null; planDurationDays: number | null; frozen: boolean; freezes: Freeze[]; personalTrainerId?: number | null; personalTrainerName?: string | null; ptSessionsIncluded?: number | null; ptSessionsUsed?: number; memberPin?: string | null; }
+export interface Membership { id: number; memberName: string; email: string; phoneNumber: string | null; planId: number; planName: string; branchId: number | null; branchName: string | null; startDate: string; endDate: string; listPrice: number; discountPercent: number; amountPaid: number; status: 'ACTIVE' | 'CANCELLED'; renewalStartDate: string | null; createdAt: string; lastActivityAt: string; cancelledAt: string | null; planDurationMonths: number | null; planDurationDays: number | null; frozen: boolean; freezes: Freeze[]; personalTrainerId?: number | null; personalTrainerName?: string | null; ptSessionsIncluded?: number | null; ptSessionsUsed?: number; memberPin?: string | null; paymentMethod?: string; transactionId?: string | null; }
 export interface MembershipGroup { memberId: number; memberName: string; email: string; phoneNumber: string | null; terms: Membership[]; }
 export interface MembershipPage { members: MembershipGroup[]; page: number; size: number; totalMembers: number; totalPages: number; }
 export interface MembershipAccess { allowed: boolean; status: string; checkedOn: string; message: string; }
 export interface BranchDashboard { branchId: number; branchName: string; branchCode: string; branchType: BranchType; revenueThisMonth: number; revenueLastMonth: number; activeMembers: number; totalMembers: number; expiringWithinSevenDays: number; expiringMembers: Membership[]; }
 export interface Dashboard { revenueThisMonth: number; revenueLastMonth: number; activeMembers: number; totalMembers: number; expiringWithinSevenDays: number; expiringMembers: Membership[]; branches: BranchDashboard[]; }
 export interface PlanPayload { name: string; description: string; price: number; durationMonths: number | null; durationDays: number | null; branchId: number | null; active: boolean; ptPackageType?: PtPackageType; includedPtSessions?: number | null; ptFeeIncluded?: number | null; }
-export interface MembershipPayload { fullName: string; email: string; phoneNumber: string; password: string; planId: number; branchId: number | null; personalTrainerId?: number | null; discountPercent: number; startDate: string; receiptImageData?: string | null; }
-export interface RenewalPayload { planId: number; branchId: number | null; personalTrainerId?: number | null; discountPercent: number; startDate: string; }
+export interface MembershipPayload { fullName: string; email: string; phoneNumber: string; password: string; planId: number; branchId: number | null; personalTrainerId?: number | null; discountPercent: number; startDate: string; receiptImageData?: string | null; paymentMethod?: string; transactionId?: string | null; }
+export interface RenewalPayload { planId: number; branchId: number | null; personalTrainerId?: number | null; discountPercent: number; startDate: string; paymentMethod?: string; transactionId?: string | null; }
 export interface StaffPayload { fullName: string; email: string; phoneNumber: string; password: string; branchId: number; }
 export interface ProfilePayload { fullName: string; email: string; phoneNumber: string; }
 export interface ResetRequestResponse { message: string; developmentCode: string | null; }
@@ -285,6 +292,7 @@ export interface PtAnalytics {
 export class GymApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api';
+  me(): Observable<User> { return this.http.get<User>(`${this.baseUrl}/auth/me`); }
   login(email: string, password: string): Observable<Session> { return this.http.post<Session>(`${this.baseUrl}/auth/login`, { email, password }); }
   registerGym(payload: GymRegistrationPayload): Observable<Session> { return this.http.post<Session>(`${this.baseUrl}/auth/register-gym`, payload); }
   currentSubscription(): Observable<SubscriptionStatus> { return this.http.get<SubscriptionStatus>(`${this.baseUrl}/subscription/current`); }
@@ -332,6 +340,7 @@ export class GymApiService {
   confirmPasswordReset(payload: { email: string; code: string; newPassword: string }): Observable<string> { return this.http.post(`${this.baseUrl}/auth/password-reset/confirm`, payload, { responseType: 'text' }); }
   changePassword(payload: { currentPassword: string; newPassword: string }): Observable<Session> { return this.http.post<Session>(`${this.baseUrl}/auth/change-password`, payload); }
   updateProfile(payload: ProfilePayload): Observable<Session> { return this.http.put<Session>(`${this.baseUrl}/auth/profile`, payload); }
+  updateBranding(payload: { name: string; logoData: string | null }): Observable<User> { return this.http.put<User>(`${this.baseUrl}/organization/branding`, payload); }
   logout(): Observable<void> { return this.http.post<void>(`${this.baseUrl}/auth/logout`, {}); }
   plans(): Observable<Plan[]> { return this.http.get<Plan[]>(`${this.baseUrl}/plans`); }
   branches(): Observable<Branch[]> { return this.http.get<Branch[]>(`${this.baseUrl}/branches`); }

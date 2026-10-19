@@ -55,6 +55,12 @@ public class ActionHistoryService {
         if (value == null) {
             return null;
         }
+        if (value instanceof com.gymflow.web.ApiDtos.UserDto user && user.organizationLogo() != null) {
+            value = new com.gymflow.web.ApiDtos.UserDto(user.id(), user.fullName(), user.email(), user.phoneNumber(), user.role(),
+                    user.branchId(), user.branchName(), user.organizationId(), user.organizationName(),
+                    "[LOGO_ATTACHED]", user.subscriptionTier(), user.enabledFeatures(),
+                    user.subscriptionStatus(), user.subscriptionExpiresAt(), user.memberPin());
+        }
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException exception) {

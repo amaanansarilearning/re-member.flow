@@ -31,6 +31,7 @@ public final class ApiDtos {
 
         public record UserDto(Long id, String fullName, String email, String phoneNumber, Role role,
                         Long branchId, String branchName, Long organizationId, String organizationName,
+                        String organizationLogo,
                         SubscriptionTier subscriptionTier, List<String> enabledFeatures,
                         SubscriptionStatus subscriptionStatus, Instant subscriptionExpiresAt,
                         String memberPin) {
@@ -55,12 +56,21 @@ public final class ApiDtos {
                         Long organizationId,
                         String organizationName,
                         String organizationCode,
+                        String organizationLogo,
                         SubscriptionTier subscriptionTier,
                         SubscriptionStatus subscriptionStatus,
                         Instant expiresAt,
-                        boolean ptEnabled,
+                        boolean brandingEnabled,
+                        boolean receiptUploadEnabled,
                         boolean historyEnabled,
+                        boolean ptEnabled,
+                        boolean analyticsEnabled,
                         List<String> enabledFeatures) {
+        }
+
+        public record BrandingUpdateRequest(
+                        @NotBlank @Size(max = 120) String name,
+                        @Size(max = 2_000_000) String logoData) {
         }
 
         public record SubscriptionUpgradeRequest(
@@ -82,7 +92,8 @@ public final class ApiDtos {
                         @NotBlank @Size(max = 50) String paymentMethod,
                         @Size(max = 50) String gstNumber,
                         @Size(max = 255) String billingAddress,
-                        @Size(max = 500) String notes) {
+                        @Size(max = 500) String notes,
+                        String targetTier) {
         }
 
         public record UpgradeRequestDto(
@@ -154,6 +165,7 @@ public final class ApiDtos {
                         Long id,
                         String name,
                         String code,
+                        String logoData,
                         SubscriptionTier subscriptionTier,
                         SubscriptionStatus subscriptionStatus,
                         Instant subscriptionExpiresAt,
@@ -230,14 +242,18 @@ public final class ApiDtos {
                         Long personalTrainerId,
                         @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal discountPercent,
                         LocalDate startDate,
-                        @Size(max = 7_000_100) String receiptImageData) {
+                        @Size(max = 7_000_100) String receiptImageData,
+                        @Size(max = 40) String paymentMethod,
+                        @Size(max = 120) String transactionId) {
         }
 
         public record MembershipRenewalRequest(@NotNull Long planId,
                         Long branchId,
                         Long personalTrainerId,
                         @NotNull @DecimalMin("0") @DecimalMax("100") BigDecimal discountPercent,
-                        LocalDate startDate) {
+                        LocalDate startDate,
+                        @Size(max = 40) String paymentMethod,
+                        @Size(max = 120) String transactionId) {
         }
 
         public record StaffRegistrationRequest(@NotBlank @Size(max = 100) String fullName,
@@ -256,7 +272,9 @@ public final class ApiDtos {
                         List<FreezeDto> freezes,
                         Long personalTrainerId, String personalTrainerName,
                         Integer ptSessionsIncluded, Integer ptSessionsUsed,
-                        String memberPin) {
+                        String memberPin,
+                        String paymentMethod,
+                        String transactionId) {
         }
 
         public record MembershipGroupDto(Long memberId, String memberName, String email, String phoneNumber,

@@ -122,11 +122,122 @@ export class App {
   });
 
   // ─── Subscription & Tier Signals ──────────────────────────────────────────
-  readonly isPremium = computed(() => this.user()?.subscriptionTier === 'PREMIUM');
-  readonly hasPtAccess = computed(() => this.isPremium());
-  readonly hasHistoryAccess = computed(() => this.isPremium());
+  readonly isPremium = computed(() => ['STARTER', 'PRO', 'ENTERPRISE', 'PREMIUM'].includes(this.user()?.subscriptionTier || ''));
+  readonly hasBrandingAccess = computed(() => !!this.user()?.enabledFeatures?.includes('CUSTOM_BRANDING') || ['STARTER', 'PRO', 'ENTERPRISE', 'PREMIUM'].includes(this.user()?.subscriptionTier || ''));
+  readonly hasReceiptUploadAccess = computed(() => !!this.user()?.enabledFeatures?.includes('RECEIPT_IMAGE_UPLOAD') || ['PRO', 'ENTERPRISE', 'PREMIUM'].includes(this.user()?.subscriptionTier || ''));
+  readonly hasHistoryAccess = computed(() => !!this.user()?.enabledFeatures?.includes('ACTION_HISTORY') || ['PRO', 'ENTERPRISE', 'PREMIUM'].includes(this.user()?.subscriptionTier || ''));
+  readonly hasPtAccess = computed(() => !!this.user()?.enabledFeatures?.includes('PERSONAL_TRAINERS') || ['ENTERPRISE', 'PREMIUM'].includes(this.user()?.subscriptionTier || ''));
+  readonly hasAnalyticsAccess = computed(() => !!this.user()?.enabledFeatures?.includes('ANALYTICS') || ['ENTERPRISE', 'PREMIUM'].includes(this.user()?.subscriptionTier || ''));
+
+  tierBadgeLabel(tier?: string): string {
+    switch (tier) {
+      case 'STARTER': return '⭐ STARTER';
+      case 'PRO': return '⚡ PRO';
+      case 'ENTERPRISE':
+      case 'PREMIUM': return '👑 ENTERPRISE';
+      default: return 'STANDARD';
+    }
+  }
+
+  tierDisplayName(tier?: string): string {
+    switch (tier) {
+      case 'STARTER': return 'Starter';
+      case 'PRO': return 'Pro';
+      case 'ENTERPRISE':
+      case 'PREMIUM': return 'Enterprise';
+      default: return 'Standard';
+    }
+  }
+
+  tierPillClass(tier?: string): string {
+    switch (tier) {
+      case 'STARTER': return 'tier-starter';
+      case 'PRO': return 'tier-pro';
+      case 'ENTERPRISE':
+      case 'PREMIUM': return 'tier-enterprise';
+      default: return 'tier-standard';
+    }
+  }
+
+  canUpgradeTier(): boolean {
+    const role = this.user()?.role;
+    const tier = this.user()?.subscriptionTier;
+    return role === 'OWNER' && tier !== 'ENTERPRISE' && tier !== 'PREMIUM';
+  }
+
+  readonly brandingDraft = {
+    name: '',
+    logoData: '' as string | null
+  };
+  readonly brandingSaving = signal(false);
+  readonly brandingSuccessNotice = signal('');
+  readonly logoPreview = signal<string | null>(null);
+
+  initBrandingDraft(): void {
+    const u = this.user();
+    this.brandingDraft.name = u?.organizationName || '';
+    this.brandingDraft.logoData = u?.organizationLogo || null;
+    this.logoPreview.set(u?.organizationLogo || null);
+  }
+
+  onLogoSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'].includes(file.type)) {
+      this.error.set('Please select a valid image (PNG, JPG, SVG, WebP) under 2 MB.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      this.error.set('Logo file size must be less than 2 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      this.brandingDraft.logoData = result;
+      this.logoPreview.set(result);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  removeBrandingLogo(): void {
+    this.brandingDraft.logoData = null;
+    this.logoPreview.set(null);
+  }
+
+  async saveBranding(): Promise<void> {
+    if (!this.brandingDraft.name.trim()) {
+      this.error.set('Gym name cannot be empty.');
+      return;
+    }
+    if (!this.hasBrandingAccess()) {
+      this.openUpgradeModal('branding');
+      return;
+    }
+    this.brandingSaving.set(true);
+    this.error.set('');
+    try {
+      const updated = await firstValueFrom(this.api.updateBranding({
+        name: this.brandingDraft.name.trim(),
+        logoData: this.brandingDraft.logoData
+      }));
+      this.user.set(updated);
+      try { sessionStorage.setItem('gym.user', JSON.stringify(updated)); } catch {}
+      this.initBrandingDraft();
+      this.notice.set('Gym branding updated successfully!');
+      this.brandingSuccessNotice.set('Gym branding updated successfully!');
+      setTimeout(() => this.brandingSuccessNotice.set(''), 4000);
+    } catch (err: any) {
+      this.error.set(this.api.message(err, 'Failed to update gym branding.'));
+    } finally {
+      this.brandingSaving.set(false);
+    }
+  }
+
   readonly upgradeModalOpen = signal(false);
-  readonly upgradeFeatureTarget = signal<'pt' | 'history' | 'general'>('general');
+  readonly upgradeFeatureTarget = signal<'pt' | 'history' | 'branding' | 'receipt' | 'analytics' | 'general'>('general');
+  readonly upgradeTargetTier = signal<'STARTER' | 'PRO' | 'ENTERPRISE'>('PRO');
   readonly upgradeLoading = signal(false);
   readonly upgradeModalTab = signal<'request' | 'redeem'>('request');
   readonly upgradeBillingPlan = signal<'ANNUAL' | 'HALF_YEAR' | 'MONTHLY'>('ANNUAL');
@@ -144,7 +255,22 @@ export class App {
   readonly copiedSettlementField = signal<string>('');
 
   readonly quotePlanAmount = computed(() => {
-    switch (this.upgradeBillingPlan()) {
+    const tier = this.upgradeTargetTier();
+    const plan = this.upgradeBillingPlan();
+    if (tier === 'STARTER') {
+      switch (plan) {
+        case 'ANNUAL': return 9999;
+        case 'HALF_YEAR': return 5999;
+        case 'MONTHLY': return 1199;
+      }
+    } else if (tier === 'ENTERPRISE') {
+      switch (plan) {
+        case 'ANNUAL': return 39999;
+        case 'HALF_YEAR': return 22999;
+        case 'MONTHLY': return 4499;
+      }
+    }
+    switch (plan) {
       case 'ANNUAL': return 24000;
       case 'HALF_YEAR': return 14000;
       case 'MONTHLY': return 2999;
@@ -160,7 +286,22 @@ export class App {
   });
 
   readonly quotePlanMonthlyEquivalent = computed(() => {
-    switch (this.upgradeBillingPlan()) {
+    const tier = this.upgradeTargetTier();
+    const plan = this.upgradeBillingPlan();
+    if (tier === 'STARTER') {
+      switch (plan) {
+        case 'ANNUAL': return '₹833 / mo';
+        case 'HALF_YEAR': return '₹1,000 / mo';
+        case 'MONTHLY': return '₹1,199 / mo';
+      }
+    } else if (tier === 'ENTERPRISE') {
+      switch (plan) {
+        case 'ANNUAL': return '₹3,333 / mo';
+        case 'HALF_YEAR': return '₹3,833 / mo';
+        case 'MONTHLY': return '₹4,499 / mo';
+      }
+    }
+    switch (plan) {
       case 'ANNUAL': return '₹2,000 / mo';
       case 'HALF_YEAR': return '₹2,333 / mo';
       case 'MONTHLY': return '₹2,999 / mo';
@@ -229,7 +370,7 @@ export class App {
 
   readonly generateCodeModalOpen = signal(false);
   generateCodeDraft = {
-    tier: 'PREMIUM' as 'PREMIUM' | 'STANDARD',
+    tier: 'PRO' as 'STARTER' | 'PRO' | 'ENTERPRISE' | 'STANDARD' | 'PREMIUM',
     durationDays: 365 as number | null,
     notes: ''
   };
@@ -316,9 +457,9 @@ export class App {
   planDraft = { id: 0, name: '', description: '', price: 49, durationMode: 'months' as 'months' | 'days', durationMonths: 1, durationDays: 30, branchId: '', active: true, ptPackageType: 'NONE' as PtPackageType, includedPtSessions: 0, ptFeeIncluded: 0 };
   branchDraft = { id: 0, name: '', code: '', type: 'COMPANY_OWNED' as BranchType, address: '', phoneNumber: '', active: true };
   readonly renewalTarget = signal<Membership | null>(null);
-  renewalDraft = { planId: '', branchId: '', personalTrainerId: '', discountPercent: 0, startDate: '' };
+  renewalDraft = { planId: '', branchId: '', personalTrainerId: '', discountPercent: 0, startDate: '', paymentMethod: 'CASH', transactionId: '' };
   staffDraft = { fullName: '', email: '', phoneNumber: '', password: '', branchId: '' };
-  memberDraft = { fullName: '', email: '', phoneNumber: '', password: '', planId: '', branchId: '', personalTrainerId: '', discountPercent: 0, startDate: this.todayDate(), waiverAcknowledged: false };
+  memberDraft = { fullName: '', email: '', phoneNumber: '', password: '', planId: '', branchId: '', personalTrainerId: '', discountPercent: 0, startDate: this.todayDate(), waiverAcknowledged: false, paymentMethod: 'CASH', transactionId: '' };
   ptDraft = { id: 0, fullName: '', email: '', phoneNumber: '', password: '', branchId: '', specializations: '', bio: '', sessionFeePerHour: 500, commissionPercent: 70 };
   ptPayoutDraft = { ptId: 0, ptName: '', periodFrom: this.addDays(this.todayDate(), -30), periodTo: this.todayDate(), notes: '' };
   receiptFile: File | null = null;
@@ -655,6 +796,7 @@ export class App {
       }
     });
     if (this.user()) {
+      void this.refreshCurrentUser();
       if (this.user()?.role === 'SUPER_ADMIN') {
         this.view.set('platform-admin');
         void this.loadPlatformData();
@@ -664,6 +806,20 @@ export class App {
     }
     if (typeof window !== 'undefined' && window.location.hash) {
       this.checkUrlHash();
+    }
+  }
+
+  async refreshCurrentUser(): Promise<void> {
+    if (!this.user()) return;
+    try {
+      const freshUser = await firstValueFrom(this.api.me());
+      this.user.set(freshUser);
+      try { sessionStorage.setItem('gym.user', JSON.stringify(freshUser)); } catch {}
+      if (this.view() === 'account') {
+        this.initBrandingDraft();
+      }
+    } catch {
+      // Retain stored user session if network is unavailable
     }
   }
 
@@ -816,11 +972,24 @@ export class App {
     });
   }
 
-  openUpgradeModal(target: 'pt' | 'history' | 'general' = 'general'): void {
+  openUpgradeModal(target: 'pt' | 'history' | 'branding' | 'receipt' | 'analytics' | 'general' = 'general'): void {
     this.upgradeFeatureTarget.set(target);
+    if (target === 'branding') {
+      this.upgradeTargetTier.set('STARTER');
+    } else if (target === 'receipt' || target === 'history') {
+      this.upgradeTargetTier.set('PRO');
+    } else if (target === 'pt' || target === 'analytics') {
+      this.upgradeTargetTier.set('ENTERPRISE');
+    } else {
+      this.upgradeTargetTier.set('PRO');
+    }
     this.upgradeModalTab.set('request');
     this.upgradeModalOpen.set(true);
     void this.loadMyUpgradeRequests();
+  }
+
+  setUpgradeTargetTier(tier: 'STARTER' | 'PRO' | 'ENTERPRISE'): void {
+    this.upgradeTargetTier.set(tier);
   }
 
   closeUpgradeModal(): void {
@@ -861,16 +1030,9 @@ export class App {
     this.submittingUpgradeRequest.set(true);
     this.error.set('');
     try {
-      const planName = this.upgradeBillingPlan() === 'ANNUAL'
-        ? 'Annual PRO (365 Days)'
-        : this.upgradeBillingPlan() === 'HALF_YEAR'
-        ? 'Half-Year PRO (180 Days)'
-        : 'Monthly PRO (30 Days)';
-      const durationDays = this.upgradeBillingPlan() === 'ANNUAL'
-        ? 365
-        : this.upgradeBillingPlan() === 'HALF_YEAR'
-        ? 180
-        : 30;
+      const tierTitle = this.tierDisplayName(this.upgradeTargetTier());
+      const planName = `${this.upgradeBillingPlan() === 'ANNUAL' ? 'Annual' : this.upgradeBillingPlan() === 'HALF_YEAR' ? 'Half-Year' : 'Monthly'} ${tierTitle} (${this.quotePlanDurationDays()} Days)`;
+      const durationDays = this.quotePlanDurationDays();
 
       await firstValueFrom(this.api.requestUpgrade({
         billingPlan: planName,
@@ -878,11 +1040,12 @@ export class App {
         paymentMethod: this.upgradePaymentMethod(),
         gstNumber: this.upgradeGstNumber().trim() || undefined,
         billingAddress: this.upgradeBillingAddress().trim() || undefined,
-        notes: this.upgradeNotes().trim() || undefined
+        notes: this.upgradeNotes().trim() || undefined,
+        targetTier: this.upgradeTargetTier()
       }));
 
       await this.loadMyUpgradeRequests();
-      this.notice.set('Your PRO upgrade request has been submitted! Our accounts team will review payment and issue your activation key.');
+      this.notice.set(`Your ${tierTitle} upgrade request has been submitted! Our accounts team will review payment and issue your activation key.`);
     } catch (err) {
       this.error.set(this.api.message(err, 'Failed to submit upgrade request.'));
     } finally {
@@ -1131,7 +1294,7 @@ export class App {
 
   openGenerateCodeModal(): void {
     this.generateCodeDraft = {
-      tier: 'PREMIUM',
+      tier: 'PRO',
       durationDays: 365,
       notes: ''
     };
@@ -1212,7 +1375,7 @@ export class App {
     }
   }
 
-  async updateOrgTier(id: number, tier: 'STANDARD' | 'PREMIUM'): Promise<void> {
+  async updateOrgTier(id: number, tier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM' | string): Promise<void> {
     this.busy.set(true);
     this.error.set('');
     try {
@@ -1258,12 +1421,16 @@ export class App {
       this.error.set('Access denied: You do not have permission to view that section.');
       return;
     }
-    if ((view === 'pt-management' || view === 'pt-dashboard' || view === 'pt-earnings') && !this.isPremium()) {
+    if ((view === 'pt-management' || view === 'pt-dashboard' || view === 'pt-earnings') && !this.hasPtAccess()) {
       this.openUpgradeModal('pt');
       return;
     }
-    if (view === 'history' && !this.isPremium()) {
+    if (view === 'history' && !this.hasHistoryAccess()) {
       this.openUpgradeModal('history');
+      return;
+    }
+    if (view === 'reports' && !this.hasAnalyticsAccess()) {
+      this.openUpgradeModal('analytics');
       return;
     }
     this.error.set('');
@@ -1282,8 +1449,11 @@ export class App {
     if (view === 'pt-management' && this.user()?.role === 'OWNER') void this.loadPtManagementData();
     if (view === 'pt-dashboard' && this.user()?.role === 'PERSONAL_TRAINER') void this.loadMyPtDashboardData();
     if (view === 'pt-earnings' && this.user()?.role === 'PERSONAL_TRAINER') void this.loadMyPtEarningsData();
-    if (view === 'register') { this.memberDraft = { ...this.memberDraft, fullName: '', email: '', phoneNumber: '', password: '', planId: '', branchId: this.user()?.role === 'OWNER' ? String(this.activeBranches()[0]?.id ?? '') : String(this.user()?.branchId ?? ''), personalTrainerId: '', discountPercent: 0, startDate: this.todayDate(), waiverAcknowledged: false }; this.receiptFile = null; }
-    if (view === 'account' && this.user()) this.profileDraft = { fullName: this.user()!.fullName, email: this.user()!.email, phoneNumber: this.user()!.phoneNumber ?? '' };
+    if (view === 'register') { this.memberDraft = { ...this.memberDraft, fullName: '', email: '', phoneNumber: '', password: '', planId: '', branchId: this.user()?.role === 'OWNER' ? String(this.activeBranches()[0]?.id ?? '') : String(this.user()?.branchId ?? ''), personalTrainerId: '', discountPercent: 0, startDate: this.todayDate(), waiverAcknowledged: false, paymentMethod: 'CASH', transactionId: '' }; this.receiptFile = null; }
+    if (view === 'account' && this.user()) {
+      this.profileDraft = { fullName: this.user()!.fullName, email: this.user()!.email, phoneNumber: this.user()!.phoneNumber ?? '' };
+      this.initBrandingDraft();
+    }
     if (view === 'register' && this.user()?.role === 'OWNER' && !this.memberDraft.branchId) this.memberDraft.branchId = String(this.activeBranches()[0]?.id ?? '');
     if (view === 'team' && !this.staffDraft.branchId) this.staffDraft.branchId = String(this.activeBranches()[0]?.id ?? '');
   }
@@ -1607,17 +1777,28 @@ export class App {
       this.error.set('Please confirm the member has acknowledged the health waiver and club terms.');
       return;
     }
+    if (this.memberDraft.paymentMethod !== 'CASH' && !this.memberDraft.transactionId?.trim()) {
+      this.error.set(`Please enter the Transaction ID / Reference for ${this.memberDraft.paymentMethod} payments.`);
+      return;
+    }
     this.busy.set(true);
     this.error.set('');
     try {
       const receiptImageData = this.receiptFile ? await this.readReceiptFile(this.receiptFile) : null;
+      if (receiptImageData && !this.hasReceiptUploadAccess()) {
+        this.error.set('Receipt photo upload is a Pro feature. Please upgrade your gym to Pro or Enterprise.');
+        this.openUpgradeModal('receipt');
+        return;
+      }
       const result = await firstValueFrom(this.api.registerMembership({
         ...this.memberDraft,
         planId: Number(this.memberDraft.planId),
         branchId: this.memberDraft.branchId ? Number(this.memberDraft.branchId) : null,
         personalTrainerId: this.memberDraft.personalTrainerId ? Number(this.memberDraft.personalTrainerId) : null,
         discountPercent: Number(this.memberDraft.discountPercent),
-        receiptImageData
+        receiptImageData,
+        paymentMethod: this.memberDraft.paymentMethod,
+        transactionId: this.memberDraft.paymentMethod === 'CASH' ? null : this.memberDraft.transactionId.trim()
       }));
       const pinMsg = result.memberPin ? ` · Member Verification PIN: ${result.memberPin}` : '';
       this.notice.set(`${result.memberName} is now on the ${result.planName} package${pinMsg}.`);
@@ -1636,6 +1817,12 @@ export class App {
     const input = event.currentTarget as HTMLInputElement;
     const file = input.files?.[0] ?? null;
     this.error.set('');
+    if (!this.hasReceiptUploadAccess()) {
+      this.error.set('Receipt photo upload is a Pro feature. Please upgrade your gym to Pro or Enterprise.');
+      this.openUpgradeModal('receipt');
+      input.value = '';
+      return;
+    }
     if (!file) {
       this.receiptFile = null;
       return;
@@ -1739,7 +1926,9 @@ export class App {
       branchId: String(member.branchId ?? ''),
       personalTrainerId: member.personalTrainerId ? String(member.personalTrainerId) : '',
       discountPercent: member.discountPercent,
-      startDate: this.renewalMinimumStartDate(member)
+      startDate: this.renewalMinimumStartDate(member),
+      paymentMethod: 'CASH',
+      transactionId: ''
     };
     this.renewalTarget.set(member);
   }
@@ -1750,6 +1939,10 @@ export class App {
     const member = this.renewalTarget();
     const plan = this.selectedRenewalPlan();
     if (!member || !plan || !this.renewalDraft.startDate) return;
+    if (this.renewalDraft.paymentMethod !== 'CASH' && !this.renewalDraft.transactionId?.trim()) {
+      this.error.set(`Please enter the Transaction ID / Reference for ${this.renewalDraft.paymentMethod} renewal payments.`);
+      return;
+    }
     this.busy.set(true);
     this.error.set('');
     try {
@@ -1758,7 +1951,9 @@ export class App {
         branchId: this.renewalDraft.branchId ? Number(this.renewalDraft.branchId) : null,
         personalTrainerId: this.renewalDraft.personalTrainerId ? Number(this.renewalDraft.personalTrainerId) : null,
         discountPercent: Number(this.renewalDraft.discountPercent),
-        startDate: this.renewalDraft.startDate
+        startDate: this.renewalDraft.startDate,
+        paymentMethod: this.renewalDraft.paymentMethod,
+        transactionId: this.renewalDraft.paymentMethod === 'CASH' ? null : this.renewalDraft.transactionId.trim()
       }));
       this.closeRenewal();
       this.notice.set(`${member.memberName}'s renewal starts ${this.dateLabel(this.renewalDraft.startDate)}.`);

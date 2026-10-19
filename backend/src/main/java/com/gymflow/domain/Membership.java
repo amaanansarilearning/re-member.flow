@@ -87,6 +87,12 @@ public class Membership {
     @Column(precision = 5, scale = 2)
     private BigDecimal ptCommissionRateSnapshot;
 
+    @Column(name = "payment_method", length = 40)
+    private String paymentMethod = "CASH";
+
+    @Column(name = "transaction_id", length = 120)
+    private String transactionId;
+
     // ─── Constructors ─────────────────────────────────────────────────────────
 
     protected Membership() {
@@ -134,6 +140,18 @@ public class Membership {
             this.ptSessionsIncluded = plan.getIncludedPtSessions();
             this.ptCommissionRateSnapshot = personalTrainer.getCommissionPercent();
         }
+    }
+
+    public Membership(UserAccount member, MembershipPlan plan, GymBranch branch, LocalDate startDate, LocalDate endDate,
+            BigDecimal listPrice, BigDecimal amountPaid, BigDecimal discountPercent, Membership renewedFrom,
+            PersonalTrainer personalTrainer, String paymentMethod, String transactionId) {
+        this(member, plan, branch, startDate, endDate, listPrice, amountPaid, discountPercent, renewedFrom, personalTrainer);
+        recordPayment(paymentMethod, transactionId);
+    }
+
+    public void recordPayment(String paymentMethod, String transactionId) {
+        this.paymentMethod = paymentMethod == null || paymentMethod.isBlank() ? "CASH" : paymentMethod.trim().toUpperCase();
+        this.transactionId = transactionId == null || transactionId.isBlank() ? null : transactionId.trim();
     }
 
     // ─── Business methods ─────────────────────────────────────────────────────
@@ -286,5 +304,13 @@ public class Membership {
 
     public BigDecimal getPtCommissionRateSnapshot() {
         return ptCommissionRateSnapshot;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public String getTransactionId() {
+        return transactionId;
     }
 }

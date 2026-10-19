@@ -253,7 +253,14 @@ public class GymController {
     @PreAuthorize("hasRole('OWNER')")
     public AnalyticsDto analytics(Principal principal, @RequestParam LocalDate from, @RequestParam LocalDate to,
             @RequestParam(required = false) Long branchId) {
+        subscriptionService.requireFeature(principal.getName(), com.gymflow.domain.AppFeature.ANALYTICS);
         return analytics.analytics(principal.getName(), from, to, branchId);
+    }
+
+    @PutMapping("/organization/branding")
+    @PreAuthorize("hasRole('OWNER')")
+    public UserDto updateBranding(Principal principal, @Valid @RequestBody BrandingUpdateRequest request) {
+        return gymService.updateBranding(principal.getName(), request);
     }
 
     @GetMapping(value = "/reports/export.csv", produces = "text/csv")
