@@ -65,7 +65,10 @@ public final class ApiDtos {
                         boolean historyEnabled,
                         boolean ptEnabled,
                         boolean analyticsEnabled,
-                        List<String> enabledFeatures) {
+                        List<String> enabledFeatures,
+                        Integer maxBranches,
+                        Integer maxStaff,
+                        Integer maxMembers) {
         }
 
         public record BrandingUpdateRequest(
@@ -93,7 +96,8 @@ public final class ApiDtos {
                         @Size(max = 50) String gstNumber,
                         @Size(max = 255) String billingAddress,
                         @Size(max = 500) String notes,
-                        String targetTier) {
+                        String targetTier,
+                        BigDecimal estimatedTopUp) {
         }
 
         public record UpgradeRequestDto(
@@ -116,7 +120,18 @@ public final class ApiDtos {
                         String reviewedBy,
                         Instant reviewedAt,
                         String rejectionReason,
-                        Instant createdAt) {
+                        Instant createdAt,
+                        BigDecimal estimatedTopUp) {
+        }
+
+        public record SaasUpgradeQuoteDto(
+                        SubscriptionTier currentTier,
+                        SubscriptionTier targetTier,
+                        BigDecimal currentMonthlyPrice,
+                        BigDecimal targetMonthlyPrice,
+                        int remainingDays,
+                        BigDecimal estimatedTopUp,
+                        LocalDate effectiveDate) {
         }
 
         public record ApproveUpgradeDirectDto(
@@ -247,6 +262,29 @@ public final class ApiDtos {
                         @Size(max = 120) String transactionId) {
         }
 
+        public record MembershipUpgradeQuoteDto(
+                        int totalDays,
+                        int remainingDays,
+                        BigDecimal oldDailyRate,
+                        BigDecimal newDailyRate,
+                        BigDecimal creditAmount,
+                        BigDecimal newPlanProrataCost,
+                        BigDecimal topUpDue,
+                        String currentPlanName,
+                        BigDecimal currentPlanPrice,
+                        String newPlanName,
+                        BigDecimal newPlanPrice,
+                        boolean hasPt) {
+        }
+
+        public record MembershipUpgradeRequest(
+                        @NotNull Long newPlanId,
+                        Long personalTrainerId,
+                        @NotNull @DecimalMin("0") BigDecimal topUpPaid,
+                        @Size(max = 40) String paymentMethod,
+                        @Size(max = 120) String transactionId) {
+        }
+
         public record MembershipRenewalRequest(@NotNull Long planId,
                         Long branchId,
                         Long personalTrainerId,
@@ -263,11 +301,17 @@ public final class ApiDtos {
                         @NotBlank @Size(min = 8, max = 72) String password) {
         }
 
+        public record StaffUpdateRequest(@NotBlank @Size(max = 100) String fullName,
+                        @Size(max = 30) @Pattern(regexp = "^$|^\\+?[0-9][0-9 ()-]{6,19}$") String phoneNumber,
+                        @NotNull Long branchId,
+                        @Size(max = 72) String password) {
+        }
+
         public record MembershipDto(Long id, String memberName, String email, String phoneNumber, Long planId,
                         String planName, Long branchId, String branchName,
                         LocalDate startDate, LocalDate endDate, BigDecimal listPrice,
                         BigDecimal discountPercent, BigDecimal amountPaid, MembershipStatus status,
-                        LocalDate renewalStartDate, Instant createdAt, Instant lastActivityAt, Instant cancelledAt,
+                        LocalDate renewalStartDate, Long upgradedFromId, Instant createdAt, Instant lastActivityAt, Instant cancelledAt,
                         Integer planDurationMonths, Integer planDurationDays, boolean frozen,
                         List<FreezeDto> freezes,
                         Long personalTrainerId, String personalTrainerName,
@@ -485,5 +529,40 @@ public final class ApiDtos {
                         long sessionsCompleted, long sessionsCancelled, long sessionsMissed,
                         long activeTrainees, BigDecimal contractedPtRevenue,
                         long allocatedSessions, long remainingSessions) {
+        }
+
+        public record TenantBackupDto(
+                        Long organizationId,
+                        String organizationName,
+                        String organizationCode,
+                        SubscriptionTier subscriptionTier,
+                        SubscriptionStatus subscriptionStatus,
+                        Instant exportedAt,
+                        String exportedBy,
+                        List<BranchDto> branches,
+                        List<PlanDto> packages,
+                        List<MembershipDto> memberships,
+                        List<UserDto> staff,
+                        List<ActionHistoryDto> auditLogs) {
+        }
+
+        public record BulkMemberImportRow(
+                        String fullName,
+                        String email,
+                        String phoneNumber,
+                        String packageName,
+                        String branchCode,
+                        LocalDate startDate,
+                        String paymentMethod) {
+        }
+
+        public record BulkMemberImportRequest(
+                        List<BulkMemberImportRow> members) {
+        }
+
+        public record BulkMemberImportResultDto(
+                        int totalRequested,
+                        int importedCount,
+                        List<String> errors) {
         }
 }

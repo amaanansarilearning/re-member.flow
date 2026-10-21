@@ -37,6 +37,13 @@ public class SubscriptionController {
                 "Direct self-upgrades are not permitted. Please submit an upgrade request or redeem an activation code.");
     }
 
+    @GetMapping("/upgrade-quote")
+    @PreAuthorize("hasRole('OWNER')")
+    public SaasUpgradeQuoteDto upgradeQuote(Principal principal,
+            @RequestParam(required = false) com.gymflow.domain.SubscriptionTier targetTier) {
+        return subscriptionService.quoteSaasUpgrade(principal.getName(), targetTier);
+    }
+
     @PostMapping("/request-upgrade")
     @PreAuthorize("hasRole('OWNER')")
     public UpgradeRequestDto requestUpgrade(Principal principal,

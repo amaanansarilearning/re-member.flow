@@ -123,6 +123,13 @@ public class GymController {
         gymService.deleteStaff(principal.getName(), id);
     }
 
+    @PutMapping("/staff/{id}")
+    @PreAuthorize("hasRole('OWNER')")
+    public UserDto updateStaff(Principal principal, @PathVariable long id,
+            @Valid @RequestBody StaffUpdateRequest request) {
+        return gymService.updateStaff(principal.getName(), id, request);
+    }
+
     @GetMapping("/memberships")
     @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'MEMBER', 'PERSONAL_TRAINER')")
     public List<MembershipDto> memberships(Principal principal) {
@@ -155,10 +162,26 @@ public class GymController {
 
     @PostMapping("/memberships/{id}/renew")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'MEMBER')")
     public MembershipDto renew(Principal principal, @PathVariable long id,
             @Valid @RequestBody MembershipRenewalRequest request) {
         return gymService.renew(principal.getName(), currentRole(), id, request);
+    }
+
+    @GetMapping("/memberships/{id}/upgrade-quote")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'MEMBER')")
+    public MembershipUpgradeQuoteDto upgradeQuote(Principal principal,
+            @PathVariable long id,
+            @RequestParam long newPlanId) {
+        return gymService.quoteMembershipUpgrade(principal.getName(), currentRole(), id, newPlanId);
+    }
+
+    @PostMapping("/memberships/{id}/upgrade")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'MEMBER')")
+    public MembershipDto upgrade(Principal principal, @PathVariable long id,
+            @Valid @RequestBody MembershipUpgradeRequest request) {
+        return gymService.upgradeMembership(principal.getName(), currentRole(), id, request);
     }
 
     @GetMapping("/memberships/expiring")
@@ -176,28 +199,28 @@ public class GymController {
 
     @PostMapping("/memberships/{id}/cancel-renewal")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'MEMBER')")
     public void cancelRenewal(Principal principal, @PathVariable long id,
             @Valid @RequestBody CancellationRequest request) {
         gymService.cancelScheduledRenewal(principal.getName(), currentRole(), id, request);
     }
 
     @PostMapping("/memberships/{id}/freeze")
-    @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'MEMBER')")
     public MembershipDto freeze(Principal principal, @PathVariable long id,
             @Valid @RequestBody MembershipFreezeRequest request) {
         return membershipOperations.freeze(principal.getName(), currentRole(), id, request);
     }
 
     @PostMapping("/memberships/{id}/freezes/{freezeId}/cancel")
-    @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'MEMBER')")
     public MembershipDto cancelFreeze(Principal principal, @PathVariable long id, @PathVariable long freezeId,
             @Valid @RequestBody MembershipFreezeChangeRequest request) {
         return membershipOperations.cancelFreeze(principal.getName(), currentRole(), id, freezeId, request);
     }
 
     @PostMapping("/memberships/{id}/freezes/{freezeId}/end-early")
-    @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'MEMBER')")
     public MembershipDto endFreezeEarly(Principal principal, @PathVariable long id, @PathVariable long freezeId,
             @Valid @RequestBody MembershipFreezeChangeRequest request) {
         return membershipOperations.endFreezeEarly(principal.getName(), currentRole(), id, freezeId, request);
@@ -234,6 +257,12 @@ public class GymController {
     public List<ActionHistoryDto> history(Principal principal) {
         subscriptionService.requireFeature(principal.getName(), com.gymflow.domain.AppFeature.ACTION_HISTORY);
         return actionHistory.list(gymService.organizationId(principal.getName()));
+    }
+
+    @PostMapping("/memberships/{id}/send-reminder")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")
+    public RenewalReminderDto sendReminder(Principal principal, @PathVariable long id) {
+        return renewalReminders.sendManualRenewalReminder(principal.getName(), currentRole(), id);
     }
 
     @GetMapping("/renewal-reminders")
@@ -279,6 +308,18 @@ public class GymController {
     @PreAuthorize("hasRole('OWNER')")
     public DashboardDto dashboard(Principal principal) {
         return gymService.dashboard(principal.getName());
+    }
+
+    @GetMapping(value = "/backup.json", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('OWNER')")
+    public TenantBackupDto downloadBackup(Principal principal) {
+        return gymService.exportBackup(principal.getName());
+    }
+
+    @PostMapping("/memberships/bulk-import")
+    @PreAuthorize("hasRole('OWNER')")
+    public BulkMemberImportResultDto bulkImportMembers(Principal principal, @RequestBody BulkMemberImportRequest request) {
+        return gymService.bulkImportMembers(principal.getName(), request);
     }
 
     private Role currentRole() {

@@ -45,6 +45,9 @@ export interface SubscriptionStatus {
   ptEnabled: boolean;
   analyticsEnabled?: boolean;
   enabledFeatures: string[];
+  maxBranches?: number;
+  maxStaff?: number;
+  maxMembers?: number;
 }
 export interface ActivationCode {
   id: number;
@@ -84,6 +87,7 @@ export interface UpgradeRequest {
   reviewedAt: string | null;
   rejectionReason: string | null;
   createdAt: string;
+  estimatedTopUp?: number | null;
 }
 export interface UpgradeRequestPayload {
   billingPlan: string;
@@ -93,6 +97,16 @@ export interface UpgradeRequestPayload {
   billingAddress?: string;
   notes?: string;
   targetTier?: string;
+  estimatedTopUp?: number;
+}
+export interface SaasUpgradeQuote {
+  currentTier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
+  targetTier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
+  currentMonthlyPrice: number;
+  targetMonthlyPrice: number;
+  remainingDays: number;
+  estimatedTopUp: number;
+  effectiveDate: string;
 }
 export interface PlatformMetrics {
   totalGyms: number;
@@ -123,13 +137,36 @@ export interface BranchPayload { name: string; code: string; type: BranchType; a
 export type PtPackageType = 'NONE' | 'PT_ONLY' | 'COMBINED';
 export interface Plan { id: number; name: string; description: string; price: number; durationMonths: number | null; durationDays: number | null; branchId: number | null; branchName: string | null; active: boolean; usageCount: number; ptPackageType?: PtPackageType; includedPtSessions?: number | null; ptFeeIncluded?: number | null; }
 export interface Freeze { id: number; startDate: string; endDate: string; reason: string; createdBy: string; createdAt: string; cancelledAt: string | null; endedEarlyAt: string | null; }
-export interface Membership { id: number; memberName: string; email: string; phoneNumber: string | null; planId: number; planName: string; branchId: number | null; branchName: string | null; startDate: string; endDate: string; listPrice: number; discountPercent: number; amountPaid: number; status: 'ACTIVE' | 'CANCELLED'; renewalStartDate: string | null; createdAt: string; lastActivityAt: string; cancelledAt: string | null; planDurationMonths: number | null; planDurationDays: number | null; frozen: boolean; freezes: Freeze[]; personalTrainerId?: number | null; personalTrainerName?: string | null; ptSessionsIncluded?: number | null; ptSessionsUsed?: number; memberPin?: string | null; paymentMethod?: string; transactionId?: string | null; }
+export interface Membership { id: number; memberName: string; email: string; phoneNumber: string | null; planId: number; planName: string; branchId: number | null; branchName: string | null; startDate: string; endDate: string; listPrice: number; discountPercent: number; amountPaid: number; status: 'ACTIVE' | 'CANCELLED' | 'UPGRADED'; upgradedFromId?: number | null; renewalStartDate: string | null; createdAt: string; lastActivityAt: string; cancelledAt: string | null; planDurationMonths: number | null; planDurationDays: number | null; frozen: boolean; freezes: Freeze[]; personalTrainerId?: number | null; personalTrainerName?: string | null; ptSessionsIncluded?: number | null; ptSessionsUsed?: number; memberPin?: string | null; paymentMethod?: string; transactionId?: string | null; }
 export interface MembershipGroup { memberId: number; memberName: string; email: string; phoneNumber: string | null; terms: Membership[]; }
 export interface MembershipPage { members: MembershipGroup[]; page: number; size: number; totalMembers: number; totalPages: number; }
 export interface MembershipAccess { allowed: boolean; status: string; checkedOn: string; message: string; }
 export interface BranchDashboard { branchId: number; branchName: string; branchCode: string; branchType: BranchType; revenueThisMonth: number; revenueLastMonth: number; activeMembers: number; totalMembers: number; expiringWithinSevenDays: number; expiringMembers: Membership[]; }
 export interface Dashboard { revenueThisMonth: number; revenueLastMonth: number; activeMembers: number; totalMembers: number; expiringWithinSevenDays: number; expiringMembers: Membership[]; branches: BranchDashboard[]; }
 export interface PlanPayload { name: string; description: string; price: number; durationMonths: number | null; durationDays: number | null; branchId: number | null; active: boolean; ptPackageType?: PtPackageType; includedPtSessions?: number | null; ptFeeIncluded?: number | null; }
+export interface MembershipUpgradeQuote {
+  totalDays: number;
+  remainingDays: number;
+  oldDailyRate: number;
+  newDailyRate: number;
+  creditAmount: number;
+  newPlanProrataCost: number;
+  topUpDue: number;
+  currentPlanName: string;
+  currentPlanPrice: number;
+  newPlanName: string;
+  newPlanPrice: number;
+  hasPt: boolean;
+}
+
+export interface MembershipUpgradePayload {
+  newPlanId: number;
+  personalTrainerId?: number | null;
+  topUpPaid: number;
+  paymentMethod?: string;
+  transactionId?: string | null;
+}
+
 export interface MembershipPayload { fullName: string; email: string; phoneNumber: string; password: string; planId: number; branchId: number | null; personalTrainerId?: number | null; discountPercent: number; startDate: string; receiptImageData?: string | null; paymentMethod?: string; transactionId?: string | null; }
 export interface RenewalPayload { planId: number; branchId: number | null; personalTrainerId?: number | null; discountPercent: number; startDate: string; paymentMethod?: string; transactionId?: string | null; }
 export interface StaffPayload { fullName: string; email: string; phoneNumber: string; password: string; branchId: number; }
@@ -288,6 +325,37 @@ export interface PtAnalytics {
   remainingSessions: number;
 }
 
+export interface BulkMemberImportRow {
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  packageName?: string;
+  branchCode?: string;
+  startDate?: string;
+  paymentMethod?: string;
+}
+
+export interface BulkMemberImportResult {
+  totalRequested: number;
+  importedCount: number;
+  errors: string[];
+}
+
+export interface TenantBackup {
+  organizationId: number;
+  organizationName: string;
+  organizationCode: string;
+  subscriptionTier: string;
+  subscriptionStatus: string;
+  exportedAt: string;
+  exportedBy: string;
+  branches: Branch[];
+  packages: Plan[];
+  memberships: Membership[];
+  staff: User[];
+  auditLogs: ActionHistory[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class GymApiService {
   private readonly http = inject(HttpClient);
@@ -350,6 +418,9 @@ export class GymApiService {
   updatePlan(id: number, payload: PlanPayload): Observable<Plan> { return this.http.put<Plan>(`${this.baseUrl}/plans/${id}`, payload); }
   staff(): Observable<User[]> { return this.http.get<User[]>(`${this.baseUrl}/staff`); }
   createStaff(payload: StaffPayload): Observable<User> { return this.http.post<User>(`${this.baseUrl}/staff`, payload); }
+  updateStaff(id: number, payload: { fullName: string; phoneNumber?: string; branchId: number; password?: string }): Observable<User> {
+    return this.http.put<User>(`${this.baseUrl}/staff/${id}`, payload);
+  }
   deleteStaff(id: number): Observable<void> { return this.http.delete<void>(`${this.baseUrl}/staff/${id}`); }
   memberships(): Observable<Membership[]> { return this.http.get<Membership[]>(`${this.baseUrl}/memberships`); }
   recentMemberships(branchId: number | null): Observable<Membership[]> {
@@ -367,6 +438,21 @@ export class GymApiService {
     return this.http.get<MembershipPage>(`${this.baseUrl}/memberships/page`, { params });
   }
   registerMembership(payload: MembershipPayload): Observable<Membership> { return this.http.post<Membership>(`${this.baseUrl}/memberships`, payload); }
+    quoteMembershipUpgrade(membershipId: number, newPlanId: number): Observable<MembershipUpgradeQuote> {
+    const params = new HttpParams().set('newPlanId', newPlanId);
+    return this.http.get<MembershipUpgradeQuote>(`${this.baseUrl}/memberships/${membershipId}/upgrade-quote`, { params });
+  }
+
+  upgradeMembership(membershipId: number, payload: MembershipUpgradePayload): Observable<Membership> {
+    return this.http.post<Membership>(`${this.baseUrl}/memberships/${membershipId}/upgrade`, payload);
+  }
+
+  quoteSaasUpgrade(targetTier?: string): Observable<SaasUpgradeQuote> {
+    let params = new HttpParams();
+    if (targetTier) params = params.set('targetTier', targetTier);
+    return this.http.get<SaasUpgradeQuote>(`${this.baseUrl}/subscription/upgrade-quote`, { params });
+  }
+
   renewMembership(id: number, payload: RenewalPayload): Observable<Membership> { return this.http.post<Membership>(`${this.baseUrl}/memberships/${id}/renew`, payload); }
   cancelMembership(id: number, payload: CancellationPayload): Observable<void> { return this.http.post<void>(`${this.baseUrl}/memberships/${id}/cancel`, payload); }
   cancelRenewal(id: number, payload: CancellationPayload): Observable<void> { return this.http.post<void>(`${this.baseUrl}/memberships/${id}/cancel-renewal`, payload); }
@@ -378,6 +464,7 @@ export class GymApiService {
   transferMembership(id: number, payload: { branchId: number; reason: string }): Observable<Membership> { return this.http.post<Membership>(`${this.baseUrl}/memberships/${id}/transfer`, payload); }
   correctMembership(id: number, payload: { planId: number; startDate: string; endDate: string; listPrice: number; discountPercent: number; amountPaid: number; reason: string }): Observable<Membership> { return this.http.put<Membership>(`${this.baseUrl}/memberships/${id}/correction`, payload); }
   history(): Observable<ActionHistory[]> { return this.http.get<ActionHistory[]>(`${this.baseUrl}/history`); }
+  sendRenewalReminder(id: number): Observable<RenewalReminder> { return this.http.post<RenewalReminder>(`${this.baseUrl}/memberships/${id}/send-reminder`, {}); }
   renewalReminders(): Observable<RenewalReminder[]> { return this.http.get<RenewalReminder[]>(`${this.baseUrl}/renewal-reminders`); }
   report(from: string, to: string, branchId: number | null): Observable<Report> {
     let params = new HttpParams().set('from', from).set('to', to);
@@ -395,6 +482,12 @@ export class GymApiService {
     return this.http.get(`${this.baseUrl}/reports/export.csv`, { params, responseType: 'blob' });
   }
   dashboard(): Observable<Dashboard> { return this.http.get<Dashboard>(`${this.baseUrl}/dashboard`); }
+  downloadTenantBackup(): Observable<TenantBackup> {
+    return this.http.get<TenantBackup>(`${this.baseUrl}/backup.json`);
+  }
+  bulkImportMembers(members: BulkMemberImportRow[]): Observable<BulkMemberImportResult> {
+    return this.http.post<BulkMemberImportResult>(`${this.baseUrl}/memberships/bulk-import`, { members });
+  }
 
   // ─── PT Methods ───────────────────────────────────────────────────────────
   personalTrainers(): Observable<PtProfile[]> { return this.http.get<PtProfile[]>(`${this.baseUrl}/pt`); }

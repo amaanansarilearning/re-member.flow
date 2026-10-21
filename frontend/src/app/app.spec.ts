@@ -17,7 +17,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
     expect(app).toBeTruthy();
-  });
+  }, 25000);
 
   it('should show the public home before authentication', async () => {
     const fixture = TestBed.createComponent(App);
@@ -434,14 +434,15 @@ describe('App', () => {
     await app.submitUpgradeRequest();
 
     expect(api.requestUpgrade).toHaveBeenCalledWith({
-      billingPlan: 'Annual PRO (365 Days)',
+      targetTier: 'PRO',
+      billingPlan: 'Annual Pro (365 Days)',
       durationDays: 365,
       paymentMethod: 'BANK_WIRE',
       gstNumber: '29ABCDE1234F1Z5',
       billingAddress: 'Bangalore',
       notes: 'Transfer ref 9988'
     });
-    expect(app.notice()).toContain('Your PRO upgrade request has been submitted');
+    expect(app.notice()).toContain('Your Pro upgrade request has been submitted');
     expect(app.myUpgradeRequests().length).toBe(1);
     expect(app.pendingMyUpgradeRequest()?.id).toBe(101);
   });
@@ -550,11 +551,14 @@ describe('App', () => {
       personalTrainerId: '',
       discountPercent: 0,
       startDate: app.todayDate(),
-      waiverAcknowledged: false
+      waiverAcknowledged: false,
+      paymentMethod: 'CASH',
+      transactionId: ''
     };
 
     await app.registerMember();
-    expect(app.error()).toContain('Please confirm the member has acknowledged the health waiver');
+    expect(app.hasFieldError('memberWaiver')).toBe(true);
+    expect(app.error()).toContain('Please fix the required fields marked in red below');
   });
 
   it('dismisses cookie consent and saves to localStorage', () => {

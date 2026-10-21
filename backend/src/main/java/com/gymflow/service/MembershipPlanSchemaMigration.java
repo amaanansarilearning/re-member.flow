@@ -37,6 +37,11 @@ public class MembershipPlanSchemaMigration {
                     }
                 }
 
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute("ALTER TABLE memberships MODIFY COLUMN status VARCHAR(32) NOT NULL");
+                } catch (Exception ignored) {
+                }
+
                 if (durationMonthsIsNotNullable) {
                     try (Statement statement = connection.createStatement()) {
                         statement.execute("ALTER TABLE membership_plans MODIFY COLUMN duration_months INT NULL");

@@ -1,3 +1,4 @@
+ALTER TABLE memberships MODIFY COLUMN status VARCHAR(32) NOT NULL;
 -- Apply once to existing MySQL installations before deploying with ddl-auto=validate.
 ALTER TABLE user_accounts MODIFY COLUMN role VARCHAR(32) NOT NULL;
 ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS member_pin VARCHAR(8) NULL;

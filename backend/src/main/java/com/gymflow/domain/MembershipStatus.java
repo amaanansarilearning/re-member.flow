@@ -2,5 +2,6 @@ package com.gymflow.domain;
 
 public enum MembershipStatus {
     ACTIVE,
-    CANCELLED
+    CANCELLED,
+    UPGRADED
 }

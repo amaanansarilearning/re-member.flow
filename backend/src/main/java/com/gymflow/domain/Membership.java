@@ -9,7 +9,8 @@ import java.time.LocalDate;
 @Table(name = "memberships", indexes = {
         @Index(name = "idx_memberships_created_at", columnList = "created_at"),
         @Index(name = "idx_memberships_cancelled_at", columnList = "cancelled_at"),
-        @Index(name = "idx_memberships_renewed_from", columnList = "renewed_from_id")
+        @Index(name = "idx_memberships_renewed_from", columnList = "renewed_from_id"),
+        @Index(name = "idx_memberships_upgraded_from", columnList = "upgraded_from_id")
 })
 public class Membership {
     @Id
@@ -47,6 +48,10 @@ public class Membership {
     @JoinColumn(name = "renewed_from_id")
     private Membership renewedFrom;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "upgraded_from_id")
+    private Membership upgradedFrom;
+
     @Column(nullable = false)
     private LocalDate startDate;
 
@@ -63,7 +68,7 @@ public class Membership {
     private BigDecimal discountPercent;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 32)
     private MembershipStatus status = MembershipStatus.ACTIVE;
 
     @Column(name = "cancelled_at")
@@ -160,6 +165,20 @@ public class Membership {
         cancel(Instant.now());
     }
 
+    public void markUpgraded() {
+        this.status = MembershipStatus.UPGRADED;
+        this.cancelledAt = Instant.now();
+    }
+
+    public static Membership createUpgraded(UserAccount member, MembershipPlan plan, GymBranch branch,
+            LocalDate startDate, LocalDate endDate, BigDecimal listPrice, BigDecimal amountPaid,
+            Membership upgradedFrom, PersonalTrainer personalTrainer, String paymentMethod, String transactionId) {
+        Membership upgraded = new Membership(member, plan, branch, startDate, endDate,
+                listPrice, amountPaid, BigDecimal.ZERO, null, personalTrainer, paymentMethod, transactionId);
+        upgraded.upgradedFrom = upgradedFrom;
+        return upgraded;
+    }
+
     public void cancel(Instant cancellationTime) {
         this.status = MembershipStatus.CANCELLED;
         this.cancelledAt = cancellationTime;
@@ -240,6 +259,14 @@ public class Membership {
 
     public GymBranch getBranch() {
         return branch;
+    }
+
+    public Membership getUpgradedFrom() {
+        return upgradedFrom;
+    }
+
+    public void setUpgradedFrom(Membership upgradedFrom) {
+        this.upgradedFrom = upgradedFrom;
     }
 
     public Membership getRenewedFrom() {

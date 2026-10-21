@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.gymflow.domain.GymBranch;
 import com.gymflow.domain.Membership;
+import com.gymflow.domain.MembershipStatus;
 import com.gymflow.domain.MembershipPlan;
 import com.gymflow.domain.MembershipReceipt;
 import com.gymflow.domain.UserAccount;
@@ -824,6 +825,12 @@ class GymApiIntegrationTest {
                                                 && ((Number) row.get("daysBefore")).intValue() == 7
                                                 && "FAILED".equals(row.get("status"))
                                                 && ((Number) row.get("attempts")).intValue() == 1);
+
+                ResponseEntity<Map<String, Object>> manualReminder = rest.exchange(
+                                url("/api/memberships/" + membershipId + "/send-reminder"), HttpMethod.POST,
+                                request(ownerToken, null), MAP_RESPONSE);
+                assertThat(manualReminder.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(((Number) manualReminder.getBody().get("membershipId")).longValue()).isEqualTo(membershipId);
         }
 
         @Test
@@ -1358,4 +1365,104 @@ class GymApiIntegrationTest {
         private String url(String path) {
                 return "http://localhost:" + port + path;
         }
+
+    @Test
+    void memberUpgradeQuoteAndExecutionLifecycleTest() {
+        String gymOwnerEmail = "upgrade-owner-" + System.nanoTime() + "@gym.local";
+        Map<String, Object> gym = Map.of(
+                "fullName", "Upgrade Owner",
+                "email", gymOwnerEmail,
+                "password", "OwnerPass123!",
+                "organizationName", "Upgrade Gym " + System.nanoTime(),
+                "organizationCode", "UPG" + (System.currentTimeMillis() % 10000),
+                "branchName", "Main Branch",
+                "subscriptionTier", "ENTERPRISE");
+        rest.postForEntity(url("/api/auth/register-gym"), gym, Map.class);
+        String ownerToken = login(gymOwnerEmail, "OwnerPass123!").get("token").toString();
+
+        // Redeem Enterprise code to enable PT feature
+        Map<String, Object> adminLogin = login("admin@gymflow.io", "AdminPassword123!");
+        String adminToken = adminLogin.get("token").toString();
+        Map<String, Object> genReq = Map.of(
+                "tier", "ENTERPRISE",
+                "durationDays", 365,
+                "notes", "Enterprise test code"
+        );
+        ResponseEntity<Map<String, Object>> codeRes = rest.exchange(
+                url("/api/platform/activation-codes"), HttpMethod.POST, request(adminToken, genReq), MAP_RESPONSE);
+        String activationCode = codeRes.getBody().get("code").toString();
+        rest.exchange(url("/api/subscription/redeem"), HttpMethod.POST, request(ownerToken, Map.of("code", activationCode)), MAP_RESPONSE);
+
+        Map<String, Object> basicPlan = Map.of(
+                "name", "Basic 30-Day",
+                "description", "No PT",
+                "price", 999,
+                "durationDays", 30,
+                "active", true,
+                "ptPackageType", "NONE");
+        ResponseEntity<Map<String, Object>> basicPlanRes = rest.exchange(url("/api/plans"), HttpMethod.POST,
+                request(ownerToken, basicPlan), MAP_RESPONSE);
+        Long basicPlanId = ((Number) basicPlanRes.getBody().get("id")).longValue();
+
+        Map<String, Object> ptPlan = Map.of(
+                "name", "Pro PT 30-Day",
+                "description", "With PT",
+                "price", 1499,
+                "durationDays", 30,
+                "active", true,
+                "ptPackageType", "COMBINED",
+                "includedPtSessions", 5,
+                "ptFeeIncluded", 500);
+        ResponseEntity<Map<String, Object>> ptPlanRes = rest.exchange(url("/api/plans"), HttpMethod.POST,
+                request(ownerToken, ptPlan), MAP_RESPONSE);
+        Long ptPlanId = ((Number) ptPlanRes.getBody().get("id")).longValue();
+
+        String memberEmail = "upgrade-member-" + System.nanoTime() + "@example.test";
+        Map<String, Object> memberReq = Map.of(
+                "fullName", "Upgrade Member",
+                "email", memberEmail,
+                "phoneNumber", "+1 415 555 0188",
+                "password", "MemberPass123",
+                "planId", basicPlanId,
+                "discountPercent", 0,
+                "startDate", LocalDate.now().toString());
+        ResponseEntity<Map<String, Object>> memberRes = rest.exchange(url("/api/memberships"), HttpMethod.POST,
+                request(ownerToken, memberReq), MAP_RESPONSE);
+        assertThat(memberRes.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        Long membershipId = ((Number) memberRes.getBody().get("id")).longValue();
+
+        ResponseEntity<Map<String, Object>> quoteRes = rest.exchange(
+                url("/api/memberships/" + membershipId + "/upgrade-quote?newPlanId=" + ptPlanId),
+                HttpMethod.GET, request(ownerToken, null), MAP_RESPONSE);
+        assertThat(quoteRes.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(((Number) quoteRes.getBody().get("totalDays")).intValue()).isEqualTo(30);
+        assertThat(((Number) quoteRes.getBody().get("remainingDays")).intValue()).isGreaterThanOrEqualTo(1);
+        assertThat(((Number) quoteRes.getBody().get("topUpDue")).doubleValue()).isGreaterThan(0);
+        assertThat(quoteRes.getBody().get("hasPt")).isEqualTo(true);
+
+        double topUpDue = ((Number) quoteRes.getBody().get("topUpDue")).doubleValue();
+
+        Map<String, Object> upgradeReq = Map.of(
+                "newPlanId", ptPlanId,
+                "topUpPaid", topUpDue,
+                "paymentMethod", "CASH");
+        ResponseEntity<Map<String, Object>> upgradeRes = rest.exchange(
+                url("/api/memberships/" + membershipId + "/upgrade"),
+                HttpMethod.POST, request(ownerToken, upgradeReq), MAP_RESPONSE);
+        assertThat(upgradeRes.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(upgradeRes.getBody().get("status")).isEqualTo("ACTIVE");
+        assertThat(((Number) upgradeRes.getBody().get("upgradedFromId")).longValue()).isEqualTo(membershipId);
+        assertThat(((Number) upgradeRes.getBody().get("planId")).longValue()).isEqualTo(ptPlanId);
+
+        Membership oldTerm = memberships.findById(membershipId).orElseThrow();
+        assertThat(oldTerm.getStatus()).isEqualTo(MembershipStatus.UPGRADED);
+
+        ResponseEntity<Map<String, Object>> saasQuote = rest.exchange(
+                url("/api/subscription/upgrade-quote?targetTier=ENTERPRISE"),
+                HttpMethod.GET, request(ownerToken, null), MAP_RESPONSE);
+        assertThat(saasQuote.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(saasQuote.getBody().get("targetTier")).isEqualTo("ENTERPRISE");
+        assertThat(((Number) saasQuote.getBody().get("targetMonthlyPrice")).doubleValue()).isEqualTo(25000.0);
+    }
+
 }

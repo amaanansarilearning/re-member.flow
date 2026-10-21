@@ -204,8 +204,11 @@ public class PtSchedulingService {
         m.incrementPtSessionsUsed();
         // Create earning record
         if (!earnings.existsByPtSessionId(session.getId())) {
-            BigDecimal gross = session.getSessionFeeSnapshot();
-            BigDecimal rate = session.getCommissionRateSnapshot();
+            BigDecimal gross = session.getSessionFeeSnapshot() != null ? session.getSessionFeeSnapshot() : BigDecimal.ZERO;
+            if (gross.compareTo(BigDecimal.ZERO) < 0) gross = BigDecimal.ZERO;
+            BigDecimal rate = session.getCommissionRateSnapshot() != null ? session.getCommissionRateSnapshot() : BigDecimal.ZERO;
+            if (rate.compareTo(BigDecimal.ZERO) < 0) rate = BigDecimal.ZERO;
+            if (rate.compareTo(BigDecimal.valueOf(100)) > 0) rate = BigDecimal.valueOf(100);
             BigDecimal ptCut = gross.multiply(rate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
             BigDecimal gymCut = gross.subtract(ptCut).setScale(2, RoundingMode.HALF_UP);
             earnings.save(new PtEarning(session, pt, gross, ptCut, gymCut, rate));
@@ -280,6 +283,10 @@ public class PtSchedulingService {
             if (membership.getPlan() != null && membership.getPlan().getPtFeeIncluded() != null
                     && membership.getPlan().getPtFeeIncluded().compareTo(BigDecimal.ZERO) > 0) {
                 ptTotal = membership.getPlan().getPtFeeIncluded();
+                if (membership.getAmountPaid() != null && membership.getAmountPaid().compareTo(BigDecimal.ZERO) > 0
+                        && ptTotal.compareTo(membership.getAmountPaid()) > 0) {
+                    ptTotal = membership.getAmountPaid();
+                }
             } else if (membership.getAmountPaid() != null && membership.getAmountPaid().compareTo(BigDecimal.ZERO) > 0) {
                 ptTotal = membership.getAmountPaid();
             } else if (membership.getListPrice() != null && membership.getListPrice().compareTo(BigDecimal.ZERO) > 0) {

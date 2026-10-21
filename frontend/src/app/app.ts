@@ -2,7 +2,7 @@ import { Component, computed, effect, signal, HostListener } from '@angular/core
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { GymApiService, ActionHistory, Analytics, Branch, BranchPayload, BranchType, CancellationReason, Dashboard, Freeze, Membership, MembershipAccess, MembershipGroup, Plan, RenewalReminder, User, PtProfile, PtSession, PtEarning, PtPayout, PtAnalytics, PtPackageType, ActivationCode, PlatformMetrics, PlatformOrganization, UpgradeRequest, UpgradeRequestPayload } from './gym-api.service';
+import { GymApiService, MembershipUpgradeQuote, MembershipUpgradePayload, SaasUpgradeQuote, ActionHistory, Analytics, Branch, BranchPayload, BranchType, CancellationReason, Dashboard, Freeze, Membership, MembershipAccess, MembershipGroup, Plan, RenewalReminder, User, PtProfile, PtSession, PtEarning, PtPayout, PtAnalytics, PtPackageType, ActivationCode, PlatformMetrics, PlatformOrganization, UpgradeRequest, UpgradeRequestPayload, TenantBackup, BulkMemberImportRow, BulkMemberImportResult } from './gym-api.service';
 import { CsrfTokenService } from './csrf-token.service';
 import { ALL_LEGAL_DOCUMENTS, LegalDocument } from './legal-content';
 
@@ -239,12 +239,15 @@ export class App {
   readonly upgradeFeatureTarget = signal<'pt' | 'history' | 'branding' | 'receipt' | 'analytics' | 'general'>('general');
   readonly upgradeTargetTier = signal<'STARTER' | 'PRO' | 'ENTERPRISE'>('PRO');
   readonly upgradeLoading = signal(false);
-  readonly upgradeModalTab = signal<'request' | 'redeem'>('request');
+  readonly upgradeModalTab = signal<'request' | 'redeem' | 'compare'>('request');
+  readonly publicPricingCycle = signal<'ANNUAL' | 'MONTHLY'>('ANNUAL');
   readonly upgradeBillingPlan = signal<'ANNUAL' | 'HALF_YEAR' | 'MONTHLY'>('ANNUAL');
   readonly upgradePaymentMethod = signal<'BANK_WIRE' | 'UPI_QR' | 'CORPORATE_INVOICE'>('BANK_WIRE');
   readonly upgradeGstNumber = signal('');
   readonly upgradeBillingAddress = signal('');
   readonly upgradeNotes = signal('');
+  readonly saasUpgradeQuote = signal<SaasUpgradeQuote | null>(null);
+  readonly saasUpgradeQuoteLoading = signal<boolean>(false);
   readonly submittingUpgradeRequest = signal(false);
   readonly myUpgradeRequests = signal<UpgradeRequest[]>([]);
   readonly myUpgradeRequestsLoading = signal(false);
@@ -439,7 +442,7 @@ export class App {
     organizationCode: '',
     branchName: '',
     branchAddress: '',
-    subscriptionTier: 'STANDARD' as 'STANDARD' | 'PREMIUM',
+    subscriptionTier: 'STANDARD' as 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM',
     acceptTerms: false
   };
 
@@ -468,6 +471,54 @@ export class App {
   passwordDraft = { currentPassword: '', newPassword: '' };
 
   readonly staffExpiringMembersList = signal<Membership[]>([]);
+
+  // ─── Public Pricing & Plans Matrix ───────────────────────────────────────────
+  readonly pricingCycle = signal<'ANNUAL' | 'MONTHLY'>('ANNUAL');
+  readonly pricingMatrixExpanded = signal<boolean>(true);
+  readonly pricingCategoryFilter = signal<'ALL' | 'CAPACITY' | 'WORKFLOW' | 'DATA' | 'SECURITY'>('ALL');
+  readonly pricingBrochureModalOpen = signal<boolean>(false);
+
+  // ─── Member Self-Service Portal ──────────────────────────────────────────────
+  readonly memberRenewalModalOpen = signal<boolean>(false);
+  readonly memberFreezeModalOpen = signal<boolean>(false);
+  readonly memberSelectedPlanId = signal<number | null>(null);
+  memberFreezeStartDate = '';
+  memberFreezeEndDate = '';
+  memberFreezeReason = '';
+
+  // ─── Cloud Data Portability & Bulk Import ─────────────────────────────────────
+  readonly downloadingBackup = signal<boolean>(false);
+  readonly bulkImportModalOpen = signal<boolean>(false);
+  readonly bulkImportLoading = signal<boolean>(false);
+  bulkImportCsvText = '';
+  readonly bulkImportResult = signal<BulkMemberImportResult | null>(null);
+
+  // ─── Sticky Field-Level Validation & Scroll Helper ───────────────────────────
+  readonly fieldErrors = signal<Record<string, string>>({});
+
+  // ─── Member Mid-Cycle Plan Upgrade ──────────────────────────────────────────
+  readonly upgradingMembership = signal<Membership | null>(null);
+  readonly upgradeTargetPlanId = signal<number | null>(null);
+  readonly upgradeQuote = signal<MembershipUpgradeQuote | null>(null);
+  readonly upgradeQuoteLoading = signal<boolean>(false);
+  readonly upgradeQuoteError = signal<string>('');
+  upgradeDraft = {
+    topUpPaid: 0,
+    paymentMethod: 'CASH',
+    transactionId: '',
+    personalTrainerId: null as number | null
+  };
+
+  // ─── Staff Edit State ────────────────────────────────────────────────────────
+  readonly editingStaff = signal<boolean>(false);
+  staffEditDraft = { id: 0, fullName: '', email: '', phoneNumber: '', branchId: '', password: '' };
+
+  // ─── Branch Enterprise Gating ────────────────────────────────────────────────
+  readonly enterpriseBranchPromptOpen = signal<boolean>(false);
+
+  // ─── Packages Feature Comparison Matrix ───────────────────────────────────────
+  readonly packageViewMode = signal<'cards' | 'matrix'>('cards');
+
   readonly staffRecentMembersList = signal<Membership[]>([]);
 
   readonly activePlans = computed(() => this.plans().filter((plan) => plan.active));
@@ -526,6 +577,7 @@ export class App {
   });
 
   readonly isAnyModalOpen = computed(() => !!(
+    this.upgradingMembership() ||
     this.legalModalOpen() ||
     this.sessionCompleting() ||
     this.bookingPtSession() ||
@@ -543,6 +595,7 @@ export class App {
 
   @HostListener('window:keydown.escape')
   onEscapePress(): void {
+    if (this.upgradingMembership()) { this.closeMemberUpgradeModal(); return; }
     if (this.legalModalOpen()) { this.closeLegal(); return; }
     if (this.sessionCompleting()) { this.closeSessionCompletionModal(); return; }
     if (this.bookingPtSession()) { this.closeBookSessionModal(); return; }
@@ -986,19 +1039,30 @@ export class App {
     this.upgradeModalTab.set('request');
     this.upgradeModalOpen.set(true);
     void this.loadMyUpgradeRequests();
+    this.loadSaasUpgradeQuote();
   }
 
   setUpgradeTargetTier(tier: 'STARTER' | 'PRO' | 'ENTERPRISE'): void {
     this.upgradeTargetTier.set(tier);
+    this.loadSaasUpgradeQuote(tier);
   }
 
   closeUpgradeModal(): void {
     this.upgradeModalOpen.set(false);
   }
 
-  setUpgradeModalTab(tab: 'request' | 'redeem'): void {
+  setUpgradeModalTab(tab: 'request' | 'redeem' | 'compare'): void {
     this.upgradeModalTab.set(tab);
     this.error.set('');
+  }
+
+  togglePublicPricingCycle(): void {
+    this.publicPricingCycle.update(v => v === 'ANNUAL' ? 'MONTHLY' : 'ANNUAL');
+  }
+
+  selectTierFromComparison(tier: 'STARTER' | 'PRO' | 'ENTERPRISE'): void {
+    this.setUpgradeTargetTier(tier);
+    this.setUpgradeModalTab('request');
   }
 
   setUpgradeBillingPlan(plan: 'ANNUAL' | 'HALF_YEAR' | 'MONTHLY'): void {
@@ -1041,8 +1105,9 @@ export class App {
         gstNumber: this.upgradeGstNumber().trim() || undefined,
         billingAddress: this.upgradeBillingAddress().trim() || undefined,
         notes: this.upgradeNotes().trim() || undefined,
-        targetTier: this.upgradeTargetTier()
-      }));
+        targetTier: this.upgradeTargetTier(),
+      estimatedTopUp: this.saasUpgradeQuote()?.estimatedTopUp ?? undefined
+    }));
 
       await this.loadMyUpgradeRequests();
       this.notice.set(`Your ${tierTitle} upgrade request has been submitted! Our accounts team will review payment and issue your activation key.`);
@@ -1694,6 +1759,130 @@ export class App {
     return value === null ? 'New / no baseline' : `${value > 0 ? '+' : ''}${value}%`;
   }
 
+  readonly ptNoteDismissed = signal<boolean>(false);
+
+  private readonly CHART_PALETTE = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#3b82f6', '#f43f5e', '#14b8a6', '#64748b'];
+
+  calculateDonutSlices(items: { name: string; value: number; color?: string }[]): Array<{
+    name: string;
+    value: number;
+    percent: number;
+    dashArray: string;
+    dashOffset: number;
+    color: string;
+  }> {
+    const total = items.reduce((acc, curr) => acc + Math.max(0, curr.value), 0);
+    const C = 251.327; // 2 * PI * 40
+    if (total <= 0) {
+      return [{
+        name: 'No data',
+        value: 0,
+        percent: 0,
+        dashArray: `0 ${C}`,
+        dashOffset: 0,
+        color: '#94a3b8'
+      }];
+    }
+    let accumulatedOffset = 0;
+    return items.map((item, index) => {
+      const val = Math.max(0, item.value);
+      const pct = Math.round((val / total) * 100);
+      const arcLength = (val / total) * C;
+      const slice = {
+        name: item.name,
+        value: val,
+        percent: pct,
+        dashArray: `${arcLength.toFixed(2)} ${(C - arcLength).toFixed(2)}`,
+        dashOffset: -accumulatedOffset,
+        color: item.color || this.CHART_PALETTE[index % this.CHART_PALETTE.length]
+      };
+      accumulatedOffset += arcLength;
+      return slice;
+    });
+  }
+
+  executiveSalesDonutSlices(): ReturnType<typeof this.calculateDonutSlices> {
+    const data = this.analyticsData();
+    if (!data) return [];
+    return this.calculateDonutSlices([
+      { name: 'New Enrollments', value: data.newMembershipRevenue, color: '#6366f1' },
+      { name: 'Renewals', value: data.renewalRevenue, color: '#10b981' },
+      { name: 'Discounts Absorbed', value: data.discountsGiven, color: '#f59e0b' }
+    ]);
+  }
+
+  packagePerformanceDonutSlices(): ReturnType<typeof this.calculateDonutSlices> {
+    const data = this.analyticsData();
+    if (!data || !data.packagePerformance || data.packagePerformance.length === 0) return [];
+    return this.calculateDonutSlices(
+      data.packagePerformance.map((pkg, idx) => ({
+        name: pkg.packageName,
+        value: pkg.revenue,
+        color: this.CHART_PALETTE[idx % this.CHART_PALETTE.length]
+      }))
+    );
+  }
+
+  ptSessionInventoryDonutSlices(): ReturnType<typeof this.calculateDonutSlices> {
+    const pt = this.ptAnalyticsData();
+    if (!pt) return [];
+    return this.calculateDonutSlices([
+      { name: 'Completed & Verified', value: pt.sessionsCompleted, color: '#10b981' },
+      { name: 'Remaining in Pipeline', value: pt.remainingSessions, color: '#6366f1' },
+      { name: 'Missed Sessions', value: pt.sessionsMissed, color: '#f43f5e' },
+      { name: 'Cancelled Sessions', value: pt.sessionsCancelled, color: '#f59e0b' }
+    ]);
+  }
+
+  ptRevenueSplitDonutSlices(): ReturnType<typeof this.calculateDonutSlices> {
+    const pt = this.ptAnalyticsData();
+    if (!pt) return [];
+    const gross = pt.totalPtGrossRevenue > 0 ? pt.totalPtGrossRevenue : pt.contractedPtRevenue;
+    const gymShare = pt.totalPtGrossRevenue > 0 ? pt.totalGymRetained : Math.round(gross * 0.6);
+    const ptShare = pt.totalPtGrossRevenue > 0 ? pt.totalPtCommission : Math.round(gross * 0.4);
+    return this.calculateDonutSlices([
+      { name: pt.totalPtGrossRevenue > 0 ? 'Club Retained Profit' : 'Est. Club Profit (60%)', value: gymShare, color: '#3b82f6' },
+      { name: pt.totalPtGrossRevenue > 0 ? 'Trainer Commission Pool' : 'Est. Trainer Pool (40%)', value: ptShare, color: '#10b981' }
+    ]);
+  }
+
+  taxBreakdownDonutSlices(): ReturnType<typeof this.calculateDonutSlices> {
+    const data = this.analyticsData();
+    if (!data || !data.tax) return [];
+    const tax = data.tax;
+    return this.calculateDonutSlices([
+      { name: 'Base Net Sales', value: tax.recordedSalesExcludingEstimatedGst, color: '#6366f1' },
+      { name: `CGST (${tax.cgstRate}%)`, value: tax.estimatedCgst, color: '#10b981' },
+      { name: `SGST (${tax.sgstRate}%)`, value: tax.estimatedSgst, color: '#06b6d4' },
+      { name: `IGST (${tax.igstRate}%)`, value: tax.estimatedIgst, color: '#f59e0b' }
+    ]);
+  }
+
+  retentionMemberSlices(): ReturnType<typeof this.calculateDonutSlices> {
+    const data = this.analyticsData();
+    if (!data) return [];
+    return this.calculateDonutSlices([
+      { name: 'Retained Active Members', value: data.activeMembers, color: '#10b981' },
+      { name: 'Opening Cohort Lost', value: data.membersLeft, color: '#f43f5e' },
+      { name: 'New Members Acquired', value: data.newMembers, color: '#6366f1' }
+    ]);
+  }
+
+  maxPackageRevenue(): number {
+    const pkgs = this.analyticsData()?.packagePerformance ?? [];
+    return Math.max(1, ...pkgs.map(p => p.revenue));
+  }
+
+  maxPackageTerms(): number {
+    const pkgs = this.analyticsData()?.packagePerformance ?? [];
+    return Math.max(1, ...pkgs.map(p => p.memberships));
+  }
+
+  roundPct(numerator: number, denominator: number): number {
+    if (!denominator || denominator <= 0) return 0;
+    return Math.min(100, Math.round((numerator / denominator) * 100));
+  }
+
   async exportReport(type: string): Promise<void> {
     try {
       const file = await firstValueFrom(this.api.exportReport(
@@ -1707,6 +1896,244 @@ export class App {
     } catch (error) {
       this.error.set(this.api.message(error, 'Could not export this report.'));
     }
+  }
+
+  // ─── Sticky Field-Level Validation & Scroll Helper ───────────────────────────
+  hasFieldError(field: string): boolean {
+    return !!this.fieldErrors()[field];
+  }
+
+  getFieldError(field: string): string {
+    return this.fieldErrors()[field] || '';
+  }
+
+  setFieldError(field: string, msg: string): void {
+    this.fieldErrors.update(curr => ({ ...curr, [field]: msg }));
+  }
+
+  clearFieldError(field: string): void {
+    if (this.fieldErrors()[field]) {
+      this.fieldErrors.update(curr => {
+        const next = { ...curr };
+        delete next[field];
+        return next;
+      });
+    }
+  }
+
+  clearAllFieldErrors(): void {
+    this.fieldErrors.set({});
+  }
+
+  scrollToFirstError(containerSelector?: string): void {
+    if (typeof document === 'undefined') return;
+    setTimeout(() => {
+      const container = containerSelector ? document.querySelector(containerSelector) : document;
+      if (!container) return;
+      const firstInvalid = container.querySelector(
+        '.field-has-error, .input-has-error, .field-error-msg, input:invalid, select:invalid, [aria-invalid="true"]'
+      );
+      if (firstInvalid) {
+        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (firstInvalid instanceof HTMLElement) {
+          const inputEl = firstInvalid.tagName === 'INPUT' || firstInvalid.tagName === 'SELECT' || firstInvalid.tagName === 'TEXTAREA'
+            ? firstInvalid
+            : firstInvalid.querySelector('input, select, textarea');
+          if (inputEl instanceof HTMLElement) {
+            inputEl.focus({ preventScroll: true });
+          }
+        }
+      }
+    }, 60);
+  }
+
+  preventNonNumeric(event: KeyboardEvent, allowDecimal = true): void {
+    const allowedKeys = ['Backspace', 'Tab', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Escape', 'Home', 'End'];
+    if (allowedKeys.includes(event.key)) return;
+    if (event.ctrlKey || event.metaKey) return;
+    if (allowDecimal && (event.key === '.' || event.key === ',')) {
+      const target = event.target as HTMLInputElement;
+      if (target && !target.value.includes('.') && !target.value.includes(',')) return;
+    }
+    if (!/^[0-9]$/.test(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  sanitizeNumericInput(event: Event, targetObj: any, field: string, isInt = false): void {
+    const input = event.target as HTMLInputElement;
+    if (!input) return;
+    let clean = input.value.replace(/[^0-9.]/g, '');
+    const firstDot = clean.indexOf('.');
+    if (firstDot !== -1) {
+      clean = clean.substring(0, firstDot + 1) + clean.substring(firstDot + 1).replace(/\./g, '');
+    }
+    if (clean === '') {
+      targetObj[field] = 0;
+      return;
+    }
+    const num = isInt ? parseInt(clean, 10) : parseFloat(clean);
+    targetObj[field] = isNaN(num) ? 0 : Math.max(0, num);
+  }
+
+  // ─── Staff Edit State & Methods ───────────────────────────────────────────────
+  openEditStaffModal(staff: User): void {
+    this.clearAllFieldErrors();
+    this.staffEditDraft = {
+      id: staff.id,
+      fullName: staff.fullName,
+      email: staff.email,
+      phoneNumber: staff.phoneNumber ?? '',
+      branchId: staff.branchId ? String(staff.branchId) : (this.activeBranches()[0]?.id ? String(this.activeBranches()[0].id) : ''),
+      password: ''
+    };
+    this.editingStaff.set(true);
+  }
+
+  closeEditStaffModal(): void {
+    this.editingStaff.set(false);
+    this.clearAllFieldErrors();
+  }
+
+  async saveStaffEdit(): Promise<void> {
+    this.clearAllFieldErrors();
+    const draft = this.staffEditDraft;
+    let hasErr = false;
+
+    if (!draft.fullName?.trim()) {
+      this.setFieldError('staffEditFullName', 'Full name is mandatory.');
+      hasErr = true;
+    }
+    if (!draft.branchId) {
+      this.setFieldError('staffEditBranch', 'Branch facility assignment is mandatory.');
+      hasErr = true;
+    }
+    if (draft.password && draft.password.trim().length > 0 && draft.password.trim().length < 8) {
+      this.setFieldError('staffEditPassword', 'New password must be at least 8 characters long.');
+      hasErr = true;
+    }
+
+    if (hasErr) {
+      this.error.set('Please fix the required fields marked in red below.');
+      this.scrollToFirstError('#staff-edit-modal');
+      return;
+    }
+
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const payload: { fullName: string; phoneNumber?: string; branchId: number; password?: string } = {
+        fullName: draft.fullName.trim(),
+        phoneNumber: draft.phoneNumber.trim() || undefined,
+        branchId: Number(draft.branchId)
+      };
+      if (draft.password && draft.password.trim().length >= 8) {
+        payload.password = draft.password.trim();
+      }
+      await firstValueFrom(this.api.updateStaff(draft.id, payload));
+      this.notice.set(`Staff member ${draft.fullName} updated successfully.`);
+      this.closeEditStaffModal();
+      await this.loadStaffData();
+    } catch (err) {
+      this.error.set(this.api.message(err, 'Failed to update staff member.'));
+      this.scrollToFirstError('#staff-edit-modal');
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  // ─── Branch Active Quick Toggle & Enterprise Gating ───────────────────────────
+  async toggleBranchActive(branch: Branch): Promise<void> {
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const updatedActive = !branch.active;
+      const payload: BranchPayload = {
+        name: branch.name,
+        code: branch.code,
+        type: branch.type,
+        address: branch.address ?? '',
+        phoneNumber: branch.phoneNumber ?? '',
+        active: updatedActive
+      };
+      await firstValueFrom(this.api.updateBranch(branch.id, payload));
+      this.notice.set(`Branch "${branch.name}" is now ${updatedActive ? 'Active' : 'Paused'}.`);
+      await this.refreshBranchesAndOverview();
+    } catch (err) {
+      this.error.set(this.api.message(err, 'Could not update branch active status.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  closeEnterpriseBranchPrompt(): void {
+    this.enterpriseBranchPromptOpen.set(false);
+  }
+
+  // ─── Packages Feature Comparison Matrix ───────────────────────────────────────
+  setPackageViewMode(mode: 'cards' | 'matrix'): void {
+    this.packageViewMode.set(mode);
+  }
+
+  // ─── Capacity Display Helpers ────────────────────────────────────────────────
+  tierMaxBranches(): number {
+    const tier = this.user()?.subscriptionTier;
+    switch (tier) {
+      case 'STANDARD':
+      case 'STARTER':
+      case 'PRO':
+        return 1;
+      case 'ENTERPRISE':
+      case 'PREMIUM':
+      default:
+        return 9999;
+    }
+  }
+
+  tierMaxStaff(): number {
+    const tier = this.user()?.subscriptionTier;
+    switch (tier) {
+      case 'STANDARD': return 2;
+      case 'STARTER': return 5;
+      case 'PRO': return 15;
+      case 'ENTERPRISE':
+      case 'PREMIUM':
+      default:
+        return 9999;
+    }
+  }
+
+  tierMaxMembers(): number {
+    const tier = this.user()?.subscriptionTier;
+    switch (tier) {
+      case 'STANDARD': return 50;
+      case 'STARTER': return 250;
+      case 'PRO': return 1000;
+      case 'ENTERPRISE':
+      case 'PREMIUM':
+      default:
+        return 9999;
+    }
+  }
+
+  hasReachedStaffLimit(): boolean {
+    const max = this.tierMaxStaff();
+    return this.staff().length >= max;
+  }
+
+  maxStaffDisplay(): string {
+    const max = this.tierMaxStaff();
+    return max >= 9999 ? 'Unlimited' : String(max);
+  }
+
+  maxMembersDisplay(): string {
+    const max = this.tierMaxMembers();
+    return max >= 9999 ? 'Unlimited' : String(max);
+  }
+
+  maxBranchesDisplay(): string {
+    const max = this.tierMaxBranches();
+    return max >= 9999 ? 'Unlimited' : String(max);
   }
 
   planPtSessionRate(): number {
@@ -1724,21 +2151,46 @@ export class App {
     const price = Number(draft.price) || 0;
     const ptFee = Number(draft.ptFeeIncluded) || 0;
     const sessions = Number(draft.includedPtSessions) || 0;
-    if (ptFee > price) {
-      return `PT fee component (${this.money(ptFee)}) cannot exceed total package price (${this.money(price)}).`;
+    if (price <= 0) {
+      return 'Please enter a valid package price greater than 0.';
+    }
+    if (sessions <= 0) {
+      return 'Please specify at least 1 included PT session.';
     }
     if (sessions > 100) {
       return 'Included PT sessions cannot exceed 100 sessions per package.';
     }
-    if (sessions <= 0) {
-      return 'Please specify at least 1 included PT session.';
+    if (ptFee > price) {
+      const derivedPerSession = Math.round((ptFee / sessions) * 100) / 100;
+      return `Calculation Error: ${sessions} sessions @ ${this.money(derivedPerSession)} each = ${this.money(ptFee)}, which exceeds total package price of ${this.money(price)}. Total PT allocation cannot exceed the package price.`;
     }
     return '';
   }
 
   async savePlan(): Promise<void> {
-    if (this.planPtValidationError()) {
-      this.error.set(this.planPtValidationError());
+    this.clearAllFieldErrors();
+    let hasErr = false;
+    if (!this.planDraft.name?.trim()) {
+      this.setFieldError('planName', 'Package name is mandatory.');
+      hasErr = true;
+    }
+    if (!this.planDraft.price || Number(this.planDraft.price) <= 0) {
+      this.setFieldError('planPrice', 'Package price must be greater than 0.');
+      hasErr = true;
+    }
+    if (this.planDraft.durationMode === 'days' && (!this.planDraft.durationDays || Number(this.planDraft.durationDays) < 1)) {
+      this.setFieldError('planDurationDays', 'Duration in days must be at least 1.');
+      hasErr = true;
+    }
+    const ptErr = this.planPtValidationError();
+    if (ptErr) {
+      this.setFieldError('planPtFee', ptErr);
+      this.error.set(ptErr);
+      hasErr = true;
+    }
+    if (hasErr) {
+      this.error.set('Please fix the package form errors highlighted below.');
+      this.scrollToFirstError('.plan-form');
       return;
     }
     this.busy.set(true);
@@ -1763,6 +2215,7 @@ export class App {
       await this.loadPlans();
     } catch (error) {
       this.error.set(this.api.message(error, 'Could not save this package.'));
+      this.scrollToFirstError('.plan-form');
     } finally {
       this.busy.set(false);
     }
@@ -1772,13 +2225,41 @@ export class App {
   editPlan(plan: Plan): void { this.planDraft = { id: plan.id, name: plan.name, description: plan.description ?? '', price: plan.price, durationMode: plan.durationDays !== null ? 'days' : 'months', durationMonths: plan.durationMonths ?? 1, durationDays: plan.durationDays ?? 30, branchId: plan.branchId === null ? '' : String(plan.branchId), active: plan.active, ptPackageType: plan.ptPackageType ?? 'NONE', includedPtSessions: plan.includedPtSessions ?? 0, ptFeeIncluded: plan.ptFeeIncluded ?? 0 }; this.editingPlan.set(true); }
 
   async registerMember(): Promise<void> {
-    if (!this.selectedPlan()) return;
-    if (!this.memberDraft.waiverAcknowledged) {
-      this.error.set('Please confirm the member has acknowledged the health waiver and club terms.');
-      return;
+    this.clearAllFieldErrors();
+    let hasErr = false;
+
+    if (!this.memberDraft.fullName?.trim()) {
+      this.setFieldError('memberFullName', 'Member full name is mandatory.');
+      hasErr = true;
+    }
+    if (!this.memberDraft.email?.trim() || !this.memberDraft.email.includes('@')) {
+      this.setFieldError('memberEmail', 'A valid email address is mandatory.');
+      hasErr = true;
+    }
+    if (!this.memberDraft.planId || !this.selectedPlan()) {
+      this.setFieldError('memberPlan', 'Please select a membership package.');
+      hasErr = true;
+    }
+    if (this.user()?.role === 'OWNER' && !this.memberDraft.branchId) {
+      this.setFieldError('memberBranch', 'Please assign an enrollment branch facility.');
+      hasErr = true;
+    }
+    if (!this.memberDraft.startDate) {
+      this.setFieldError('memberStartDate', 'Membership start date is mandatory.');
+      hasErr = true;
     }
     if (this.memberDraft.paymentMethod !== 'CASH' && !this.memberDraft.transactionId?.trim()) {
-      this.error.set(`Please enter the Transaction ID / Reference for ${this.memberDraft.paymentMethod} payments.`);
+      this.setFieldError('memberTransactionId', `Transaction ID / Reference is mandatory for ${this.memberDraft.paymentMethod} payments.`);
+      hasErr = true;
+    }
+    if (!this.memberDraft.waiverAcknowledged) {
+      this.setFieldError('memberWaiver', 'Health waiver and club safety terms acknowledgment is mandatory.');
+      hasErr = true;
+    }
+
+    if (hasErr) {
+      this.error.set('Please fix the required fields marked in red below.');
+      this.scrollToFirstError('#member-registration-form');
       return;
     }
     this.busy.set(true);
@@ -1808,6 +2289,7 @@ export class App {
       this.navigate('members');
     } catch (error) {
       this.error.set(this.api.message(error, 'Could not create this membership.'));
+      this.scrollToFirstError('#member-registration-form');
     } finally {
       this.busy.set(false);
     }
@@ -1927,7 +2409,7 @@ export class App {
       personalTrainerId: member.personalTrainerId ? String(member.personalTrainerId) : '',
       discountPercent: member.discountPercent,
       startDate: this.renewalMinimumStartDate(member),
-      paymentMethod: 'CASH',
+      paymentMethod: this.user()?.role === 'MEMBER' ? 'UPI' : 'CASH',
       transactionId: ''
     };
     this.renewalTarget.set(member);
@@ -1950,7 +2432,7 @@ export class App {
         planId: plan.id,
         branchId: this.renewalDraft.branchId ? Number(this.renewalDraft.branchId) : null,
         personalTrainerId: this.renewalDraft.personalTrainerId ? Number(this.renewalDraft.personalTrainerId) : null,
-        discountPercent: Number(this.renewalDraft.discountPercent),
+        discountPercent: this.user()?.role === 'MEMBER' ? 0 : Number(this.renewalDraft.discountPercent),
         startDate: this.renewalDraft.startDate,
         paymentMethod: this.renewalDraft.paymentMethod,
         transactionId: this.renewalDraft.paymentMethod === 'CASH' ? null : this.renewalDraft.transactionId.trim()
@@ -1966,6 +2448,29 @@ export class App {
   }
 
   async createStaff(): Promise<void> {
+    this.clearAllFieldErrors();
+    let hasErr = false;
+    if (!this.staffDraft.fullName?.trim()) {
+      this.setFieldError('staffName', 'Staff full name is mandatory.');
+      hasErr = true;
+    }
+    if (!this.staffDraft.email?.trim() || !this.staffDraft.email.includes('@')) {
+      this.setFieldError('staffEmail', 'A valid email address is mandatory.');
+      hasErr = true;
+    }
+    if (!this.staffDraft.password || this.staffDraft.password.length < 8) {
+      this.setFieldError('staffPassword', 'Temporary password must be at least 8 characters long.');
+      hasErr = true;
+    }
+    if (!this.staffDraft.branchId) {
+      this.setFieldError('staffBranch', 'Branch facility assignment is mandatory.');
+      hasErr = true;
+    }
+    if (hasErr) {
+      this.error.set('Please fix the required fields marked in red below.');
+      this.scrollToFirstError('.team-form');
+      return;
+    }
     this.busy.set(true);
     this.error.set('');
     try {
@@ -1981,6 +2486,7 @@ export class App {
       await this.loadStaffData();
     } catch (error) {
       this.error.set(this.api.message(error, 'Could not create this staff account.'));
+      this.scrollToFirstError('.team-form');
     } finally {
       this.busy.set(false);
     }
@@ -1997,11 +2503,42 @@ export class App {
     }
   }
 
-  startNewBranch(): void { this.branchDraft = { id: 0, name: '', code: '', type: 'COMPANY_OWNED', address: '', phoneNumber: '', active: true }; this.editingBranch.set(true); }
-  editBranch(branch: Branch): void { this.branchDraft = { id: branch.id, name: branch.name, code: branch.code, type: branch.type, address: branch.address ?? '', phoneNumber: branch.phoneNumber ?? '', active: branch.active }; this.editingBranch.set(true); }
+  startNewBranch(): void {
+    const tier = this.user()?.subscriptionTier;
+    const maxBranches = this.tierMaxBranches();
+    if (this.branches().length >= maxBranches && tier !== 'ENTERPRISE' && tier !== 'PREMIUM') {
+      this.enterpriseBranchPromptOpen.set(true);
+      return;
+    }
+    this.branchDraft = { id: 0, name: '', code: '', type: 'COMPANY_OWNED', address: '', phoneNumber: '', active: true };
+    this.clearAllFieldErrors();
+    this.editingBranch.set(true);
+  }
+
+  editBranch(branch: Branch): void {
+    this.branchDraft = { id: branch.id, name: branch.name, code: branch.code, type: branch.type, address: branch.address ?? '', phoneNumber: branch.phoneNumber ?? '', active: branch.active };
+    this.clearAllFieldErrors();
+    this.editingBranch.set(true);
+  }
+
   viewBranchInOverview(branchId: number): void { this.selectDashboardBranch(branchId); this.navigate('overview'); }
 
   async saveBranch(): Promise<void> {
+    this.clearAllFieldErrors();
+    let hasErr = false;
+    if (!this.branchDraft.name?.trim()) {
+      this.setFieldError('branchName', 'Branch name is mandatory.');
+      hasErr = true;
+    }
+    if (!this.branchDraft.code?.trim()) {
+      this.setFieldError('branchCode', 'Branch code is mandatory.');
+      hasErr = true;
+    }
+    if (hasErr) {
+      this.error.set('Please fix the required fields marked in red below.');
+      this.scrollToFirstError('.branch-form');
+      return;
+    }
     this.busy.set(true);
     this.error.set('');
     try {
@@ -2013,6 +2550,7 @@ export class App {
       await this.refreshBranchesAndOverview();
     } catch (error) {
       this.error.set(this.api.message(error, 'Could not save this branch.'));
+      this.scrollToFirstError('.branch-form');
     } finally {
       this.busy.set(false);
     }
@@ -2051,6 +2589,7 @@ export class App {
 
   selectedPlan(): Plan | null { return this.activePlans().find((plan) => String(plan.id) === String(this.memberDraft.planId)) ?? null; }
   selectedRenewalPlan(): Plan | null { return this.activePlans().find((plan) => String(plan.id) === String(this.renewalDraft.planId)) ?? null; }
+  selectedUpgradePlan(): Plan | null { return this.activePlans().find((plan) => String(plan.id) === String(this.upgradeTargetPlanId())) ?? null; }
   selectedPt(): PtProfile | null { return this.personalTrainers().find((pt) => String(pt.id) === String(this.memberDraft.personalTrainerId)) ?? null; }
   filteredMembers(): Membership[] {
     return this.memberships();
@@ -2091,6 +2630,7 @@ export class App {
   isExpiring(value: string): boolean { return !this.isExpired(value) && this.daysUntil(value) <= 7; }
   isMemberExpiring(member: Membership): boolean { return !member.renewalStartDate && this.isExpiring(member.endDate); }
   memberStatus(member: Membership): string {
+    if (member.status === 'UPGRADED') return 'Upgraded';
     if (member.status === 'CANCELLED') return 'Cancelled';
     if (this.isUpcoming(member.startDate)) return 'Upcoming';
     if (this.isExpired(member.endDate)) return 'Expired';
@@ -2193,6 +2733,9 @@ export class App {
     return member.status === 'ACTIVE' && member.renewalStartDate !== null
       && this.isUpcoming(member.renewalStartDate);
   }
+  canUpgradeMembership(member: Membership): boolean {
+    return member.status === 'ACTIVE' && !this.isExpired(member.endDate) && !member.renewalStartDate;
+  }
   canRenewMembership(member: Membership): boolean {
     if (member.renewalStartDate || (member.status === 'ACTIVE' && this.isUpcoming(member.startDate))) {
       return false;
@@ -2208,6 +2751,26 @@ export class App {
       other.startDate > today || other.startDate > member.startDate
       || (other.startDate === member.startDate && other.createdAt > member.createdAt));
     return !laterActiveTerm;
+  }
+  canSendRenewalReminder(member: Membership): boolean {
+    const role = this.user()?.role;
+    if (role !== 'OWNER' && role !== 'STAFF') return false;
+    return member.status === 'ACTIVE' && !member.renewalStartDate && !this.isExpired(member.endDate);
+  }
+  async sendManualReminder(member: Membership): Promise<void> {
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      const reminder = await firstValueFrom(this.api.sendRenewalReminder(member.id));
+      this.notice.set(`Renewal reminder sent to ${reminder.recipientEmail || member.email} successfully.`);
+      if (this.user()?.role === 'OWNER') {
+        this.renewalReminders.set(await firstValueFrom(this.api.renewalReminders()));
+      }
+    } catch (err) {
+      this.error.set(this.api.message(err, 'Failed to send renewal reminder.'));
+    } finally {
+      this.busy.set(false);
+    }
   }
   auditActionLabel(action: string): string {
     const labels: Record<string, string> = {
@@ -2601,6 +3164,35 @@ export class App {
   }
 
   async savePt(): Promise<void> {
+    this.clearAllFieldErrors();
+    let hasErr = false;
+    if (!this.ptDraft.fullName?.trim()) {
+      this.setFieldError('ptFullName', 'Trainer full name is mandatory.');
+      hasErr = true;
+    }
+    if (!this.ptDraft.email?.trim() || !this.ptDraft.email.includes('@')) {
+      this.setFieldError('ptEmail', 'A valid email address is mandatory.');
+      hasErr = true;
+    }
+    if (this.ptDraft.id === 0 && (!this.ptDraft.password || this.ptDraft.password.length < 8)) {
+      this.setFieldError('ptPassword', 'Temporary password must be at least 8 characters long.');
+      hasErr = true;
+    }
+    const fee = Number(this.ptDraft.sessionFeePerHour);
+    if (isNaN(fee) || fee < 0) {
+      this.setFieldError('ptSessionFee', 'Session fee must be a valid non-negative number.');
+      hasErr = true;
+    }
+    const comm = Number(this.ptDraft.commissionPercent);
+    if (isNaN(comm) || comm < 0 || comm > 100) {
+      this.setFieldError('ptCommission', 'Commission share must be between 0% and 100%.');
+      hasErr = true;
+    }
+    if (hasErr) {
+      this.error.set('Please fix the required fields marked in red below.');
+      this.scrollToFirstError('.pt-editor-form');
+      return;
+    }
     this.error.set('');
     this.busy.set(true);
     try {
@@ -2613,8 +3205,8 @@ export class App {
           branchId: this.ptDraft.branchId ? Number(this.ptDraft.branchId) : null,
           specializations: this.ptDraft.specializations.trim(),
           bio: this.ptDraft.bio.trim(),
-          sessionFeePerHour: Number(this.ptDraft.sessionFeePerHour),
-          commissionPercent: Number(this.ptDraft.commissionPercent)
+          sessionFeePerHour: fee,
+          commissionPercent: comm
         }));
         this.notice.set('Trainer created successfully.');
       } else {
@@ -2622,8 +3214,8 @@ export class App {
           branchId: this.ptDraft.branchId ? Number(this.ptDraft.branchId) : null,
           specializations: this.ptDraft.specializations.trim(),
           bio: this.ptDraft.bio.trim(),
-          sessionFeePerHour: Number(this.ptDraft.sessionFeePerHour),
-          commissionPercent: Number(this.ptDraft.commissionPercent)
+          sessionFeePerHour: fee,
+          commissionPercent: comm
         }));
         this.notice.set('Trainer updated successfully.');
       }
@@ -2631,6 +3223,7 @@ export class App {
       await this.loadPtManagementData();
     } catch (error) {
       this.error.set(this.api.message(error, 'Could not save trainer profile.'));
+      this.scrollToFirstError('.pt-editor-form');
     } finally {
       this.busy.set(false);
     }
@@ -2961,8 +3554,420 @@ export class App {
       .reduce((sum, e) => sum + e.ptCommission, 0);
   }
 
+    selectPlanFromPublic(tier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE'): void {
+    this.registerGymDraft.subscriptionTier = tier;
+    this.authMode.set('register-gym');
+    this.error.set('');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  scrollToPricing(): void {
+    if (typeof document !== 'undefined') {
+      document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  scrollToMatrix(): void {
+    if (typeof document !== 'undefined') {
+      document.getElementById('feature-matrix')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  downloadPlanComparisonPdf(): void {
+    if (typeof window !== 'undefined') {
+      this.pricingBrochureModalOpen.set(true);
+      setTimeout(() => {
+        window.print();
+      }, 350);
+    }
+  }
+
+  closeBrochureModal(): void {
+    this.pricingBrochureModalOpen.set(false);
+  }
+
+  async downloadGymBackup(): Promise<void> {
+    this.downloadingBackup.set(true);
+    this.error.set('');
+    try {
+      const backup = await firstValueFrom(this.api.downloadTenantBackup());
+      const orgCode = backup.organizationCode || 'GYM';
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const jsonStr = JSON.stringify(backup, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `gymflow-${orgCode.toLowerCase()}-backup-${dateStr}.json`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+      this.notice.set('Complete gym data backup archive downloaded successfully.');
+    } catch (err) {
+      this.error.set(this.api.message(err, 'Failed to download gym backup. Feature requires Pro or Enterprise subscription.'));
+    } finally {
+      this.downloadingBackup.set(false);
+    }
+  }
+
+  openBulkImportModal(): void {
+    this.bulkImportModalOpen.set(true);
+    this.bulkImportCsvText = '';
+    this.bulkImportResult.set(null);
+    this.error.set('');
+  }
+
+  closeBulkImportModal(): void {
+    this.bulkImportModalOpen.set(false);
+  }
+
+  downloadSampleImportCsv(): void {
+    const csvContent = 'Full Name,Email,Phone,Package Name,Branch Code,Start Date,Payment Method\r\n' +
+      'Vikram Malhotra,vikram@example.com,+919876543210,Strength,,2026-11-01,UPI\r\n' +
+      'Ananya Sen,ananya@example.com,+919876543211,All access,,2026-11-01,CASH\r\n' +
+      'Rahul Verma,rahul@example.com,+919876543212,Strength,,2026-11-05,CARD';
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'gymflow-member-import-template.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+
+  handleCsvFileSelect(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.bulkImportCsvText = (e.target?.result as string) || '';
+      };
+      reader.readAsText(file);
+    }
+  }
+
+  async submitBulkImport(): Promise<void> {
+    const raw = this.bulkImportCsvText.trim();
+    if (!raw) {
+      this.error.set('Please provide CSV data or select a valid CSV file.');
+      return;
+    }
+    const lines = raw.split(/\r?\n/).filter(line => line.trim().length > 0);
+    if (lines.length < 2) {
+      this.error.set('CSV must contain a header row and at least one member data row.');
+      return;
+    }
+
+    const startIndex = (lines[0].toLowerCase().includes('name') || lines[0].toLowerCase().includes('email')) ? 1 : 0;
+    const members: BulkMemberImportRow[] = [];
+
+    for (let i = startIndex; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim().replace(/^["']|["']$/g, ''));
+      if (cols.length >= 2 && cols[0] && cols[1]) {
+        members.push({
+          fullName: cols[0],
+          email: cols[1],
+          phoneNumber: cols[2] || '',
+          packageName: cols[3] || '',
+          branchCode: cols[4] || '',
+          startDate: cols[5] || '',
+          paymentMethod: cols[6] || 'CASH'
+        });
+      }
+    }
+
+    if (members.length === 0) {
+      this.error.set('No valid member rows could be parsed from the CSV text.');
+      return;
+    }
+
+    this.bulkImportLoading.set(true);
+    this.error.set('');
+    try {
+      const result = await firstValueFrom(this.api.bulkImportMembers(members));
+      this.bulkImportResult.set(result);
+      if (result.importedCount > 0) {
+        this.notice.set(`Successfully imported ${result.importedCount} members into your gym!`);
+        await this.refreshMembershipViews();
+      }
+    } catch (err) {
+      this.error.set(this.api.message(err, 'Bulk member import failed. Please verify CSV format and plan permissions.'));
+    } finally {
+      this.bulkImportLoading.set(false);
+    }
+  }
+
+  printMembershipReceipt(m: Membership): void {
+    if (typeof window === 'undefined') return;
+    const win = window.open('', '_blank', 'width=750,height=850');
+    if (!win) return;
+    const gymName = this.user()?.organizationName || 'GymFlow Club';
+    const gymLogo = this.user()?.organizationLogo;
+    const dateFormatted = this.dateLabel(m.startDate);
+    const expiryFormatted = this.dateLabel(m.endDate);
+    const amountStr = this.money(m.amountPaid || m.listPrice);
+    const planName = m.planName || 'Standard Membership';
+    const invoiceNum = `INV-${m.id.toString().padStart(6, '0')}`;
+
+    win.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Tax Invoice Receipt - ${invoiceNum}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; padding: 40px; margin: 0; background: #fff; }
+          .receipt-container { max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+          .receipt-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 24px; }
+          .gym-title { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; }
+          .receipt-kicker { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; font-weight: 700; }
+          .receipt-logo { max-height: 48px; max-width: 140px; object-fit: contain; }
+          .invoice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; font-size: 13px; line-height: 1.5; }
+          .line-item-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13.5px; }
+          .line-item-table th { background: #f8fafc; text-align: left; padding: 10px 12px; border-bottom: 1px solid #cbd5e1; font-size: 11.5px; text-transform: uppercase; color: #475569; }
+          .line-item-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+          .total-box { display: flex; justify-content: flex-end; margin-top: 16px; padding-top: 16px; border-top: 2px solid #0f172a; font-size: 18px; font-weight: 800; }
+          .receipt-footer { margin-top: 32px; text-align: center; font-size: 11.5px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+          @media print {
+            body { padding: 0; }
+            .receipt-container { border: none; box-shadow: none; padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-container">
+          <div class="receipt-header">
+            <div>
+              <div class="receipt-kicker">OFFICIAL TAX INVOICE &amp; PAYMENT RECEIPT</div>
+              <h1 class="gym-title">${gymName}</h1>
+              <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Branch: ${m.branchName || 'Main Facility'}</div>
+            </div>
+            ${gymLogo ? `<img src="${gymLogo}" class="receipt-logo" alt="Gym Logo">` : `<div style="font-size: 28px;">⚡</div>`}
+          </div>
+          <div class="invoice-grid">
+            <div>
+              <strong style="color: #475569;">Billed To:</strong><br>
+              <strong>${m.memberName}</strong><br>
+              ${m.email}<br>
+              ${m.phoneNumber || 'N/A'}
+            </div>
+            <div style="text-align: right;">
+              <strong style="color: #475569;">Invoice No:</strong> <strong>${invoiceNum}</strong><br>
+              <strong>Date of Issue:</strong> ${dateFormatted}<br>
+              <strong>Payment Mode:</strong> ${m.paymentMethod || 'CASH / POS'}<br>
+              <strong>Status:</strong> <span style="color: #16a34a; font-weight: 700;">PAID IN FULL</span>
+            </div>
+          </div>
+          <table class="line-item-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Validity Period</th>
+                <th style="text-align: right;">Amount (INR)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>${planName}</strong><br><small style="color: #64748b;">Club Facility &amp; Fitness Access</small></td>
+                <td>${dateFormatted} to ${expiryFormatted}</td>
+                <td style="text-align: right;"><strong>${amountStr}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="total-box">
+            <div>Total Paid: &nbsp; <span style="color: #0f172a;">${amountStr}</span></div>
+          </div>
+          <div class="receipt-footer">
+            Thank you for being a valued member of ${gymName}. This is a computer-generated tax receipt.
+          </div>
+        </div>
+        <script>
+          window.onload = function() { window.print(); };
+        </script>
+      </body>
+      </html>
+    `);
+    win.document.close();
+  }
+
+  openMemberRenewalModal(m?: Membership): void {
+    if (m) {
+      this.memberSelectedPlanId.set(m.planId);
+    } else if (this.plans().length > 0) {
+      this.memberSelectedPlanId.set(this.plans()[0].id);
+    }
+    this.memberRenewalModalOpen.set(true);
+  }
+
+  closeMemberRenewalModal(): void {
+    this.memberRenewalModalOpen.set(false);
+  }
+
+  openMemberFreezeModal(m?: Membership): void {
+    this.memberFreezeStartDate = this.todayDate();
+    this.memberFreezeEndDate = this.addDays(this.todayDate(), 14);
+    this.memberFreezeReason = 'Temporary personal pause / travel';
+    this.memberFreezeModalOpen.set(true);
+  }
+
+  closeMemberFreezeModal(): void {
+    this.memberFreezeModalOpen.set(false);
+  }
+
+  async submitMemberFreeze(membershipId: number): Promise<void> {
+    if (!this.memberFreezeStartDate || !this.memberFreezeEndDate) {
+      this.error.set('Please provide both freeze start and end dates.');
+      return;
+    }
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      await firstValueFrom(this.api.freezeMembership(membershipId, {
+        startDate: this.memberFreezeStartDate,
+        endDate: this.memberFreezeEndDate,
+        reason: this.memberFreezeReason.trim() || 'Member self-service freeze'
+      }));
+      this.notice.set('Your membership has been temporarily frozen. Enjoy your pause!');
+      this.closeMemberFreezeModal();
+      await this.refreshMembershipViews();
+    } catch (err) {
+      this.error.set(this.api.message(err, 'Failed to freeze membership. Please verify freeze dates or contact club staff.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  async submitMemberRenewal(membershipId: number): Promise<void> {
+    const planId = this.memberSelectedPlanId();
+    if (!planId) {
+      this.error.set('Please select a membership package to renew.');
+      return;
+    }
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      await firstValueFrom(this.api.renewMembership(membershipId, {
+        planId: planId,
+        branchId: null,
+        personalTrainerId: null,
+        discountPercent: 0,
+        startDate: this.todayDate(),
+        paymentMethod: 'ONLINE_MEMBER_PORTAL'
+      }));
+      this.notice.set('Your membership renewal has been processed successfully!');
+      this.closeMemberRenewalModal();
+      await this.refreshMembershipViews();
+    } catch (err) {
+      this.error.set(this.api.message(err, 'Renewal failed. Please check with your gym front desk.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+
   private readStoredUser(): User | null {
     try { const value = sessionStorage.getItem('gym.user'); return value ? JSON.parse(value) as User : null; }
     catch { return null; }
   }
+
+
+  loadSaasUpgradeQuote(targetTier?: string): void {
+    const tier = targetTier || this.upgradeTargetTier();
+    this.saasUpgradeQuoteLoading.set(true);
+    this.api.quoteSaasUpgrade(tier).subscribe({
+      next: (quote) => {
+        this.saasUpgradeQuote.set(quote);
+        this.saasUpgradeQuoteLoading.set(false);
+      },
+      error: () => {
+        this.saasUpgradeQuote.set(null);
+        this.saasUpgradeQuoteLoading.set(false);
+      }
+    });
+  }
+
+  openMemberUpgradeModal(membership: Membership): void {
+    this.upgradingMembership.set(membership);
+    this.upgradeTargetPlanId.set(null);
+    this.upgradeQuote.set(null);
+    this.upgradeQuoteError.set('');
+    this.upgradeDraft.topUpPaid = 0;
+    this.upgradeDraft.paymentMethod = this.user()?.role === 'MEMBER' ? 'UPI' : 'CASH';
+    this.upgradeDraft.transactionId = '';
+    this.upgradeDraft.personalTrainerId = membership.personalTrainerId ?? null;
+    this.clearAllFieldErrors();
+  }
+
+  closeMemberUpgradeModal(): void {
+    this.upgradingMembership.set(null);
+    this.upgradeTargetPlanId.set(null);
+    this.upgradeQuote.set(null);
+    this.upgradeQuoteError.set('');
+    this.clearAllFieldErrors();
+  }
+
+  onMemberUpgradePlanChange(planId: any): void {
+    const id = planId ? Number(planId) : null;
+    this.upgradeTargetPlanId.set(id);
+    this.upgradeQuote.set(null);
+    this.upgradeQuoteError.set('');
+    this.clearFieldError('upgradePlan');
+    const current = this.upgradingMembership();
+    if (!id || !current) return;
+    this.upgradeQuoteLoading.set(true);
+    this.api.quoteMembershipUpgrade(current.id, id).subscribe({
+      next: (q) => {
+        this.upgradeQuote.set(q);
+        this.upgradeDraft.topUpPaid = q.topUpDue;
+        this.upgradeQuoteLoading.set(false);
+      },
+      error: (err) => {
+        this.upgradeQuoteError.set(this.api.message(err, 'Could not calculate upgrade cost.'));
+        this.upgradeQuoteLoading.set(false);
+      }
+    });
+  }
+
+  async confirmMembershipUpgrade(): Promise<void> {
+    this.clearAllFieldErrors();
+    const current = this.upgradingMembership();
+    const planId = this.upgradeTargetPlanId();
+    if (!current) return;
+    if (!planId) {
+      this.setFieldError('upgradePlan', 'Please select a package to upgrade to');
+      this.scrollToFirstError('.upgrade-modal');
+      return;
+    }
+    const quote = this.upgradeQuote();
+    if (!quote) {
+      this.upgradeQuoteError.set('Please select a valid package and wait for calculation.');
+      return;
+    }
+    const pm = this.upgradeDraft.paymentMethod;
+    if (!['CASH', 'OFFLINE'].includes(pm?.toUpperCase()) && !this.upgradeDraft.transactionId?.trim()) {
+      this.setFieldError('upgradeTransactionId', 'Transaction ID is required for online payments');
+      this.scrollToFirstError('.upgrade-modal');
+      return;
+    }
+
+    this.busy.set(true);
+    try {
+      await firstValueFrom(this.api.upgradeMembership(current.id, {
+        newPlanId: planId,
+        personalTrainerId: this.upgradeDraft.personalTrainerId ? Number(this.upgradeDraft.personalTrainerId) : null,
+        topUpPaid: Number(this.upgradeDraft.topUpPaid),
+        paymentMethod: pm,
+        transactionId: this.upgradeDraft.transactionId?.trim() || null
+      }));
+      this.notice.set(`Successfully upgraded ${current.memberName}'s membership to ${quote.newPlanName}!`);
+      this.closeMemberUpgradeModal();
+      await this.refreshMembershipViews();
+    } catch (err: any) {
+      this.upgradeQuoteError.set(this.api.message(err, 'Failed to upgrade membership.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
 }

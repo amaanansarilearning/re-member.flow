@@ -24,6 +24,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -293,6 +297,42 @@ public class SubscriptionService {
 
     // ─── Upgrade Request Operations (B2B SaaS Lifecycle) ─────────────────────────
 
+    public SaasUpgradeQuoteDto quoteSaasUpgrade(String userEmail, SubscriptionTier targetTier) {
+        UserAccount user = users.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+        GymOrganization org = user.getOrganization();
+        if (org == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Gym organization not found");
+        }
+        SubscriptionTier currentTier = org.getSubscriptionTier() != null ? org.getSubscriptionTier() : SubscriptionTier.STANDARD;
+        SubscriptionTier resolvedTarget = (targetTier != null) ? targetTier : SubscriptionTier.PRO;
+
+        BigDecimal currentMonthlyPrice = currentTier.monthlyPrice();
+        BigDecimal targetMonthlyPrice = resolvedTarget.monthlyPrice();
+
+        Instant now = Instant.now();
+        int remainingDays = 30;
+        if (org.getSubscriptionExpiresAt() != null && org.getSubscriptionExpiresAt().isAfter(now)) {
+            long days = ChronoUnit.DAYS.between(now, org.getSubscriptionExpiresAt());
+            remainingDays = (int) Math.min(30, Math.max(1, days));
+        }
+
+        BigDecimal priceDifference = targetMonthlyPrice.subtract(currentMonthlyPrice).max(BigDecimal.ZERO);
+        BigDecimal dailyRateDiff = priceDifference.divide(BigDecimal.valueOf(30), 4, RoundingMode.HALF_UP);
+        BigDecimal estimatedTopUp = dailyRateDiff.multiply(BigDecimal.valueOf(remainingDays)).setScale(2, RoundingMode.HALF_UP);
+
+        return new SaasUpgradeQuoteDto(
+                currentTier,
+                resolvedTarget,
+                currentMonthlyPrice,
+                targetMonthlyPrice,
+                remainingDays,
+                estimatedTopUp,
+                LocalDate.now()
+        );
+    }
+
+
     @Transactional
     public UpgradeRequestDto submitUpgradeRequest(String userEmail, SubmitUpgradeRequestDto request) {
         UserAccount user = users.findByEmailIgnoreCase(userEmail)
@@ -336,6 +376,9 @@ public class SubscriptionService {
                 request.notes()
         );
 
+        if (request.estimatedTopUp() != null) {
+            upgradeReq.setEstimatedTopUp(request.estimatedTopUp());
+        }
         UpgradeRequest saved = upgradeRequests.save(upgradeReq);
         platformEmailService.sendUpgradeRequestConfirmationToOwner(saved);
         platformEmailService.sendUpgradeRequestAlertToAdmin(saved);
@@ -446,7 +489,8 @@ public class SubscriptionService {
                 req.getReviewedBy(),
                 req.getReviewedAt(),
                 req.getRejectionReason(),
-                req.getCreatedAt()
+                req.getCreatedAt(),
+                req.getEstimatedTopUp()
         );
     }
 
@@ -466,6 +510,7 @@ public class SubscriptionService {
     }
 
     private SubscriptionStatusDto toSubscriptionDto(GymOrganization org) {
+        SubscriptionTier tier = org.getSubscriptionTier() != null ? org.getSubscriptionTier() : SubscriptionTier.STANDARD;
         return new SubscriptionStatusDto(
                 org.getId(),
                 org.getName(),
@@ -479,7 +524,10 @@ public class SubscriptionService {
                 org.hasFeature(AppFeature.ACTION_HISTORY),
                 org.hasFeature(AppFeature.PERSONAL_TRAINERS),
                 org.hasFeature(AppFeature.ANALYTICS),
-                org.getEnabledFeatures()
+                org.getEnabledFeatures(),
+                tier.maxBranches(),
+                tier.maxStaff(),
+                tier.maxMembers()
         );
     }
 

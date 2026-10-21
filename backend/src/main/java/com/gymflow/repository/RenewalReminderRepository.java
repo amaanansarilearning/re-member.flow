@@ -14,6 +14,12 @@ public interface RenewalReminderRepository extends JpaRepository<RenewalReminder
     boolean existsForRecipient(@Param("membershipId") Long membershipId,
             @Param("daysBefore") int daysBefore, @Param("recipientEmail") String recipientEmail);
 
+    @Query("select r from RenewalReminder r "
+            + "where r.membership.id = :membershipId and r.daysBefore = :daysBefore "
+            + "and lower(r.recipientEmail) = lower(:recipientEmail)")
+    java.util.Optional<RenewalReminder> findForRecipient(@Param("membershipId") Long membershipId,
+            @Param("daysBefore") int daysBefore, @Param("recipientEmail") String recipientEmail);
+
     List<RenewalReminder> findTop100ByStatusInAndNextAttemptAtLessThanEqualOrderByNextAttemptAtAsc(
             List<String> statuses, Instant now);
 

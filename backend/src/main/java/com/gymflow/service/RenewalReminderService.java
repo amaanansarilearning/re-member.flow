@@ -55,6 +55,43 @@ public class RenewalReminderService {
         sendDueRetries();
     }
 
+    @Transactional
+    public RenewalReminderDto sendManualRenewalReminder(String actorEmail, Role role, Long membershipId) {
+        Membership membership = memberships.findById(membershipId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "Membership not found"));
+        UserAccount actor = users.findByEmailIgnoreCase(actorEmail)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "User not found"));
+        if (!membership.getMember().getOrganization().getId().equals(actor.getOrganization().getId())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND, "Membership not found");
+        }
+        if (role == Role.STAFF && (actor.getBranch() == null || membership.getBranch() == null
+                || !actor.getBranch().getId().equals(membership.getBranch().getId()))) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Staff can only manage memberships at their assigned branch");
+        }
+        int daysBefore = (int) Math.max(0, java.time.temporal.ChronoUnit.DAYS.between(
+                LocalDate.now(businessZone), membership.getEndDate()));
+        RenewalReminder reminder = reminders.findForRecipient(
+                membership.getId(), daysBefore, membership.getMember().getEmail())
+                .orElseGet(() -> reminders.save(new RenewalReminder(membership, daysBefore, membership.getMember().getEmail())));
+        boolean sent = emailService.sendRenewalReminder(membership.getMember().getEmail(),
+                membership.getMember().getFullName(), membership.getPlanNameSnapshot(), membership.getEndDate(),
+                daysBefore);
+        if (sent) {
+            reminder.markSent(Instant.now());
+        } else {
+            reminder.markFailed(Instant.now(), Instant.now().plusSeconds(900), "Failed to send email");
+        }
+        return new RenewalReminderDto(reminder.getId(), reminder.getMembership().getId(),
+                membership.getMember().getFullName(), reminder.getRecipientEmail(),
+                reminder.getDaysBefore(), reminder.getStatus(), reminder.getAttempts(),
+                reminder.getLastAttemptAt(), reminder.getNextAttemptAt(), reminder.getSentAt(),
+                reminder.getLastError());
+    }
+
     @Transactional(readOnly = true)
     public List<RenewalReminderDto> list(Long organizationId) {
         return reminders.findTop500ByMembershipMemberOrganizationIdOrderByNextAttemptAtDesc(organizationId).stream()

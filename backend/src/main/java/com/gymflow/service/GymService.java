@@ -30,6 +30,7 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
@@ -168,6 +169,12 @@ public class GymService {
 
     public BranchDto createBranch(String email, BranchRequest request) {
         GymOrganization organization = requireOrganization(account(email));
+        long currentBranches = branches.countByOrganizationId(organization.getId());
+        SubscriptionTier tier = organization.getSubscriptionTier() != null ? organization.getSubscriptionTier() : SubscriptionTier.STANDARD;
+        if (currentBranches >= tier.maxBranches()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Multi-branch operations require an Enterprise subscription. Standard, Starter, and Pro plans include 1 branch facility. Please upgrade to Enterprise to register additional locations.");
+        }
         if (branches.existsByOrganizationIdAndCodeIgnoreCase(organization.getId(), request.code())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A branch with this code already exists");
         }
@@ -204,6 +211,12 @@ public class GymService {
     public UserDto createStaff(String ownerEmail, StaffRegistrationRequest request) {
         UserAccount owner = account(ownerEmail);
         GymOrganization organization = requireOrganization(owner);
+        SubscriptionTier tier = organization.getSubscriptionTier() != null ? organization.getSubscriptionTier() : SubscriptionTier.STANDARD;
+        long currentStaff = users.countByRoleAndOrganizationId(Role.STAFF, organization.getId());
+        if (currentStaff >= tier.maxStaff()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Staff account limit reached (" + tier.maxStaff() + " accounts) for " + tier.name() + " tier. Upgrade your subscription to add additional team accounts.");
+        }
         GymBranch branch = activeBranch(request.branchId(), organization.getId());
         if (users.existsByEmailIgnoreCase(request.email())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
@@ -214,6 +227,28 @@ public class GymService {
         membershipEmailService.notifyStaffAdded(owner.getEmail(), account.getFullName(), account.getEmail(),
                 branch.getName());
         return toUserDto(account);
+    }
+
+    @Transactional
+    public UserDto updateStaff(String ownerEmail, long id, StaffUpdateRequest request) {
+        UserAccount owner = account(ownerEmail);
+        Long organizationId = requireOrganization(owner).getId();
+        UserAccount staff = users.findById(id)
+                .filter(user -> user.getRole() == Role.STAFF && user.getOrganization() != null
+                        && user.getOrganization().getId().equals(organizationId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Staff account not found"));
+        GymBranch branch = activeBranch(request.branchId(), organizationId);
+        UserDto before = toUserDto(staff);
+        staff.updateProfile(request.fullName(), staff.getEmail(), request.phoneNumber());
+        staff.assignLocation(staff.getOrganization(), branch);
+        if (request.password() != null && !request.password().isBlank()) {
+            if (request.password().trim().length() < 8) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password must be at least 8 characters");
+            }
+            staff.changePassword(passwordEncoder.encode(request.password().trim()));
+        }
+        actionHistory.record(owner, "STAFF_UPDATED", "STAFF", staff.getId(), null, before, toUserDto(staff));
+        return toUserDto(staff);
     }
 
     public synchronized UserDto registerGym(GymRegistrationRequest request) {
@@ -319,6 +354,13 @@ public class GymService {
     public MembershipDto register(String actorEmail, Role role, MembershipRegistrationRequest request) {
         UserAccount actor = account(actorEmail);
         GymOrganization organization = requireOrganization(actor);
+        SubscriptionTier tier = organization.getSubscriptionTier() != null ? organization.getSubscriptionTier() : SubscriptionTier.STANDARD;
+        long currentMembers = users.countByRoleAndOrganizationId(Role.MEMBER, organization.getId());
+        boolean isNewUser = !users.existsByEmailIgnoreCase(request.email());
+        if (isNewUser && currentMembers >= tier.maxMembers()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Member roster limit reached (" + tier.maxMembers() + " members) for " + tier.name() + " tier. Upgrade your subscription to register additional members.");
+        }
         GymBranch branch = resolveBranch(actor, role, request.branchId());
         MembershipPlan plan = plans.findByIdAndOrganizationId(request.planId(), organization.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active package not found"));
@@ -326,7 +368,7 @@ public class GymService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Active package not found for this branch");
         }
         LocalDate startDate = request.startDate() == null ? businessToday() : request.startDate();
-        BigDecimal discount = request.discountPercent().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal discount = (role == Role.MEMBER || request.discountPercent() == null) ? BigDecimal.ZERO : request.discountPercent().setScale(2, RoundingMode.HALF_UP);
         BigDecimal amount = plan.getPrice().multiply(BigDecimal.ONE.subtract(discount.movePointLeft(2)))
                 .setScale(2, RoundingMode.HALF_UP);
         UserAccount member = users.findByEmailIgnoreCase(request.email()).map(existing -> {
@@ -701,6 +743,8 @@ public class GymService {
         if (role == Role.OWNER) {
             targetBranch = request.branchId() == null ? previous.getBranch()
                     : activeBranch(request.branchId(), organization.getId());
+        } else if (role == Role.MEMBER) {
+            targetBranch = previous.getBranch();
         } else {
             targetBranch = requireUserBranch(actor);
             if (!targetBranch.getId().equals(previous.getBranch().getId())
@@ -766,6 +810,162 @@ public class GymService {
         actionHistory.record(actor, "MEMBERSHIP_RENEWED", "MEMBERSHIP", renewal.getId(), null,
                 before, toMembershipDto(renewal));
         return toMembershipDto(renewal);
+    }
+
+    @Transactional(readOnly = true)
+    public MembershipUpgradeQuoteDto quoteMembershipUpgrade(String email, Role role, long membershipId, long newPlanId) {
+        Membership membership = memberships.findById(membershipId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Membership not found"));
+        UserAccount actor = account(email);
+        verifyMembershipScope(actor, role, membership);
+        GymOrganization organization = requireOrganization(actor);
+
+        if (membership.getStatus() != MembershipStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only active memberships can be upgraded");
+        }
+        LocalDate today = businessToday();
+        if (membership.getEndDate().isBefore(today)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Membership has expired - please renew instead");
+        }
+        if (today.isBefore(membership.getStartDate())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Membership has not started yet");
+        }
+        if (membership.getRenewalStartDate() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "This membership has a scheduled renewal. Please cancel or update the renewal before upgrading the current term.");
+        }
+
+        MembershipPlan newPlan = plans.findByIdAndOrganizationId(newPlanId, organization.getId())
+                .filter(MembershipPlan::isActive)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active package not found"));
+
+        if (newPlan.getId().equals(membership.getPlan().getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Member is already on this plan");
+        }
+
+        int totalDays = (int) (ChronoUnit.DAYS.between(membership.getStartDate(), membership.getEndDate()) + 1);
+        if (totalDays < 1) totalDays = 1;
+        int remainingDays = (int) (ChronoUnit.DAYS.between(today, membership.getEndDate()) + 1);
+        if (remainingDays < 0) remainingDays = 0;
+
+        int oldDuration = membership.getPlanDurationDaysSnapshot() != null ? membership.getPlanDurationDaysSnapshot()
+                : (membership.getPlanDurationMonthsSnapshot() != null ? membership.getPlanDurationMonthsSnapshot() * 30 : totalDays);
+        int newDuration = newPlan.getDurationDays() != null ? newPlan.getDurationDays()
+                : (newPlan.getDurationMonths() != null ? newPlan.getDurationMonths() * 30 : totalDays);
+        if (newDuration < oldDuration) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot upgrade to a package of shorter duration (" + newDuration + " days < " + oldDuration + " days)");
+        }
+
+        int newTotalDays = (newDuration == oldDuration) ? totalDays : Math.max(1, newDuration);
+
+        BigDecimal oldDailyRate = membership.getListPrice().divide(BigDecimal.valueOf(totalDays), 4, RoundingMode.HALF_UP);
+        BigDecimal newDailyRate = newPlan.getPrice().divide(BigDecimal.valueOf(newTotalDays), 4, RoundingMode.HALF_UP);
+        BigDecimal creditAmount = oldDailyRate.multiply(BigDecimal.valueOf(remainingDays)).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal newPlanProrataCost = newDailyRate.multiply(BigDecimal.valueOf(remainingDays)).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal topUpDue = newPlanProrataCost.subtract(creditAmount).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+
+        boolean hasPt = newPlan.getPtPackageType() != null && newPlan.getPtPackageType() != com.gymflow.domain.PtPackageType.NONE;
+
+        return new MembershipUpgradeQuoteDto(
+                totalDays, remainingDays,
+                oldDailyRate.setScale(2, RoundingMode.HALF_UP),
+                newDailyRate.setScale(2, RoundingMode.HALF_UP),
+                creditAmount, newPlanProrataCost, topUpDue,
+                membership.getPlanNameSnapshot(), membership.getListPrice(),
+                newPlan.getName(), newPlan.getPrice(),
+                hasPt);
+    }
+
+    @Transactional
+    public MembershipDto upgradeMembership(String email, Role role, long membershipId, MembershipUpgradeRequest request) {
+        Membership old = memberships.findByIdForUpdate(membershipId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Membership not found"));
+        UserAccount actor = account(email);
+        verifyMembershipScope(actor, role, old);
+        GymOrganization organization = requireOrganization(actor);
+
+        if (old.getStatus() != MembershipStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only active memberships can be upgraded");
+        }
+        LocalDate today = businessToday();
+        if (old.getEndDate().isBefore(today)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Membership has expired - please renew instead");
+        }
+        if (today.isBefore(old.getStartDate())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Membership has not started yet");
+        }
+        if (old.getRenewalStartDate() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "This membership has a scheduled renewal. Please cancel or update the renewal before upgrading the current term.");
+        }
+        if (request.newPlanId().equals(old.getPlan().getId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Member is already on this plan");
+        }
+
+        MembershipPlan newPlan = plans.findByIdAndOrganizationId(request.newPlanId(), organization.getId())
+                .filter(MembershipPlan::isActive)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active package not found"));
+
+        int totalDays = (int) (ChronoUnit.DAYS.between(old.getStartDate(), old.getEndDate()) + 1);
+        if (totalDays < 1) totalDays = 1;
+        int oldDuration = old.getPlanDurationDaysSnapshot() != null ? old.getPlanDurationDaysSnapshot()
+                : (old.getPlanDurationMonthsSnapshot() != null ? old.getPlanDurationMonthsSnapshot() * 30 : totalDays);
+        int newDuration = newPlan.getDurationDays() != null ? newPlan.getDurationDays()
+                : (newPlan.getDurationMonths() != null ? newPlan.getDurationMonths() * 30 : totalDays);
+        if (newDuration < oldDuration) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Cannot upgrade to a package of shorter duration");
+        }
+
+        // PT assignment
+        PersonalTrainer pt = null;
+        boolean newHasPt = newPlan.getPtPackageType() != null && newPlan.getPtPackageType() != com.gymflow.domain.PtPackageType.NONE;
+        if (request.personalTrainerId() != null) {
+            subscriptionService.requireFeature(actor, AppFeature.PERSONAL_TRAINERS);
+            pt = pts.findByIdAndOrganizationId(request.personalTrainerId(), organization.getId())
+                    .filter(PersonalTrainer::isActive)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active personal trainer not found"));
+        } else if (old.getPersonalTrainer() != null && old.getPersonalTrainer().isActive() && newHasPt) {
+            pt = old.getPersonalTrainer();
+        }
+
+        String paymentMethod = (request.paymentMethod() == null || request.paymentMethod().isBlank()) ? "CASH"
+                : request.paymentMethod().trim().toUpperCase();
+        String transactionId = (request.transactionId() == null || request.transactionId().isBlank()) ? null
+                : request.transactionId().trim();
+
+        if (!"CASH".equalsIgnoreCase(paymentMethod) && !"OFFLINE".equalsIgnoreCase(paymentMethod)) {
+            if (transactionId == null || transactionId.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Transaction ID is required for online payments (" + paymentMethod + ")");
+            }
+        }
+
+        MembershipDto before = toMembershipDto(old);
+
+        // Mark old as UPGRADED
+        old.markUpgraded();
+
+        // Create new membership from today to old.getEndDate()
+        Membership upgraded = Membership.createUpgraded(
+                old.getMember(),
+                newPlan,
+                old.getBranch(),
+                today,
+                old.getEndDate(),
+                newPlan.getPrice(),
+                request.topUpPaid().setScale(2, RoundingMode.HALF_UP),
+                old,
+                pt,
+                paymentMethod,
+                transactionId);
+
+        Membership saved = memberships.save(upgraded);
+
+        actionHistory.record(actor, "MEMBERSHIP_UPGRADED", "MEMBERSHIP", saved.getId(), null,
+                before, toMembershipDto(saved));
+        return toMembershipDto(saved);
     }
 
     @Transactional(readOnly = true)
@@ -870,7 +1070,9 @@ public class GymService {
                 membership.getBranch() == null ? null : membership.getBranch().getName(),
                 membership.getStartDate(), membership.getEndDate(), membership.getListPrice(),
                 membership.getDiscountPercent(), membership.getAmountPaid(), membership.getStatus(),
-                membership.getRenewalStartDate(), membership.getCreatedAt(),
+                membership.getRenewalStartDate(),
+                membership.getUpgradedFrom() == null ? null : membership.getUpgradedFrom().getId(),
+                membership.getCreatedAt(),
                 lastActivityAt == null ? membership.getCreatedAt() : lastActivityAt, membership.getCancelledAt(),
                 membership.getPlanDurationMonthsSnapshot(), membership.getPlanDurationDaysSnapshot(), frozen,
                 membershipFreezes,
@@ -921,6 +1123,127 @@ public class GymService {
         );
         actionHistory.record(owner, "ORGANIZATION_BRANDING_UPDATED", "ORGANIZATION", org.getId(), null, before, after);
         return toUserDto(owner);
+    }
+
+    @Transactional(readOnly = true)
+    public TenantBackupDto exportBackup(String ownerEmail) {
+        UserAccount owner = account(ownerEmail);
+        GymOrganization org = requireOrganization(owner);
+        subscriptionService.requireFeature(owner, AppFeature.ACTION_HISTORY);
+
+        List<BranchDto> branchDtos = branches(ownerEmail, Role.OWNER);
+        List<PlanDto> planDtos = plans(ownerEmail, null);
+        List<MembershipDto> memberDtos = memberships(ownerEmail, Role.OWNER);
+        List<UserDto> staffDtos = staff(ownerEmail);
+        List<ActionHistoryDto> auditDtos = actionHistory.list(org.getId());
+
+        actionHistory.record(owner, "TENANT_BACKUP_DOWNLOADED", "ORGANIZATION", org.getId(),
+                "Downloaded full JSON data backup archive", null, null);
+
+        return new TenantBackupDto(
+                org.getId(),
+                org.getName(),
+                org.getCode(),
+                org.getSubscriptionTier(),
+                org.getSubscriptionStatus(),
+                Instant.now(),
+                owner.getEmail(),
+                branchDtos,
+                planDtos,
+                memberDtos,
+                staffDtos,
+                auditDtos
+        );
+    }
+
+    @Transactional
+    public BulkMemberImportResultDto bulkImportMembers(String ownerEmail, BulkMemberImportRequest request) {
+        UserAccount owner = account(ownerEmail);
+        GymOrganization org = requireOrganization(owner);
+        subscriptionService.requireFeature(owner, AppFeature.ACTION_HISTORY);
+
+        if (request == null || request.members() == null || request.members().isEmpty()) {
+            return new BulkMemberImportResultDto(0, 0, List.of("No member rows provided"));
+        }
+
+        SubscriptionTier tier = org.getSubscriptionTier() != null ? org.getSubscriptionTier() : SubscriptionTier.STANDARD;
+        long currentMembers = users.countByRoleAndOrganizationId(Role.MEMBER, org.getId());
+        if (currentMembers >= tier.maxMembers()) {
+            return new BulkMemberImportResultDto(request.members().size(), 0,
+                    List.of("Member roster limit reached (" + tier.maxMembers() + ") for " + tier.name() + " tier. Upgrade your subscription to import members."));
+        }
+
+        List<String> errors = new java.util.ArrayList<>();
+        int imported = 0;
+        List<GymBranch> allBranches = branches.findByOrganizationIdOrderByNameAsc(org.getId());
+        List<MembershipPlan> allPlans = plans.findByOrganizationIdOrderByPriceAsc(org.getId());
+
+        for (int i = 0; i < request.members().size(); i++) {
+            BulkMemberImportRow row = request.members().get(i);
+            int rowNum = i + 1;
+            try {
+                if (row.fullName() == null || row.fullName().isBlank()) {
+                    errors.add("Row " + rowNum + ": Member full name is required");
+                    continue;
+                }
+                if (row.email() == null || !row.email().contains("@")) {
+                    errors.add("Row " + rowNum + " (" + row.fullName() + "): Invalid email address");
+                    continue;
+                }
+                GymBranch branch = null;
+                if (row.branchCode() != null && !row.branchCode().isBlank()) {
+                    branch = allBranches.stream()
+                            .filter(b -> b.getCode().equalsIgnoreCase(row.branchCode().trim()))
+                            .findFirst().orElse(null);
+                }
+                if (branch == null) {
+                    branch = allBranches.stream().findFirst().orElse(null);
+                }
+                if (branch == null) {
+                    errors.add("Row " + rowNum + ": No active gym branch exists to assign member");
+                    continue;
+                }
+
+                MembershipPlan plan = null;
+                if (row.packageName() != null && !row.packageName().isBlank()) {
+                    plan = allPlans.stream()
+                            .filter(p -> p.getName().equalsIgnoreCase(row.packageName().trim()))
+                            .findFirst().orElse(null);
+                }
+                if (plan == null) {
+                    plan = allPlans.stream().findFirst().orElse(null);
+                }
+                if (plan == null) {
+                    errors.add("Row " + rowNum + ": No active membership package found");
+                    continue;
+                }
+
+                LocalDate startDate = row.startDate() != null ? row.startDate() : businessToday();
+                MembershipRegistrationRequest regReq = new MembershipRegistrationRequest(
+                        row.fullName().trim(),
+                        row.email().trim().toLowerCase(),
+                        row.phoneNumber() != null ? row.phoneNumber().trim() : "",
+                        "Member123!",
+                        plan.getId(),
+                        branch.getId(),
+                        null,
+                        BigDecimal.ZERO,
+                        startDate,
+                        null,
+                        row.paymentMethod() != null && !row.paymentMethod().isBlank() ? row.paymentMethod().trim() : "CASH",
+                        null
+                );
+                register(ownerEmail, Role.OWNER, regReq);
+                imported++;
+            } catch (Exception ex) {
+                errors.add("Row " + rowNum + " (" + (row.fullName() != null ? row.fullName() : "Unknown") + "): " + ex.getMessage());
+            }
+        }
+
+        actionHistory.record(owner, "BULK_MEMBERS_IMPORTED", "ORGANIZATION", org.getId(),
+                "Imported " + imported + " members from CSV batch", null, null);
+
+        return new BulkMemberImportResultDto(request.members().size(), imported, errors);
     }
 
     private BranchDto toBranchDto(GymBranch branch) {
@@ -1012,10 +1335,13 @@ public class GymService {
     }
 
     private void validatePtPlanConfig(PlanRequest request) {
+        if (request.price() == null || request.price().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Package price must be greater than zero");
+        }
         if (request.ptFeeIncluded() != null && request.price() != null
                 && request.ptFeeIncluded().compareTo(request.price()) > 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "PT fee component cannot exceed the package list price");
+                    "PT fee allocation (" + request.ptFeeIncluded() + ") cannot exceed total package price (" + request.price() + ")");
         }
         if (request.includedPtSessions() != null) {
             if (request.includedPtSessions() <= 0 || request.includedPtSessions() > 100) {

@@ -1,6 +1,7 @@
 package com.gymflow.domain;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
@@ -47,6 +48,9 @@ public class UpgradeRequest {
 
     @Column(length = 500)
     private String notes;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal estimatedTopUp;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -138,6 +142,14 @@ public class UpgradeRequest {
 
     public String getBillingAddress() {
         return billingAddress;
+    }
+
+    public BigDecimal getEstimatedTopUp() {
+        return estimatedTopUp;
+    }
+
+    public void setEstimatedTopUp(BigDecimal estimatedTopUp) {
+        this.estimatedTopUp = estimatedTopUp;
     }
 
     public String getNotes() {
