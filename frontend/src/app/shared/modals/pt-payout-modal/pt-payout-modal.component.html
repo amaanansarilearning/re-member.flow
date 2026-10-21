@@ -1,0 +1,45 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="renewal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="pt-payout-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">COMMISSION SETTLEMENT</p>
+        <h2 id="pt-payout-modal-title">Create Trainer Payout Batch</h2>
+        <p class="dialog-subtitle">{{ draft.ptName }}</p>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Close payout modal"
+        (click)="close.emit()"
+      >
+        ×
+      </button>
+    </div>
+    <form class="renewal-form" (ngSubmit)="submit.emit()">
+      <label>Period start date
+        <input name="payoutPeriodFrom" [(ngModel)]="draft.periodFrom" type="date" required>
+      </label>
+      <label>Period end date
+        <input name="payoutPeriodTo" [(ngModel)]="draft.periodTo" type="date" required>
+      </label>
+      <label><span class="field-label-text">Settlement remarks / reference <span class="label-note">OPTIONAL</span></span>
+        <textarea name="payoutNotes" [(ngModel)]="draft.notes" maxlength="500" rows="3" placeholder="e.g. Bank IMPS ref #12345 or monthly reconciliation"></textarea>
+      </label>
+      <p class="report-note">This bundles all unpaid completed sessions within this period for {{ draft.ptName }} into a new settlement batch.</p>
+      @if (error) { <p class="form-error" role="alert">{{ error }}</p> }
+      <div class="form-actions">
+        <button type="button" class="button button-quiet" (click)="close.emit()">Cancel</button>
+        <button type="submit" class="button button-dark" [disabled]="busy">
+          {{ busy ? 'Generating…' : 'Generate payout batch' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+

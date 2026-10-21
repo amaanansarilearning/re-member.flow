@@ -1,0 +1,670 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="upgrade-modal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="upgrade-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Pinned Header -->
+    <div class="upgrade-modal-header">
+      <div>
+        <span class="upgrade-brand-badge">★ COMMERCIAL SAAS LICENSING · {{ tierBadgeLabel(targetTier) }}</span>
+        <h2 id="upgrade-modal-title">Elevate Your Club with {{ tierDisplayName(targetTier) }}</h2>
+        <p class="dialog-subtitle">Unlock custom branding, digital receipt archiving, audit histories, and personal trainer economics</p>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Close upgrade modal"
+        (click)="close.emit()"
+      >
+        ×
+      </button>
+    </div>
+
+    <!-- Pinned Segmented Nav -->
+    <div class="upgrade-segmented-nav">
+      <div class="upgrade-segmented-track">
+        <button
+          type="button"
+          class="upgrade-segmented-btn"
+          [class.active]="tab === 'request'"
+          (click)="tabChange.emit('request')"
+        >
+          📝 Request License &amp; Invoice
+        </button>
+        <button
+          type="button"
+          class="upgrade-segmented-btn"
+          [class.active]="tab === 'compare'"
+          (click)="tabChange.emit('compare')"
+        >
+          📊 Compare All Plans
+        </button>
+        <button
+          type="button"
+          class="upgrade-segmented-btn"
+          [class.active]="tab === 'redeem'"
+          (click)="tabChange.emit('redeem')"
+        >
+          🔑 Redeem Activation Key
+        </button>
+      </div>
+    </div>
+
+    <!-- Scrollable Content Body -->
+    <div class="upgrade-modal-scroll-body">
+      @if (tab === 'request') {
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+          <button type="button" class="button button-quiet" style="font-size: 11.5px; padding: 4px 10px;" (click)="tabChange.emit('compare')">
+            📊 Compare All Plan Features Side-by-Side →
+          </button>
+        </div>
+        @if (pendingRequest) {
+          <div class="pending-request-notice" style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: var(--r-md); padding: 14px 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="font-size: 16px;">⏳</span>
+              <strong style="color: #f59e0b; font-size: 13.5px;">{{ pendingRequest.targetTier || 'PRO' }} License Request In Review (REQ-{{ pendingRequest.id }})</strong>
+              <span class="badge badge-warning" style="margin-left: auto; font-size: 10px;">PENDING VERIFICATION</span>
+            </div>
+            <p style="margin: 0 0 8px; font-size: 12px; color: var(--muted); line-height: 1.45;">
+              Plan: <strong style="color: var(--text);">{{ pendingRequest.billingPlanName }}</strong> · Payment Mode: <strong style="color: var(--text);">{{ pendingRequest.paymentMethod }}</strong>
+            </p>
+            <p style="margin: 0; font-size: 11.5px; color: var(--muted); line-height: 1.45;">
+              Our billing accounts team is verifying your payment receipt. Have you already received your code?
+              <a href="javascript:void(0)" (click)="tabChange.emit('redeem')" style="color: var(--primary); font-weight: 700; margin-left: 4px; text-decoration: underline;">Switch to Redeem Key →</a>
+            </p>
+          </div>
+        }
+
+        <div class="upgrade-highlight-banner">
+          <span class="highlight-icon">⭐</span>
+          <div>
+            @if (targetTier === 'STARTER') {
+              <strong>White-Label Gym Branding (Starter Plan)</strong>
+              <p>Upgrade to upload your custom gym logo, replace SaaS branding, and white-label your gym name across the entire software interface.</p>
+            } @else if (targetTier === 'PRO') {
+              <strong>Pro Power: Receipts &amp; Audit Trail (Pro Plan)</strong>
+              <p>Includes Starter features plus member payment receipt photo uploads, receipt management, and full real-time action audit trail logs.</p>
+            } @else {
+              <strong>Enterprise Suite: Personal Trainers &amp; Analytics (Enterprise Plan)</strong>
+              <p>Includes Pro features plus personal trainer rosters, trainee scheduling, session attendance PINs, commission split economics, and executive business analytics.</p>
+            }
+          </div>
+        </div>
+
+        <!-- Step 1: Target Tier Selection -->
+        <div>
+          <label style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: block;">
+            1. Choose Subscription Tier
+          </label>
+          <div class="tier-select-grid">
+            <button
+              type="button"
+              class="tier-card"
+              [class.selected]="targetTier === 'STARTER'"
+              (click)="targetTierChange.emit('STARTER')"
+            >
+              <div class="tier-card-head">
+                <div class="plan-radio-indicator" [class.active]="targetTier === 'STARTER'"></div>
+                <strong class="tier-card-title">⭐ Starter</strong>
+              </div>
+              <p class="tier-card-caps">1 Branch · 250 Members · 5 Staff Logins</p>
+              <span class="tier-card-feature">Custom Logo &amp; Gym Branding</span>
+              <div class="tier-card-price">From <strong>₹833</strong><small>/mo</small></div>
+            </button>
+
+            <button
+              type="button"
+              class="tier-card"
+              [class.selected]="targetTier === 'PRO'"
+              (click)="targetTierChange.emit('PRO')"
+            >
+              <span class="plan-badge">POPULAR</span>
+              <div class="tier-card-head">
+                <div class="plan-radio-indicator" [class.active]="targetTier === 'PRO'"></div>
+                <strong class="tier-card-title">⚡ Pro</strong>
+              </div>
+              <p class="tier-card-caps">1 Branch · 1,000 Members · 15 Staff Logins</p>
+              <span class="tier-card-feature">Receipt Uploads &amp; Audit Trail</span>
+              <div class="tier-card-price">From <strong>₹2,000</strong><small>/mo</small></div>
+            </button>
+
+            <button
+              type="button"
+              class="tier-card"
+              [class.selected]="targetTier === 'ENTERPRISE'"
+              (click)="targetTierChange.emit('ENTERPRISE')"
+            >
+              <span class="plan-badge enterprise-badge">ALL UNLIMITED</span>
+              <div class="tier-card-head">
+                <div class="plan-radio-indicator" [class.active]="targetTier === 'ENTERPRISE'"></div>
+                <strong class="tier-card-title">👑 Enterprise</strong>
+              </div>
+              <p class="tier-card-caps">Multi-Branch · Unlimited Members &amp; Staff</p>
+              <span class="tier-card-feature">PT Economics &amp; Executive Analytics</span>
+              <div class="tier-card-price">From <strong>₹3,333</strong><small>/mo</small></div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Plan Term Selection Cards -->
+        <div>
+          <label style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: block;">
+            2. Select Billing Term
+          </label>
+          <div class="billing-plans-grid">
+            <div
+              class="plan-select-card"
+              [class.selected]="billingPlan === 'ANNUAL'"
+              (click)="billingPlanChange.emit('ANNUAL')"
+            >
+              <span class="plan-badge">BEST VALUE · SAVE 33%</span>
+              <div class="plan-radio-indicator" [class.active]="billingPlan === 'ANNUAL'"></div>
+              <span class="plan-name">Annual {{ tierDisplayName(targetTier) }}</span>
+              <div class="plan-price">
+                {{ targetTier === 'STARTER' ? '₹9,999' : (targetTier === 'ENTERPRISE' ? '₹39,999' : '₹24,000') }}
+              </div>
+              <span class="plan-term">365 Days Unlocked</span>
+              <span class="plan-equiv">
+                {{ targetTier === 'STARTER' ? '₹833 / mo' : (targetTier === 'ENTERPRISE' ? '₹3,333 / mo' : '₹2,000 / mo') }}
+              </span>
+            </div>
+
+            <div
+              class="plan-select-card"
+              [class.selected]="billingPlan === 'HALF_YEAR'"
+              (click)="billingPlanChange.emit('HALF_YEAR')"
+            >
+              <div class="plan-radio-indicator" [class.active]="billingPlan === 'HALF_YEAR'"></div>
+              <span class="plan-name">Half-Year {{ tierDisplayName(targetTier) }}</span>
+              <div class="plan-price">
+                {{ targetTier === 'STARTER' ? '₹5,999' : (targetTier === 'ENTERPRISE' ? '₹22,999' : '₹14,000') }}
+              </div>
+              <span class="plan-term">180 Days Unlocked</span>
+              <span class="plan-equiv">
+                {{ targetTier === 'STARTER' ? '₹1,000 / mo' : (targetTier === 'ENTERPRISE' ? '₹3,833 / mo' : '₹2,333 / mo') }}
+              </span>
+            </div>
+
+            <div
+              class="plan-select-card"
+              [class.selected]="billingPlan === 'MONTHLY'"
+              (click)="billingPlanChange.emit('MONTHLY')"
+            >
+              <div class="plan-radio-indicator" [class.active]="billingPlan === 'MONTHLY'"></div>
+              <span class="plan-name">Monthly {{ tierDisplayName(targetTier) }}</span>
+              <div class="plan-price">
+                {{ targetTier === 'STARTER' ? '₹1,199' : (targetTier === 'ENTERPRISE' ? '₹4,499' : '₹2,999') }}
+              </div>
+              <span class="plan-term">30 Days Unlocked</span>
+              <span class="plan-equiv">Flexible Renewal</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Dynamic Live Quote / Order Summary -->
+        <div class="upgrade-quote-summary">
+          <div class="quote-heading">
+            <span>3. Commercial Quote Summary</span>
+            <span style="color: var(--primary);">B2B SaaS License</span>
+          </div>
+
+          @if (quote) {
+            <div class="saas-prorata-banner">
+              <div class="saas-prorata-header">
+                <span class="saas-prorata-tag">⚡ PRO-RATA UPGRADE CREDIT</span>
+                <span class="saas-prorata-days">{{ quote.remainingDays }} days remaining in current billing cycle</span>
+              </div>
+              <div class="saas-prorata-body">
+                <div>
+                  <span>Current Rate ({{ quote.currentTier }})</span>
+                  <strong>{{ money(quote.currentMonthlyPrice) }}/mo</strong>
+                </div>
+                <div>
+                  <span>Target Rate ({{ quote.targetTier }})</span>
+                  <strong>{{ money(quote.targetMonthlyPrice) }}/mo</strong>
+                </div>
+                <div class="saas-prorata-highlight">
+                  <span>Estimated Mid-Cycle Top-Up:</span>
+                  <strong class="saas-topup-val">{{ money(quote.estimatedTopUp) }}</strong>
+                </div>
+              </div>
+            </div>
+          }
+
+          <div class="quote-row">
+            <span>Selected Plan:</span>
+            <strong>{{ billingPlan === 'ANNUAL' ? 'Annual ' + tierDisplayName(targetTier) + ' (365 Days)' : billingPlan === 'HALF_YEAR' ? 'Half-Year ' + tierDisplayName(targetTier) + ' (180 Days)' : 'Monthly ' + tierDisplayName(targetTier) + ' (30 Days)' }}</strong>
+          </div>
+          <div class="quote-row">
+            <span>Effective Monthly Rate:</span>
+            <span>{{ quoteMonthlyEquivalent }}</span>
+          </div>
+          <div class="quote-row">
+            <span>Applicable GST (18%):</span>
+            <span>Included in License Fee</span>
+          </div>
+          <div class="quote-row">
+            <span>Estimated Tier Validity:</span>
+            <span>Valid through {{ quoteEstimatedExpiry }}</span>
+          </div>
+          <div class="quote-row" style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border);">
+            <strong style="color: var(--ink);">Total Payable Amount:</strong>
+            <span class="quote-total">{{ money(quoteAmount) }}</span>
+          </div>
+        </div>
+
+        <!-- Payment Method & Wire Details Form -->
+        <div>
+          <label style="font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; display: block;">
+            4. Payment &amp; Invoicing Details
+          </label>
+          <div class="upgrade-form-grid">
+            <label><span class="field-label-text">Settlement Method <span class="req-star">*</span></span>
+              <select [ngModel]="paymentMethod" (ngModelChange)="paymentMethodChange.emit($event)">
+                <option value="BANK_WIRE">Direct Bank Wire (NEFT / RTGS)</option>
+                <option value="UPI_QR">Corporate UPI / QR Payment</option>
+                <option value="CORPORATE_INVOICE">Corporate Cheque / Purchase Order</option>
+              </select>
+            </label>
+            <label><span class="field-label-text">GSTIN / Tax ID <span class="label-note">OPTIONAL</span></span>
+              <input
+                type="text"
+                [ngModel]="gstNumber"
+                (ngModelChange)="gstNumberChange.emit($event)"
+                placeholder="e.g. 29ABCDE1234F1Z5"
+                maxlength="30"
+              />
+            </label>
+          </div>
+
+          <!-- SaaS Settlement Accounts Box -->
+          <div class="settlement-account-card" style="margin: 12px 0 16px;">
+            <div class="settlement-title">
+              <span>🏦</span>
+              <span>Direct Wire &amp; UPI Settlement Accounts</span>
+            </div>
+            <div class="settlement-grid">
+              <div class="settlement-item">
+                <span>Beneficiary:</span>
+                <span class="item-val">GymFlow Cloud Inc</span>
+              </div>
+              <div class="settlement-item">
+                <span>Account No:</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span class="item-val">9876543210</span>
+                  <button type="button" class="copy-btn" [class.copied]="copiedField === 'acc'" (click)="copySettlement('acc', '9876543210')">
+                    {{ copiedField === 'acc' ? '✓ Copied' : 'Copy' }}
+                  </button>
+                </div>
+              </div>
+              <div class="settlement-item">
+                <span>IFSC Code:</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span class="item-val">HDFC0001234</span>
+                  <button type="button" class="copy-btn" [class.copied]="copiedField === 'ifsc'" (click)="copySettlement('ifsc', 'HDFC0001234')">
+                    {{ copiedField === 'ifsc' ? '✓ Copied' : 'Copy' }}
+                  </button>
+                </div>
+              </div>
+              <div class="settlement-item">
+                <span>UPI ID:</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span class="item-val">billing@gymflow</span>
+                  <button type="button" class="copy-btn" [class.copied]="copiedField === 'upi'" (click)="copySettlement('upi', 'billing@gymflow')">
+                    {{ copiedField === 'upi' ? '✓ Copied' : 'Copy' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p style="margin: 8px 0 0; font-size: 11px; color: var(--muted); line-height: 1.4;">
+              💡 Reference your gym name <strong style="color: var(--primary);">{{ user?.organizationName || 'your club' }}</strong> in payment narration.
+            </p>
+          </div>
+
+          <div class="upgrade-field-group">
+            <label><span class="field-label-text">Billing &amp; Invoicing Address <span class="label-note">OPTIONAL</span></span>
+              <input
+                type="text"
+                [ngModel]="billingAddress"
+                (ngModelChange)="billingAddressChange.emit($event)"
+                placeholder="Registered business address to include on invoice receipt"
+                maxlength="200"
+              />
+            </label>
+
+            <label><span class="field-label-text">Payment Reference / UTR # or Billing Notes <span class="label-note">OPTIONAL</span></span>
+              <textarea
+                [ngModel]="notes"
+                (ngModelChange)="notesChange.emit($event)"
+                placeholder="Enter NEFT/RTGS UTR reference number, bank branch, or special billing requirements..."
+                rows="2"
+                maxlength="500"
+              ></textarea>
+            </label>
+          </div>
+        </div>
+      }
+
+      @if (tab === 'compare') {
+        <div class="plan-comparison-container" style="margin: 0; padding: 4px 0 16px;">
+          <div class="comparison-header">
+            <h3 class="comparison-title">Compare All Club Licensing Tiers</h3>
+            <p class="comparison-subtitle">
+              Choose the perfect tier for your gym. You can switch between tiers mid-cycle anytime with automatic pro-rata top-up credits.
+            </p>
+          </div>
+
+          <div class="billing-cycle-toggle-wrapper">
+            <div class="toggle-pill-btn" role="group" aria-label="Billing cycle toggle">
+              <button
+                type="button"
+                [class.active]="billingPlan === 'ANNUAL'"
+                (click)="billingPlanChange.emit('ANNUAL')"
+              >
+                Annual (Best Value)
+              </button>
+              <button
+                type="button"
+                [class.active]="billingPlan === 'MONTHLY'"
+                (click)="billingPlanChange.emit('MONTHLY')"
+              >
+                Monthly Billing
+              </button>
+            </div>
+            @if (billingPlan === 'ANNUAL') {
+              <span class="save-badge">SAVE >30%</span>
+            }
+          </div>
+
+          <div class="comparison-table-wrapper">
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>Features &amp; Capabilities</th>
+                  <th>
+                    <span class="tier-name">Standard</span>
+                    <span class="tier-price">Free</span>
+                    <span class="tier-period">Core floor essentials</span>
+                  </th>
+                  <th [class.highlight-col]="targetTier === 'STARTER'">
+                    <span class="tier-name">Starter</span>
+                    <span class="tier-price">{{ billingPlan === 'ANNUAL' ? '₹833' : '₹1,199' }}</span>
+                    <span class="tier-period">per month</span>
+                    <button
+                      type="button"
+                      class="tier-select-btn"
+                      [class.btn-primary-tier]="targetTier === 'STARTER'"
+                      (click)="selectTier('STARTER')"
+                    >
+                      {{ targetTier === 'STARTER' ? 'Selected ✓' : 'Select Starter' }}
+                    </button>
+                  </th>
+                  <th [class.highlight-col]="targetTier === 'PRO'">
+                    <span class="tier-name">Professional</span>
+                    <span class="tier-price">{{ billingPlan === 'ANNUAL' ? '₹2,000' : '₹2,999' }}</span>
+                    <span class="tier-period">per month</span>
+                    <button
+                      type="button"
+                      class="tier-select-btn"
+                      [class.btn-primary-tier]="targetTier === 'PRO'"
+                      (click)="selectTier('PRO')"
+                    >
+                      {{ targetTier === 'PRO' ? 'Selected ✓' : 'Select Pro' }}
+                    </button>
+                  </th>
+                  <th [class.highlight-col]="targetTier === 'ENTERPRISE'">
+                    <span class="tier-name">Enterprise</span>
+                    <span class="tier-price">{{ billingPlan === 'ANNUAL' ? '₹3,333' : '₹4,499' }}</span>
+                    <span class="tier-period">per month</span>
+                    <button
+                      type="button"
+                      class="tier-select-btn"
+                      [class.btn-primary-tier]="targetTier === 'ENTERPRISE'"
+                      (click)="selectTier('ENTERPRISE')"
+                    >
+                      {{ targetTier === 'ENTERPRISE' ? 'Selected ✓' : 'Select Enterprise' }}
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="category-row"><td colspan="5">1. Facility &amp; Capacity Management</td></tr>
+                <tr>
+                  <td>Branches / Club Locations<span class="feat-desc">Physical facilities managed</span></td>
+                  <td>1 Branch</td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'">1 Branch</td>
+                  <td [class.highlight-col]="targetTier === 'PRO'">Up to 3 Branches</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'">Unlimited Locations</td>
+                </tr>
+                <tr>
+                  <td>Branch Active / Inactive Status<span class="feat-desc">Temporarily pause club locations</span></td>
+                  <td><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Maximum Active Members<span class="feat-desc">Concurrently enrolled gym members</span></td>
+                  <td>Up to 100</td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'">Up to 300</td>
+                  <td [class.highlight-col]="targetTier === 'PRO'">Up to 1,000</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'">Unlimited</td>
+                </tr>
+                <tr>
+                  <td>Operator &amp; Staff Accounts<span class="feat-desc">Staff accounts with login permissions</span></td>
+                  <td>Up to 3</td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'">Up to 10</td>
+                  <td [class.highlight-col]="targetTier === 'PRO'">Unlimited</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'">Unlimited</td>
+                </tr>
+                <tr>
+                  <td>Staff Details &amp; Password Management<span class="feat-desc">Edit operator credentials &amp; branches</span></td>
+                  <td><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Custom Branding &amp; Logo<span class="feat-desc">Club logo &amp; receipt customization</span></td>
+                  <td><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="check-icon">✓</span> Name &amp; Logo</td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span> Full White-Label</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span> Custom Domain &amp; Themes</td>
+                </tr>
+
+                <tr class="category-row"><td colspan="5">2. Membership &amp; Workflow Automation</td></tr>
+                <tr>
+                  <td>Membership Packages<span class="feat-desc">Term lengths, pricing, and multi-tier plans</span></td>
+                  <td>Basic 3 Plans</td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'">Unlimited Plans</td>
+                  <td [class.highlight-col]="targetTier === 'PRO'">Unlimited Plans</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'">Unlimited Plans</td>
+                </tr>
+                <tr>
+                  <td>Member Check-In &amp; PIN Validation<span class="feat-desc">Real-time attendance &amp; access status</span></td>
+                  <td><span class="check-icon">✓</span> Basic</td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="check-icon">✓</span> Real-Time Guard</td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span> Real-Time Guard</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span> Real-Time Guard</td>
+                </tr>
+                <tr>
+                  <td>Pro-Rata Mid-Cycle Package Upgrades<span class="feat-desc">Credit unused days toward higher plan</span></td>
+                  <td><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Membership Freeze &amp; Term Adjustment<span class="feat-desc">Pause memberships with automated end-date extension</span></td>
+                  <td><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="check-icon">✓</span> Included</td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span> Included</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span> Included</td>
+                </tr>
+                <tr>
+                  <td>Advance Renewal Scheduling<span class="feat-desc">Continuous member renewal without gaps</span></td>
+                  <td><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span></td>
+                </tr>
+
+                <tr class="category-row"><td colspan="5">3. Personal Training (PT) &amp; Economics</td></tr>
+                <tr>
+                  <td>Personal Trainer Profiles &amp; Specialties<span class="feat-desc">Manage trainer roster &amp; rates</span></td>
+                  <td><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span> Full Suite</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span> Full Suite</td>
+                </tr>
+                <tr>
+                  <td>Trainer Commission Rate Snapshots<span class="feat-desc">Locked percentage &amp; hourly allocations</span></td>
+                  <td><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span> Auto Snapshots</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span> Auto Snapshots</td>
+                </tr>
+                <tr>
+                  <td>Trainer Settlement &amp; Payout Batches<span class="feat-desc">Commission payout run generation</span></td>
+                  <td><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span> Batch Generation</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span> Multi-Branch Batches</td>
+                </tr>
+                <tr>
+                  <td>PT Session Booking &amp; Attendance Tracking<span class="feat-desc">Real-time session tracker</span></td>
+                  <td><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span> Included</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span> Included</td>
+                </tr>
+
+                <tr class="category-row"><td colspan="5">4. Invoicing, Data &amp; Security</td></tr>
+                <tr>
+                  <td>Digital Tax Invoices &amp; PDF Receipts<span class="feat-desc">Compliant receipts with GSTIN &amp; numbering</span></td>
+                  <td><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span> PDF Invoicing</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span> PDF Invoicing</td>
+                </tr>
+                <tr>
+                  <td>Member CSV Export &amp; Backup<span class="feat-desc">Export member records to spreadsheet</span></td>
+                  <td><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span></td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span></td>
+                </tr>
+                <tr>
+                  <td>Action History &amp; Audit Logs<span class="feat-desc">Complete immutable record of operations</span></td>
+                  <td><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'"><span class="cross-icon">—</span></td>
+                  <td [class.highlight-col]="targetTier === 'PRO'"><span class="check-icon">✓</span> Complete Trail</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'"><span class="check-icon">✓</span> Complete Trail &amp; Export</td>
+                </tr>
+
+                <tr class="category-row"><td colspan="5">5. Support &amp; SLA Commitment</td></tr>
+                <tr>
+                  <td>Dedicated Support Channels<span class="feat-desc">Assistance channels</span></td>
+                  <td>Docs &amp; Community</td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'">Priority Email</td>
+                  <td [class.highlight-col]="targetTier === 'PRO'">Live Chat &amp; WhatsApp</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'">24/7 Dedicated Manager</td>
+                </tr>
+                <tr>
+                  <td>Response Turnaround SLA<span class="feat-desc">Maximum first-response time</span></td>
+                  <td>48 Hours</td>
+                  <td [class.highlight-col]="targetTier === 'STARTER'">24 Hours</td>
+                  <td [class.highlight-col]="targetTier === 'PRO'">4 Hours</td>
+                  <td [class.highlight-col]="targetTier === 'ENTERPRISE'">1 Hour Guaranteed</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+
+      @if (tab === 'redeem') {
+        <div class="voucher-redemption-card">
+          <div style="text-align: center;">
+            <span style="font-size: 28px; line-height: 1; display: block; margin-bottom: 6px;">🔑</span>
+            <strong style="font-size: 14.5px; color: var(--ink); display: block; margin-bottom: 4px;">
+              Enter Commercial License Voucher
+            </strong>
+            <p style="margin: 0 auto; font-size: 12.5px; color: var(--muted); max-width: 480px; line-height: 1.45;">
+              Enter the single-use cryptographic voucher key delivered to your billing email (format: <code style="color: var(--primary); font-weight: 700;">GF-PRO-XXXX-XXXX</code>).
+            </p>
+          </div>
+
+          <div class="voucher-input-wrapper">
+            <input
+              type="text"
+              class="voucher-key-input"
+              [ngModel]="redeemCode"
+              (ngModelChange)="redeemCodeChange.emit($event)"
+              placeholder="GF-PRO-XXXX-XXXX"
+              maxlength="30"
+              autofocus
+            />
+            <button type="button" class="voucher-paste-btn" (click)="pasteRedeem()">
+              <span>📋</span> Paste from Clipboard
+            </button>
+          </div>
+
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--r-md); padding: 12px 14px; text-align: left;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
+              <span style="color: #10b981; font-size: 13px;">🛡️</span>
+              <strong style="color: #10b981; font-size: 12px;">Zero-Data-Loss &amp; Cumulative Extension Guarantee</strong>
+            </div>
+            <p style="margin: 0; font-size: 11.5px; color: var(--muted); line-height: 1.4;">
+              Redeeming a license never alters or resets existing data. If your gym already has active days, this key extends your validity duration cumulatively without overlap waste.
+            </p>
+          </div>
+        </div>
+      }
+
+      @if (error) {
+        <p class="form-error" role="alert" style="margin: 0;">{{ error }}</p>
+      }
+    </div>
+
+    <!-- Pinned Footer -->
+    <div class="upgrade-modal-footer">
+      <div class="footer-trust">
+        <span>🔒</span>
+        <span>256-bit Encrypted · B2B Enterprise Invoicing</span>
+      </div>
+      <div class="footer-actions">
+        <button type="button" class="button button-outline" (click)="close.emit()">Cancel</button>
+        @if (tab === 'request') {
+          @if (user?.role === 'OWNER') {
+            <button
+              type="button"
+              class="button upgrade-cta-btn"
+              [disabled]="submitting || !!pendingRequest"
+              (click)="submitUpgrade.emit()"
+            >
+              {{ submitting ? 'Submitting Request…' : pendingRequest ? 'Request In Review' : 'Submit Upgrade & Invoice Request →' }}
+            </button>
+          } @else {
+            <button type="button" class="button button-outline" disabled title="Only gym owners can request upgrades">
+              Owner Authorization Required
+            </button>
+          }
+        } @else {
+          <button
+            type="button"
+            class="button upgrade-cta-btn"
+            [disabled]="redeeming || !redeemCode.trim()"
+            (click)="submitRedeem.emit()"
+          >
+            {{ redeeming ? 'Validating Voucher…' : '✓ Validate &amp; Activate PRO Key' }}
+          </button>
+        }
+      </div>
+    </div>
+  </section>
+</div>
+

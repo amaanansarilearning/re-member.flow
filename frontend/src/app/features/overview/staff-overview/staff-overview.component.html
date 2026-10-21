@@ -1,0 +1,305 @@
+        <section class="page-content staff-frontdesk-hub">
+          <div class="page-heading overview-heading">
+            <div>
+              <p class="eyebrow"><span class="overview-live-dot"></span> FRONT DESK OPERATIONS · {{ todayLabel }}</p>
+              <h1>Welcome, {{ firstName() }}.</h1>
+              <p class="page-subtitle">Front Desk Hub for {{ user!.branchName || 'your assigned location' }}. Verify member access and process renewals.</p>
+            </div>
+            <div class="dashboard-heading-actions">
+              <div class="branch-pill-active">
+                <span><i aria-hidden="true">📍</i> ASSIGNED FACILITY</span>
+                <strong>{{ user!.branchName || 'Central Branch' }}</strong>
+              </div>
+              <div class="overview-actions-wrap">
+                <button class="overview-refresh-btn" type="button" (click)="refreshOverview.emit()" title="Refresh metrics" [disabled]="busy">
+                  <span class="refresh-spin" aria-hidden="true">↻</span> Refresh
+                </button>
+                <button class="button button-lime overview-add-button" type="button" (click)="navigate.emit('register')">
+                  <span aria-hidden="true">＋</span> Register Member <span class="button-arrow" aria-hidden="true">↗</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Front Desk Quick Launch Strip -->
+          <div class="overview-quick-launch-strip" aria-label="Quick operations">
+            <button type="button" class="quick-launch-chip primary-ql" (click)="focusQuickAccess.emit()" title="Jump to Front Desk Check-in">
+              <span class="ql-icon">⚡</span> Verify Facility Access
+            </button>
+            <button type="button" class="quick-launch-chip" (click)="navigate.emit('members'); setMemberFilter.emit('expiring')">
+              <span class="ql-icon">⏰</span> Ending Terms ({{ expiringMembersCount }})
+            </button>
+            <button type="button" class="quick-launch-chip" (click)="navigate.emit('packages')">
+              <span class="ql-icon">📦</span> Packages Catalog ({{ activePlans.length }})
+            </button>
+            <button type="button" class="quick-launch-chip" (click)="navigate.emit('register')">
+              <span class="ql-icon">＋</span> Enroll New Member
+            </button>
+          </div>
+
+          <!-- Front Desk Quick Access Verification Bar -->
+          <div class="overview-checkin-bar">
+            <div class="checkin-search-box">
+              <span class="checkin-search-icon">⚡</span>
+              <input
+                type="text"
+                [ngModel]="quickAccessQuery" (ngModelChange)="onQuickAccessQueryChange($event)"
+                (keyup.enter)="checkQuickAccess.emit()"
+                placeholder="Front Desk Quick Check-in: type member name or email and press Enter to verify facility access…"
+                aria-label="Quick check-in member search"
+              />
+              @if (quickAccessQuery) {
+                <button type="button" class="checkin-clear-btn" (click)="clearQuickAccess.emit()">✕</button>
+              }
+              <button type="button" class="checkin-submit-btn" (click)="checkQuickAccess.emit()" [disabled]="!quickAccessQuery.trim()">
+                Verify Access
+              </button>
+            </div>
+            @if (quickAccessMember; as member) {
+              @if (accessResults[member.id]; as access) {
+                <div class="checkin-result-card" [class.allowed]="access.allowed" [class.denied]="!access.allowed">
+                  <div class="checkin-result-icon">{{ access.allowed ? '✓' : '✕' }}</div>
+                  <div class="checkin-result-info">
+                    <div class="checkin-result-headline">
+                      <strong>{{ access.allowed ? 'ACCESS GRANTED' : 'ACCESS DENIED' }}</strong>
+                      <span>· {{ member.memberName }}</span>
+                      <span class="checkin-plan-tag">{{ member.planName }}</span>
+                    </div>
+                    <p class="checkin-result-msg">{{ access.message }} · Valid through {{ dateLabel(member.endDate) }} ({{ termDaysRemainingLabel(member) }})</p>
+                    @if (member.personalTrainerName) {
+                      <span class="checkin-pt-tag">⚡ Trainer: {{ member.personalTrainerName }} ({{ member.ptSessionsUsed }}/{{ member.ptSessionsIncluded }} sessions)</span>
+                    }
+                  </div>
+                  <div class="checkin-result-actions">
+                    @if (!access.allowed || canRenewMembership(member)) {
+                      <button type="button" class="checkin-renew-btn" (click)="openRenewal.emit(member)">
+                        Renew Membership →
+                      </button>
+                    }
+                    <button type="button" class="checkin-dismiss-btn" (click)="clearQuickAccess.emit()">Done</button>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+
+          <!-- Front Desk Operational KPI Cards -->
+          <div class="metric-grid overview-metrics">
+            <article class="metric-card">
+              <div class="metric-top">
+                <span>IN-TERM MEMBERS</span><span class="metric-icon green">◎</span>
+              </div>
+              <strong class="metric-value">{{ activeMembersCount }}</strong>
+              <div class="metric-foot">
+                <span class="metric-note">Active at {{ user!.branchName || 'your branch' }}</span>
+              </div>
+              <div class="metric-bottom-line">
+                <span>TOTAL MEMBERS</span>
+                <strong>{{ membershipTotal }}</strong>
+              </div>
+            </article>
+
+            <article class="metric-card expiry-card">
+              <div class="metric-top">
+                <span>TERMS ENDING IN 7 DAYS</span><span class="metric-icon orange">⌁</span>
+              </div>
+              <strong class="metric-value">{{ expiringMembersCount }}</strong>
+              <button class="text-link metric-action" type="button" (click)="navigate.emit('members'); setMemberFilter.emit('expiring')">
+                Review ending terms <span>→</span>
+              </button>
+              <span class="metric-footnote">Scheduled for renewal or follow-up</span>
+            </article>
+
+            <article class="metric-card">
+              <div class="metric-top">
+                <span>AVAILABLE PACKAGES</span><span class="metric-icon">📦</span>
+              </div>
+              <strong class="metric-value">{{ activePlans.length }}</strong>
+              <div class="metric-foot">
+                <span class="metric-note">Active packages for new enrollments</span>
+              </div>
+              <button class="text-link metric-action" type="button" (click)="navigate.emit('packages')">
+                View catalog <span>→</span>
+              </button>
+            </article>
+
+            <article class="metric-card">
+              <div class="metric-top">
+                <span>PERSONAL TRAINERS</span><span class="metric-icon" style="color: var(--accent);">⚡</span>
+              </div>
+              <strong class="metric-value">{{ personalTrainers.length }}</strong>
+              <div class="metric-foot">
+                <span class="metric-note">Trainers available for assignment</span>
+              </div>
+              <div class="metric-bottom-line">
+                <span>ROSTER</span>
+                <strong>Certified Coaches</strong>
+              </div>
+            </article>
+          </div>
+
+          <!-- Front Desk Grid: Recent Enrollments + Renewal Watch -->
+          <div class="content-grid overview-content-grid">
+            <section class="panel member-panel overview-table-panel">
+              <div class="panel-heading overview-panel-header">
+                <div>
+                  <p class="eyebrow"><span class="overview-live-dot" style="margin-right: 6px;"></span> LOCATION DIRECTORY</p>
+                  <h2>Recent Members at {{ user!.branchName || 'This Branch' }}</h2>
+                </div>
+                <button class="overview-view-all-btn" type="button" (click)="navigate.emit('members')">
+                  Open Directory <span>→</span>
+                </button>
+              </div>
+              @if (staffRecentMembersList.length || membershipGroups.length) {
+                <div class="table-wrap">
+                  <table class="overview-table">
+                    <thead>
+                      <tr>
+                        <th>MEMBER</th>
+                        <th>PACKAGE</th>
+                        <th>VALIDITY TERM</th>
+                        <th>STATUS & ACCESS</th>
+                        <th>QUICK ACTION</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (member of (staffRecentMembersList.length ? staffRecentMembersList : dashboardMembers).slice(0, 6); track member.id) {
+                        <tr>
+                          <td>
+                            <div class="overview-member-cell">
+                              <span class="overview-avatar">{{ initials(member.memberName) }}</span>
+                              <div class="overview-member-info">
+                                <strong class="overview-member-name">{{ member.memberName }}</strong>
+                                <small class="overview-member-email" (click)="onCopy(member.email, 'Email copied: ' + member.email)" title="Click to copy email" style="cursor: pointer;">{{ member.email }}</small>
+                                @if (member.personalTrainerName) {
+                                  <span class="row-pt-badge">⚡ {{ member.personalTrainerName }}</span>
+                                }
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span class="package-badge-tag">{{ member.planName }}</span>
+                          </td>
+                          <td>
+                            <span class="term-date-label">{{ dateLabel(member.startDate) }} – {{ dateLabel(member.endDate) }}</span>
+                            <span class="term-days-tag">{{ termDaysRemainingLabel(member) }}</span>
+                          </td>
+                          <td>
+                            <span
+                              class="status-pill"
+                              [class.status-frozen]="member.frozen"
+                              [class.status-expiring]="isMemberExpiring(member)"
+                              [class.status-upcoming]="isUpcoming(member.startDate)"
+                              [class.status-renewed]="member.renewalStartDate !== null"
+                              [class.status-inactive]="member.status !== 'ACTIVE' || isExpired(member.endDate)"
+                            >
+                              {{ member.frozen ? 'Frozen' : memberStatus(member) }}
+                            </span>
+                            @if (accessResults[member.id]; as access) {
+                              <span class="table-access-pill" [class.granted]="access.allowed" [class.denied]="!access.allowed" style="margin-top: 4px; display: inline-flex;">
+                                {{ access.allowed ? '✓ Access OK' : '✕ Denied' }}
+                              </span>
+                            } @else {
+                              <button
+                                class="access-check-chip"
+                                type="button"
+                                (click)="checkMembershipAccess.emit(member)"
+                                title="Check facility access status"
+                                style="margin-top: 4px; display: inline-flex;"
+                              >
+                                Check Access
+                              </button>
+                            }
+                          </td>
+                          <td>
+                            <div style="display: flex; gap: 4px; align-items: center;">
+                              @if (canUpgradeMembership(member)) {
+                                <button class="row-renew-btn row-upgrade-btn" type="button" (click)="openMemberUpgradeModal.emit(member)" title="Upgrade package mid-cycle">
+                                  ⬆ Upgrade
+                                </button>
+                              }
+                              @if (canRenewMembership(member)) {
+                                <button class="row-renew-btn" type="button" (click)="openRenewal.emit(member)" title="Renew membership term">
+                                  Renew →
+                                </button>
+                              } @else {
+                                <button class="row-details-btn" type="button" (click)="checkMembershipAccess.emit(member)" title="Verify membership status">
+                                  Access ↗
+                                </button>
+                              }
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <div class="empty-state">
+                  <span class="empty-icon">◎</span><strong>No members registered at this branch yet</strong>
+                  <span>Use the button below to register a new member.</span>
+                  <button class="button button-dark" style="margin-top: 10px;" (click)="navigate.emit('register')">Register a member →</button>
+                </div>
+              }
+            </section>
+
+            <aside class="panel expiry-panel overview-renewal-panel">
+              <div class="renewal-watch-header">
+                <div>
+                  <p class="eyebrow" style="color: var(--amber);"><span style="margin-right: 4px;">⏰</span> EXPIRY WATCH</p>
+                  <h2>Ending Soon</h2>
+                </div>
+                <span class="urgency-counter-badge" [class.has-expiring]="expiringMembersCount > 0">
+                  {{ expiringMembersCount }} due soon
+                </span>
+              </div>
+
+              @if ((staffExpiringMembersList.length ? staffExpiringMembersList : (dashboardMetrics?.expiringMembers ?? [])).length) {
+                <div class="renewal-cards-list">
+                  @for (member of (staffExpiringMembersList.length ? staffExpiringMembersList : (dashboardMetrics?.expiringMembers ?? [])); track member.id) {
+                    <div class="renewal-action-card">
+                      <div class="renewal-card-top">
+                        <div class="renewal-card-person">
+                          <div class="renewal-card-avatar">{{ initials(member.memberName) }}</div>
+                          <div class="renewal-card-meta">
+                            <strong class="renewal-card-name">{{ member.memberName }}</strong>
+                            <span class="renewal-card-plan">{{ member.planName }}</span>
+                          </div>
+                        </div>
+                        <span
+                          class="days-left-chip"
+                          [class.critical]="daysUntil(member.endDate) <= 2"
+                          [class.warning]="daysUntil(member.endDate) > 2 && daysUntil(member.endDate) <= 5"
+                          [class.normal]="daysUntil(member.endDate) > 5"
+                        >
+                          {{ daysUntil(member.endDate) <= 1 ? '🚨 Ends in ' + daysUntil(member.endDate) + 'd' : '⏰ ' + daysUntil(member.endDate) + 'd left' }}
+                        </span>
+                      </div>
+                      <div class="renewal-card-foot">
+                        <span class="renewal-end-date">Ends {{ dateLabel(member.endDate) }}</span>
+                        <button class="renewal-card-btn" type="button" (click)="openRenewal.emit(member)" title="Renew membership">
+                          ⚡ Renew Now →
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="renewal-empty-state">
+                  <div class="renewal-empty-icon">✓</div>
+                  <h3>All Terms Clear</h3>
+                  <p>No memberships at your branch are expiring within the next 7 days without renewal.</p>
+                </div>
+              }
+
+              <div class="renewal-panel-footer">
+                <button class="renewal-panel-footer-btn" type="button" (click)="navigate.emit('members'); setMemberFilter.emit('expiring')">
+                  Review All Ending Terms →
+                </button>
+              </div>
+            </aside>
+          </div>
+          <footer class="page-footer">
+            <span>FRONT DESK WORKSPACE · {{ user!.branchName }}</span><span>DATA REFRESHED {{ refreshedLabel }}</span>
+          </footer>
+        </section>

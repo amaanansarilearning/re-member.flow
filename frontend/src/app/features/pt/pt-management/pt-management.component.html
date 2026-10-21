@@ -1,0 +1,421 @@
+        <section class="page-content">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">PERSONAL TRAINERS & COMMISSIONS</p>
+              <h1>Trainer Management</h1>
+              <p class="page-subtitle">Configure trainer profiles, commission splits, assignments, and settlement payout batches.</p>
+            </div>
+            <div class="page-actions">
+              <button class="button button-dark" type="button" (click)="startNewPt.emit()">
+                <span>＋</span> Add trainer
+              </button>
+            </div>
+          </div>
+
+          <!-- Top Analytics / Financial Metric Cards -->
+          <div class="team-kpi-strip">
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">ROSTER & TRAINEES</span>
+              <strong class="team-kpi-value">{{ activePtCount }} <span class="team-kpi-sub">PTs · {{ ptAnalyticsData?.activeTrainees ?? 0 }} trainees</span></strong>
+            </div>
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">ENROLLED PT REVENUE</span>
+              <strong class="team-kpi-value" style="color: var(--emerald);">{{ money(ptAnalyticsData?.contractedPtRevenue ?? 0) }}</strong>
+            </div>
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">DELIVERED GROSS</span>
+              <strong class="team-kpi-value">{{ money(ptAnalyticsData?.totalPtGrossRevenue ?? 0) }}</strong>
+            </div>
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">TRAINER COMMISSIONS</span>
+              <strong class="team-kpi-value" style="color: var(--amber);">{{ money(ptAnalyticsData?.totalPtCommission ?? 0) }}</strong>
+            </div>
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">CLUB RETAINED</span>
+              <strong class="team-kpi-value" style="color: var(--accent);">{{ money(ptAnalyticsData?.totalGymRetained ?? 0) }}</strong>
+            </div>
+          </div>
+
+          <!-- Trainer Edit Form -->
+          @if (editingPt) {
+            <section class="panel pt-editor-panel" style="margin-bottom: 24px;">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">{{ ptDraft.id === 0 ? 'NEW CREDENTIALS' : 'UPDATE RECORD' }}</p>
+                  <h2>{{ ptDraft.id === 0 ? 'Register Personal Trainer' : 'Edit Trainer Details' }}</h2>
+                </div>
+                <button class="icon-button" type="button" aria-label="Cancel trainer edit" (click)="cancelPtEdit.emit()">×</button>
+              </div>
+              <form class="team-form" (ngSubmit)="savePt.emit()" novalidate>
+                <div class="form-step-title">01 Identity & Contact Information</div>
+                <div class="form-grid">
+                  <label><span class="field-label-text">Full name <span class="req-star">*</span></span>
+                    <input
+                      name="ptFullName"
+                      [(ngModel)]="ptDraft.fullName"
+                      [class.input-has-error]="hasFieldError('ptFullName')"
+                      (input)="clearFieldError.emit('ptFullName')"
+                      required
+                      maxlength="100"
+                      placeholder="e.g. Maya Chen"
+                      [disabled]="ptDraft.id !== 0"
+                    />
+                    @if (hasFieldError('ptFullName')) {
+                      <span class="field-error-msg">⚠️ {{ getFieldError('ptFullName') }}</span>
+                    }
+                  </label>
+                  <label><span class="field-label-text">Email address <span class="req-star">*</span></span>
+                    <input
+                      name="ptEmail"
+                      [(ngModel)]="ptDraft.email"
+                      [class.input-has-error]="hasFieldError('ptEmail')"
+                      (input)="clearFieldError.emit('ptEmail')"
+                      type="email"
+                      required
+                      placeholder="maya@example.com"
+                      [disabled]="ptDraft.id !== 0"
+                    />
+                    @if (hasFieldError('ptEmail')) {
+                      <span class="field-error-msg">⚠️ {{ getFieldError('ptEmail') }}</span>
+                    }
+                  </label>
+                  <label><span class="field-label-text">Phone number <small class="opt-label">(Optional)</small></span>
+                    <input name="ptPhone" [(ngModel)]="ptDraft.phoneNumber" type="tel" placeholder="+91 98765 43210" [disabled]="ptDraft.id !== 0">
+                  </label>
+                  <label><span class="field-label-text">Assigned branch <small class="opt-label">(Optional)</small></span>
+                    <select name="ptBranch" [(ngModel)]="ptDraft.branchId">
+                      <option value="">🌐 All branches</option>
+                      @for (branch of activeBranches; track branch.id) {
+                        <option [value]="branch.id">{{ branch.name }}</option>
+                      }
+                    </select>
+                  </label>
+                </div>
+
+                @if (ptDraft.id === 0) {
+                  <div class="form-step-title" style="margin-top: 18px;">02 Portal Credentials</div>
+                  <div class="form-grid">
+                    <label><span class="field-label-text">Temporary password <span class="req-star">*</span></span>
+                      <input
+                        name="ptPassword"
+                        [(ngModel)]="ptDraft.password"
+                        [class.input-has-error]="hasFieldError('ptPassword')"
+                        (input)="clearFieldError.emit('ptPassword')"
+                        type="password"
+                        required
+                        minlength="8"
+                        maxlength="72"
+                        placeholder="At least 8 characters"
+                      />
+                      @if (hasFieldError('ptPassword')) {
+                        <span class="field-error-msg">⚠️ {{ getFieldError('ptPassword') }}</span>
+                      }
+                    </label>
+                  </div>
+                }
+
+                <div class="form-step-title" style="margin-top: 18px;">03 Financial Compensation & Commission Split</div>
+                <div class="form-grid">
+                  <label><span class="field-label-text">Session Fee / Hour (₹) <span class="req-star">*</span></span>
+                    <input
+                      name="ptFee"
+                      [(ngModel)]="ptDraft.sessionFeePerHour"
+                      type="number"
+                      min="0"
+                      step="50"
+                      required
+                      (keydown)="preventNonNumeric($event)"
+                      (input)="sanitizeNumericInput($event, ptDraft, 'sessionFeePerHour'); clearFieldError.emit('ptFee')"
+                      [class.input-has-error]="hasFieldError('ptFee')"
+                    />
+                    @if (hasFieldError('ptFee')) {
+                      <span class="field-error-msg">⚠️ {{ getFieldError('ptFee') }}</span>
+                    }
+                  </label>
+                  <label><span class="field-label-text">Trainer Commission Share (%) <span class="req-star">*</span></span>
+                    <div class="commission-slider-row">
+                      <input
+                        name="ptCommission"
+                        [(ngModel)]="ptDraft.commissionPercent"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="1"
+                        required
+                        class="commission-num-input"
+                        (keydown)="preventNonNumeric($event, false)"
+                        (input)="sanitizeNumericInput($event, ptDraft, 'commissionPercent', true); clearFieldError.emit('ptCommission')"
+                        [class.input-has-error]="hasFieldError('ptCommission')"
+                      />
+                      <input
+                        name="ptCommissionSlider"
+                        [(ngModel)]="ptDraft.commissionPercent"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        class="commission-range-slider"
+                        aria-label="Trainer Commission percentage slider"
+                      />
+                    </div>
+                    @if (hasFieldError('ptCommission')) {
+                      <span class="field-error-msg">⚠️ {{ getFieldError('ptCommission') }}</span>
+                    }
+                  </label>
+                  <div class="wide-field pt-split-preview">
+                    <div class="pt-split-meta">
+                      <span><strong>{{ ptDraft.commissionPercent }}%</strong> Trainer Share ({{ money(Math.round(ptDraft.sessionFeePerHour * ptDraft.commissionPercent / 100)) }})</span>
+                      <span><strong>{{ 100 - ptDraft.commissionPercent }}%</strong> Gym Retained ({{ money(ptDraft.sessionFeePerHour - Math.round(ptDraft.sessionFeePerHour * ptDraft.commissionPercent / 100)) }})</span>
+                    </div>
+                    <div class="pt-split-bar">
+                      <div class="pt-split-portion trainer" [style.width.%]="ptDraft.commissionPercent"></div>
+                      <div class="pt-split-portion gym" [style.width.%]="100 - ptDraft.commissionPercent"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-step-title" style="margin-top: 18px;">04 Professional Profile</div>
+                <div class="form-grid">
+                  <label class="wide-field"><span class="field-label-text">Specializations <small class="opt-label">(Optional)</small></span>
+                    <input name="ptSpecializations" [(ngModel)]="ptDraft.specializations" maxlength="500" placeholder="e.g. Strength Training, Calisthenics, HIIT, Mobility">
+                  </label>
+                  <label class="wide-field"><span class="field-label-text">Trainer Bio & Certifications <small class="opt-label">(Optional)</small></span>
+                    <textarea name="ptBio" [(ngModel)]="ptDraft.bio" maxlength="1000" rows="3" placeholder="Background, certifications (e.g. ACSM, ACE), and coaching philosophy..."></textarea>
+                  </label>
+                </div>
+
+                @if (error) { <p class="form-error" role="alert">{{ error }}</p> }
+                <div class="form-actions" style="margin-top: 18px; display: flex; justify-content: flex-end; gap: 8px;">
+                  <button class="button button-quiet" type="button" (click)="cancelPtEdit.emit()">Cancel</button>
+                  <button class="button button-dark" type="submit" [disabled]="busy">
+                    {{ busy ? 'Saving…' : (ptDraft.id === 0 ? 'Create trainer' : 'Save changes') }}
+                  </button>
+                </div>
+              </form>
+            </section>
+          }
+
+          <!-- Trainers List Table -->
+          <section class="panel full-panel" style="margin-bottom: 24px;">
+            <div class="panel-heading" style="flex-wrap: wrap; gap: 12px;">
+              <div>
+                <p class="eyebrow">ROSTER</p>
+                <h2>Personal Trainers ({{ filteredPersonalTrainers.length }})</h2>
+              </div>
+              <div class="staff-filter-bar" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <div class="branch-filter-tabs">
+                  <button type="button" class="branch-filter-pill" [class.active]="ptStatusFilter === 'ALL'" (click)="onStatusFilterChange('ALL')">
+                    All ({{ personalTrainers.length }})
+                  </button>
+                  <button type="button" class="branch-filter-pill" [class.active]="ptStatusFilter === 'ACTIVE'" (click)="onStatusFilterChange('ACTIVE')">
+                    ● Active ({{ activePtCount }})
+                  </button>
+                  <button type="button" class="branch-filter-pill" [class.active]="ptStatusFilter === 'INACTIVE'" (click)="onStatusFilterChange('INACTIVE')">
+                    ○ Inactive ({{ inactivePtCount }})
+                  </button>
+                </div>
+                <div class="staff-search-box">
+                  <svg class="search-svg-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="7" cy="7" r="5"/>
+                    <path d="M14 14l-3.5-3.5"/>
+                  </svg>
+                  <input type="search" placeholder="Search trainers, skills, specializations…" [ngModel]="ptSearchTerm" (ngModelChange)="onSearchTermChange($event)" />
+                  @if (ptSearchTerm) {
+                    <button type="button" class="search-clear-btn" aria-label="Clear search" (click)="onSearchTermChange('')">×</button>
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="member-list-table">
+                <thead>
+                  <tr>
+                    <th>TRAINER</th>
+                    <th>BRANCH</th>
+                    <th>SPECIALIZATIONS</th>
+                    <th>HOURLY RATE</th>
+                    <th>COMMISSION SPLIT</th>
+                    <th>ACTIVE CLIENTS</th>
+                    <th>STATUS</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (pt of filteredPersonalTrainers; track pt.id) {
+                    <tr>
+                      <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                          <div class="staff-avatar">{{ initials(pt.fullName) }}</div>
+                          <div>
+                            <strong>{{ pt.fullName }}</strong>
+                            <div class="status-detail">{{ pt.email }} · {{ pt.phoneNumber || 'No phone' }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="tag">{{ pt.branchName || '🌐 All locations' }}</span>
+                      </td>
+                      <td>
+                        <div style="display: flex; flex-wrap: wrap; gap: 4px; max-width: 200px;">
+                          @for (skill of (pt.specializations ? pt.specializations.split(',') : ['Fitness']); track skill) {
+                            <span class="pt-skill-chip">{{ skill.trim() }}</span>
+                          }
+                        </div>
+                      </td>
+                      <td><strong>{{ money(pt.sessionFeePerHour) }}</strong><span style="font-size: 10px; color: var(--muted);">/hr</span></td>
+                      <td>
+                        <div style="min-width: 120px;">
+                          <div style="font-size: 11px; font-weight: 700; display: flex; justify-content: space-between; margin-bottom: 3px;">
+                            <span style="color: var(--emerald);">{{ pt.commissionPercent }}% PT</span>
+                            <span style="color: var(--accent);">{{ 100 - pt.commissionPercent }}% Gym</span>
+                          </div>
+                          <div class="pt-mini-bar">
+                            <div class="pt-mini-fill trainer" [style.width.%]="pt.commissionPercent"></div>
+                            <div class="pt-mini-fill gym" [style.width.%]="100 - pt.commissionPercent"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="tag" style="font-weight: 700;">👥 {{ pt.activeMembers }} active</span>
+                      </td>
+                      <td>
+                        <span class="status-pill" [class.status-inactive]="!pt.active">
+                          {{ pt.active ? '● Active' : '○ Inactive' }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="member-actions">
+                          <button class="member-action-button pt-btn-edit" type="button" (click)="editPt.emit(pt)" title="Edit trainer details and commission split">
+                            <svg class="btn-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                              <path d="M11 2a2.121 2.121 0 0 1 3 3L4.5 14.5l-3.5 1 1-3.5L11 2z"/>
+                            </svg>
+                            <span>Edit</span>
+                          </button>
+                          <button class="member-action-button pt-btn-sessions" type="button" (click)="openPtSessionsModal.emit(pt)" title="View schedule and sessions">
+                            <svg class="btn-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                              <rect x="2" y="3" width="12" height="11" rx="2"/>
+                              <path d="M5 1v3M11 1v3M2 7h12"/>
+                            </svg>
+                            <span>Sessions</span>
+                          </button>
+                          <button
+                            class="member-action-button"
+                            [class.pt-btn-toggle-inactive]="pt.active"
+                            [class.pt-btn-toggle-active]="!pt.active"
+                            type="button"
+                            (click)="togglePtActive.emit(pt)"
+                            title="{{ pt.active ? 'Temporarily deactivate trainer' : 'Reactivate trainer' }}"
+                          >
+                            @if (pt.active) {
+                              <svg class="btn-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M5 3v10M11 3v10"/>
+                              </svg>
+                              <span>Deactivate</span>
+                            } @else {
+                              <svg class="btn-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polygon points="4 2 13 8 4 14 4 2" fill="currentColor"/>
+                              </svg>
+                              <span>Activate</span>
+                            }
+                          </button>
+                          <button class="member-action-button pt-btn-settle" type="button" (click)="openPtPayoutModal.emit(pt)" title="Create Payout Batch">
+                            <svg class="btn-svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                              <rect x="1" y="3" width="14" height="10" rx="2"/>
+                              <path d="M1 7h14"/>
+                            </svg>
+                            <span>Settle</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="8">
+                        <div class="table-empty">No personal trainers found matching your search. Click "Add trainer" to add your first trainer.</div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Payout Batches Table -->
+          <section class="panel full-panel">
+            <div class="panel-heading" style="flex-wrap: wrap; gap: 12px;">
+              <div>
+                <p class="eyebrow">COMMISSION PAYOUTS</p>
+                <h2>Trainer Settlement Batches ({{ filteredPtPayouts.length }})</h2>
+                <p class="page-subtitle">Track and settle trainer commission disbursement batches.</p>
+              </div>
+              <div class="branch-filter-tabs">
+                <button type="button" class="branch-filter-pill" [class.active]="ptPayoutFilter === 'ALL'" (click)="onPayoutFilterChange('ALL')">
+                  All Batches ({{ ptPayouts.length }})
+                </button>
+                <button type="button" class="branch-filter-pill" [class.active]="ptPayoutFilter === 'PENDING'" (click)="onPayoutFilterChange('PENDING')">
+                  ⏳ Pending ({{ money(totalPayoutsPending) }})
+                </button>
+                <button type="button" class="branch-filter-pill" [class.active]="ptPayoutFilter === 'PAID'" (click)="onPayoutFilterChange('PAID')">
+                  ✓ Settled ({{ money(totalPayoutsSettled) }})
+                </button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="member-list-table">
+                <thead>
+                  <tr>
+                    <th>BATCH #</th>
+                    <th>TRAINER</th>
+                    <th>PERIOD</th>
+                    <th>PAYOUT AMOUNT</th>
+                    <th>STATUS</th>
+                    <th>SETTLEMENT DETAILS</th>
+                    <th>NOTES / REF</th>
+                    <th>ACTION</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (payout of filteredPtPayouts; track payout.id) {
+                    <tr>
+                      <td><span class="branch-code-chip">#{{ payout.id }}</span></td>
+                      <td><strong>{{ payout.ptName }}</strong></td>
+                      <td>{{ dateLabel(payout.periodFrom) }} → {{ dateLabel(payout.periodTo) }}</td>
+                      <td><strong style="font-size: 13px; color: var(--emerald);">{{ money(payout.totalEarnings) }}</strong></td>
+                      <td>
+                        <span class="status-pill" [class.status-paid]="payout.status === 'PAID'" [class.status-pending]="payout.status === 'PENDING'">
+                          {{ payout.status === 'PAID' ? '✓ Settled' : '⏳ Pending' }}
+                        </span>
+                      </td>
+                      <td>
+                        @if (payout.paidAt) {
+                          <div style="font-size: 11px; font-weight: 600; color: var(--ink);">{{ payout.paidAt | date:'mediumDate' }}</div>
+                          <div class="status-detail">Settled by {{ payout.paidByName }}</div>
+                        } @else {
+                          <span style="color: var(--amber); font-weight: 600; font-size: 11px;">Awaiting disbursement</span>
+                        }
+                      </td>
+                      <td>
+                        <span style="font-size: 11px;">{{ payout.notes || '—' }}</span>
+                      </td>
+                      <td>
+                        @if (payout.status === 'PENDING') {
+                          <button class="button button-dark" style="min-height: 28px; font-size: 10px; padding: 0 10px;" type="button" (click)="markPtPayoutPaidQuick.emit(payout)" [disabled]="busy">
+                            Mark Paid
+                          </button>
+                        } @else {
+                          <span style="color: var(--emerald); font-weight: 700; font-size: 11px;">✓ Settled</span>
+                        }
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="8">
+                        <div class="table-empty">No payout batches found matching the selected filter. Payouts can be generated per trainer from the table above.</div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>

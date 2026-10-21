@@ -1,0 +1,51 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="renewal-dialog"
+    style="max-width: 480px; width: 94%;"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="reject-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">SAAS PLATFORM OPERATIONS</p>
+        <h2 id="reject-modal-title">Reject Upgrade Request REQ-{{ requestId }}</h2>
+        <p class="dialog-subtitle">Specify reason for audit trail and customer notification</p>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Close reject modal"
+        (click)="close.emit()"
+      >
+        ×
+      </button>
+    </div>
+
+    <div style="padding: 18px 24px;">
+      <label>Rejection Reason
+        <textarea
+          [ngModel]="reason"
+          (ngModelChange)="reasonChange.emit($event)"
+          placeholder="e.g. Payment unverified, invalid transfer reference, or tenant duplicate request..."
+          rows="3"
+          maxlength="255"
+        ></textarea>
+      </label>
+    </div>
+
+    <div style="display: flex; gap: 10px; justify-content: flex-end; padding: 14px 24px; border-top: 1px solid var(--border); background: var(--surface-2);">
+      <button type="button" class="button button-outline" (click)="close.emit()">Cancel</button>
+      <button
+        type="button"
+        class="button btn-danger"
+        [disabled]="loading"
+        (click)="confirm.emit()"
+      >
+        {{ loading ? 'Rejecting…' : 'Confirm Rejection' }}
+      </button>
+    </div>
+  </section>
+</div>
+

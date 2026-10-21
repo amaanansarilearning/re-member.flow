@@ -1,0 +1,1090 @@
+        <section class="page-content">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">INVESTOR & OWNER VIEW</p>
+              <h1>Analytics & reports</h1>
+              <p class="page-subtitle">Membership, revenue, retention, and estimated GST for the selected period.</p>
+            </div>
+            <div class="export-dropdown-wrapper">
+              <button
+                class="export-menu-trigger"
+                type="button"
+                (click)="toggleExportMenu.emit()"
+                [attr.aria-expanded]="exportMenuOpen"
+                title="Download CSV Reports"
+              >
+                <span class="export-icon">📥</span> Export Reports <span class="arrow-indicator">▾</span>
+              </button>
+              @if (exportMenuOpen) {
+                <div class="export-menu-backdrop" (click)="onCloseExportMenu()"></div>
+                <div class="export-menu-flyout">
+                  <div class="export-menu-header">
+                    <span>PERIOD EXPORT (CSV)</span>
+                    <button type="button" class="export-menu-close" (click)="onCloseExportMenu()">✕</button>
+                  </div>
+                  <button type="button" class="export-menu-item" (click)="onExportReport('revenue')">
+                    <span class="export-item-icon">📊</span>
+                    <div class="export-item-copy">
+                      <strong>Revenue Breakdown CSV</strong>
+                      <small>Recorded term sales, discounts, variances</small>
+                    </div>
+                    <span class="export-arrow">↗</span>
+                  </button>
+                  <button type="button" class="export-menu-item" (click)="onExportReport('memberships')">
+                    <span class="export-item-icon">👥</span>
+                    <div class="export-item-copy">
+                      <strong>Memberships Roster CSV</strong>
+                      <small>New enrollments, terms, active members</small>
+                    </div>
+                    <span class="export-arrow">↗</span>
+                  </button>
+                  <button type="button" class="export-menu-item" (click)="onExportReport('cancellations')">
+                    <span class="export-item-icon">❌</span>
+                    <div class="export-item-copy">
+                      <strong>Cancellations Log CSV</strong>
+                      <small>Term cancellations, terminations & reasons</small>
+                    </div>
+                    <span class="export-arrow">↗</span>
+                  </button>
+                  <button type="button" class="export-menu-item" (click)="onExportReport('packages')">
+                    <span class="export-item-icon">📦</span>
+                    <div class="export-item-copy">
+                      <strong>Package Performance CSV</strong>
+                      <small>Revenue ranking, volume & sales mix share</small>
+                    </div>
+                    <span class="export-arrow">↗</span>
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+          <section class="panel report-filter">
+            <div class="analytics-periods" role="group" aria-label="Analytics period">
+              <button type="button" [class.selected]="analyticsPeriod === 'month'" (click)="onSelectPeriod('month')">This Month</button>
+              <button type="button" [class.selected]="analyticsPeriod === 'quarter'" (click)="onSelectPeriod('quarter')">Quarter</button>
+              <button type="button" [class.selected]="analyticsPeriod === 'six-months'" (click)="onSelectPeriod('six-months')">Last 6 months</button>
+              <button type="button" [class.selected]="analyticsPeriod === 'twelve-months'" (click)="onSelectPeriod('twelve-months')">Last 12 months</button>
+              <button type="button" [class.selected]="analyticsPeriod === 'custom'" (click)="onSelectPeriod('custom')">Custom</button>
+            </div>
+            <label>From<input type="date" name="reportFrom" [ngModel]="reportFrom" (ngModelChange)="onReportFromChange($event)" required></label>
+            <label>To<input type="date" name="reportTo" [ngModel]="reportTo" (ngModelChange)="onReportToChange($event)" required></label>
+            <label>Branch<select name="reportBranch" [ngModel]="reportBranchId" (ngModelChange)="onReportBranchIdChange($event)"><option value="">All branches</option>@for (branch of branches; track branch.id) { <option [value]="branch.id">{{ branch.name }}</option> }</select></label>
+            <button class="button button-dark" (click)="loadReport.emit()" [disabled]="busy">Update analytics</button>
+          </section>
+
+          <!-- Segmented Sub-Navigation for Analytics -->
+          <div class="member-stat-strip" aria-label="Analytics sub-section" style="margin-top: 18px; margin-bottom: 22px;">
+            <button type="button" class="stat-pill-chip" [class.active]="analyticsTab === 'executive'" (click)="onSelectTab('executive')">
+              📊 Executive Overview
+            </button>
+            <button type="button" class="stat-pill-chip" [class.active]="analyticsTab === 'pt'" (click)="onSelectTab('pt')">
+              ⚡ Trainer & PT Economics
+            </button>
+            <button type="button" class="stat-pill-chip" [class.active]="analyticsTab === 'packages'" (click)="onSelectTab('packages')">
+              📦 Package Rankings
+            </button>
+            <button type="button" class="stat-pill-chip" [class.active]="analyticsTab === 'retention'" (click)="onSelectTab('retention')">
+              👥 Cohorts & Retention
+            </button>
+            <button type="button" class="stat-pill-chip" [class.active]="analyticsTab === 'tax'" (click)="onSelectTab('tax')">
+              🧾 GST & Tax Breakdown
+            </button>
+          </div>
+
+          @if (analyticsData; as analytics) {
+            <!-- 1. EXECUTIVE OVERVIEW -->
+            @if (analyticsTab === 'executive') {
+              <div class="exec-kpi-grid">
+                <div class="exec-kpi-card">
+                  <div class="exec-kpi-title">
+                    <span>TOTAL RECORDED SALES</span>
+                    <span class="exec-pill" [class.positive]="(analytics.revenueGrowthPercent ?? 0) >= 0" [class.negative]="(analytics.revenueGrowthPercent ?? 0) < 0">
+                      {{ percentLabel(analytics.revenueGrowthPercent) }}
+                    </span>
+                  </div>
+                  <strong class="exec-kpi-value">{{ moneyPrecise(analytics.totalRevenue) }}</strong>
+                  <div class="exec-kpi-foot">
+                    <span>List price value: {{ moneyPrecise(analytics.totalListPrice) }}</span>
+                    <span>Discounts: {{ moneyPrecise(analytics.discountsGiven) }}</span>
+                  </div>
+                </div>
+
+                <div class="exec-kpi-card">
+                  <div class="exec-kpi-title">
+                    <span>SALES MIX (NEW / RENEWAL)</span>
+                    <span class="exec-pill neutral">{{ analytics.renewalRevenueSharePercent }}% Renewals</span>
+                  </div>
+                  <strong class="exec-kpi-value">{{ moneyPrecise(analytics.newMembershipRevenue) }}</strong>
+                  <div class="exec-kpi-foot">
+                    <span>Renewals: {{ moneyPrecise(analytics.renewalRevenue) }}</span>
+                    <span>New Terms: {{ analytics.newMembers }}</span>
+                  </div>
+                </div>
+
+                <div class="exec-kpi-card">
+                  <div class="exec-kpi-title">
+                    <span>AVG TRANSACTION VALUE</span>
+                    <span class="exec-pill neutral">AOV</span>
+                  </div>
+                  <strong class="exec-kpi-value">{{ moneyPrecise(analytics.averageSale) }}</strong>
+                  <div class="exec-kpi-foot">
+                    <span>Avg renewal sale: {{ moneyPrecise(analytics.averageRenewalSale) }}</span>
+                    <span>Total terms: {{ analytics.totalMembershipsSold }}</span>
+                  </div>
+                </div>
+
+                <div class="exec-kpi-card">
+                  <div class="exec-kpi-title">
+                    <span>COHORT RETENTION & HEALTH</span>
+                    <span class="exec-pill" [class.positive]="analytics.retentionRate >= 65" [class.negative]="analytics.retentionRate < 50">
+                      {{ analytics.retentionRate }}% Retained
+                    </span>
+                  </div>
+                  <strong class="exec-kpi-value" [style.color]="analytics.retentionRate >= 65 ? 'var(--emerald)' : analytics.retentionRate >= 50 ? 'var(--amber)' : 'var(--danger)'">
+                    {{ analytics.retentionRate }}%
+                  </strong>
+                  <div class="exec-kpi-foot">
+                    <span>Opening: {{ analytics.openingMembers }}</span>
+                    <span>Active end: {{ analytics.activeMembers }}</span>
+                    <span>Churn: {{ analytics.churnRate }}%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="analytics-charts">
+                <section class="panel analytics-chart">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">MEMBERSHIP GROWTH</p>
+                      <h2>New members & renewals</h2>
+                    </div>
+                  </div>
+                  <div class="analytics-bars membership-bars" role="img" aria-label="Monthly memberships sold, new members and renewals">
+                    @for (point of analytics.trend; track point.month) {
+                      <div class="analytics-bar-group">
+                        <div class="analytics-bar-pair">
+                          <i class="new-member-bar" [style.height.%]="chartBarHeight(point.newMembers, maxTrendMemberships())"></i>
+                          <i class="renewal-bar" [style.height.%]="chartBarHeight(point.renewals, maxTrendMemberships())"></i>
+                        </div>
+                        <small>{{ point.month | date:'MMM yy' }}</small>
+                      </div>
+                    }
+                  </div>
+                  <p class="analytics-legend"><i class="new-member-bar"></i> New members <i class="renewal-bar"></i> Renewals</p>
+                </section>
+                <section class="panel analytics-chart">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">RECORDED SALES MIX</p>
+                      <h2>New sales vs renewals by month</h2>
+                      <p class="page-subtitle">Bars show amounts recorded for terms created in each month—not cash receipts.</p>
+                    </div>
+                  </div>
+                  <div class="analytics-bars" role="img" aria-label="Monthly recorded new member and renewal sales">
+                    @for (point of analytics.trend; track point.month) {
+                      <div class="analytics-bar-group">
+                        <div class="analytics-bar-pair">
+                          <i class="new-member-bar" [style.height.%]="chartBarHeight(point.newRevenue, maxTrendRenewalRevenue())"></i>
+                          <i class="renewal-bar" [style.height.%]="chartBarHeight(point.renewalRevenue, maxTrendRenewalRevenue())"></i>
+                        </div>
+                        <small>{{ point.month | date:'MMM yy' }}</small>
+                        <b>{{ moneyPrecise(point.revenue) }}</b>
+                      </div>
+                    }
+                  </div>
+                  <p class="analytics-legend"><i class="new-member-bar"></i> New-member sales <i class="renewal-bar"></i> Renewal sales</p>
+                </section>
+              </div>
+
+              <!-- Visual Revenue Composition & Retention Distribution Charts -->
+              <div class="analytics-charts-grid">
+                <!-- Revenue Intake Composition Donut Chart -->
+                <div class="modern-chart-panel">
+                  <div class="chart-panel-header">
+                    <div>
+                      <p class="chart-eyebrow">REVENUE COMPOSITION</p>
+                      <h3>Intake Mix & Discounts</h3>
+                      <p class="chart-subtitle">Direct distribution of total recorded inflow across segments</p>
+                    </div>
+                    <span class="chart-badge badge-emerald">{{ percentLabel(analytics.revenueGrowthPercent) }}</span>
+                  </div>
+                  <div class="chart-body-area">
+                    <div class="donut-viz-layout">
+                      <div class="donut-svg-wrap">
+                        <svg viewBox="0 0 100 100" class="donut-svg">
+                          <circle cx="50" cy="50" r="40" class="donut-bg"></circle>
+                          @for (slice of executiveSalesDonutSlices(); track slice.name) {
+                            <circle cx="50" cy="50" r="40" class="donut-slice"
+                              [style.stroke]="slice.color"
+                              [style.strokeDasharray]="slice.dashArray"
+                              [style.strokeDashoffset]="slice.dashOffset">
+                            </circle>
+                          }
+                        </svg>
+                        <div class="donut-center-copy">
+                          <span class="center-val">{{ money(analytics.totalRevenue) }}</span>
+                          <span class="center-lbl">Total Intake</span>
+                        </div>
+                      </div>
+                      <div class="donut-legend-list">
+                        @for (slice of executiveSalesDonutSlices(); track slice.name) {
+                          <div class="legend-row">
+                            <div class="legend-label-group">
+                              <span class="legend-color-dot" [style.background]="slice.color"></span>
+                              <span class="legend-name">{{ slice.name }}</span>
+                            </div>
+                            <div class="legend-numbers">
+                              <span class="legend-val">{{ money(slice.value) }}</span>
+                              <span class="legend-pct">{{ slice.percent }}%</span>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Member Retention & Churn Health Donut -->
+                <div class="modern-chart-panel">
+                  <div class="chart-panel-header">
+                    <div>
+                      <p class="chart-eyebrow">COHORT HEALTH</p>
+                      <h3>Retention vs Churn Dynamics</h3>
+                      <p class="chart-subtitle">Active member retention and acquisition balance</p>
+                    </div>
+                    <span class="chart-badge" [class.badge-emerald]="analytics.retentionRate >= 65" [class.badge-amber]="analytics.retentionRate < 65">
+                      {{ analytics.retentionRate }}% Retained
+                    </span>
+                  </div>
+                  <div class="chart-body-area">
+                    <div class="donut-viz-layout">
+                      <div class="donut-svg-wrap">
+                        <svg viewBox="0 0 100 100" class="donut-svg">
+                          <circle cx="50" cy="50" r="40" class="donut-bg"></circle>
+                          @for (slice of retentionMemberSlices(); track slice.name) {
+                            <circle cx="50" cy="50" r="40" class="donut-slice"
+                              [style.stroke]="slice.color"
+                              [style.strokeDasharray]="slice.dashArray"
+                              [style.strokeDashoffset]="slice.dashOffset">
+                            </circle>
+                          }
+                        </svg>
+                        <div class="donut-center-copy">
+                          <span class="center-val">{{ analytics.activeMembers }}</span>
+                          <span class="center-lbl">Active Base</span>
+                        </div>
+                      </div>
+                      <div class="donut-legend-list">
+                        @for (slice of retentionMemberSlices(); track slice.name) {
+                          <div class="legend-row">
+                            <div class="legend-label-group">
+                              <span class="legend-color-dot" [style.background]="slice.color"></span>
+                              <span class="legend-name">{{ slice.name }}</span>
+                            </div>
+                            <div class="legend-numbers">
+                              <span class="legend-val">{{ slice.value }}</span>
+                              <span class="legend-pct">{{ slice.percent }}%</span>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <section class="panel full-panel analytics-data-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">REVENUE DETAIL · SELECTED PERIOD</p>
+                    <h2>Monthly sales bridge</h2>
+                    <p class="page-subtitle">Recorded amounts split by first membership terms and renewals; discounts use the saved rate for each term.</p>
+                  </div>
+                </div>
+                <div class="table-wrap">
+                  <table class="member-list-table">
+                    <thead>
+                      <tr>
+                        <th>MONTH</th>
+                        <th>TERMS SOLD</th>
+                        <th>NEW MEMBER SALES</th>
+                        <th>RENEWAL SALES</th>
+                        <th>TOTAL RECORDED SALES</th>
+                        <th>DISCOUNTS BY RATE</th>
+                        <th>AMOUNT VARIANCE</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (point of analytics.trend; track point.month) {
+                        <tr>
+                          <td>{{ point.month | date:'MMMM yyyy' }}</td>
+                          <td>{{ point.memberships }}</td>
+                          <td>{{ moneyPrecise(point.newRevenue) }}</td>
+                          <td>{{ moneyPrecise(point.renewalRevenue) }}</td>
+                          <td><strong>{{ moneyPrecise(point.revenue) }}</strong></td>
+                          <td>{{ moneyPrecise(point.discountsGiven) }}</td>
+                          <td>{{ moneyPrecise(point.recordedPriceVariance) }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            }
+
+            <!-- 2. TRAINER & PT ECONOMICS -->
+            @if (analyticsTab === 'pt') {
+              @if (ptAnalyticsData; as pt) {
+                @if (!ptNoteDismissed) {
+                  <div class="pt-compact-tip">
+                    <div class="tip-left">
+                      <span class="tip-icon">ℹ️</span>
+                      <span class="tip-text">
+                        <strong>Advance Collections:</strong> {{ moneyPrecise(pt.contractedPtRevenue) }} in pipeline ({{ pt.remainingSessions }}/{{ pt.allocatedSessions }} sessions left). Delivered gross & trainer payouts accrue automatically as assigned trainers complete sessions with member PIN verification.
+                      </span>
+                    </div>
+                    <div class="tip-right">
+                      @if (pt.sessionsCompleted === 0 && pt.allocatedSessions > 0) {
+                        <button class="tip-btn" type="button" (click)="onNavigate('pt-management')">Rosters & Sessions →</button>
+                      }
+                      <button class="tip-close" type="button" (click)="onDismissPtNote()" title="Dismiss tip">×</button>
+                    </div>
+                  </div>
+                }
+
+                <div class="exec-kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                  <div class="exec-kpi-card" style="border-top: 3px solid var(--emerald);">
+                    <div class="exec-kpi-title">
+                      <span>CONTRACTED PT VOLUME</span>
+                      <span class="exec-pill positive">Enrolled Upfront</span>
+                    </div>
+                    <strong class="exec-kpi-value" style="color: var(--emerald);">{{ moneyPrecise(pt.contractedPtRevenue) }}</strong>
+                    <div class="exec-kpi-foot">
+                      <span>Active enrolled trainees</span>
+                      <span>{{ pt.activeTrainees }} clients ({{ pt.allocatedSessions }} sessions)</span>
+                    </div>
+                  </div>
+
+                  <div class="exec-kpi-card" style="border-top: 3px solid var(--accent);">
+                    <div class="exec-kpi-title">
+                      <span>DELIVERED SESSION GROSS</span>
+                      <span class="exec-pill neutral">Accrued on Completion</span>
+                    </div>
+                    <strong class="exec-kpi-value">{{ moneyPrecise(pt.totalPtGrossRevenue) }}</strong>
+                    <div class="pt-pipeline-bar-wrapper">
+                      <div class="pipeline-track">
+                        <div class="pipeline-fill" [style.width.%]="roundPct(pt.sessionsCompleted, pt.allocatedSessions)"></div>
+                      </div>
+                      <div class="pipeline-label-row">
+                        <span>{{ roundPct(pt.sessionsCompleted, pt.allocatedSessions) }}% Realized</span>
+                        <span>{{ pt.sessionsCompleted }} / {{ pt.allocatedSessions }} sessions</span>
+                      </div>
+                    </div>
+                    <div class="exec-kpi-foot">
+                      <span>Session progress</span>
+                      <span>{{ pt.sessionsCompleted }} done · {{ pt.sessionsMissed }} missed</span>
+                    </div>
+                  </div>
+
+                  <div class="exec-kpi-card" style="border-top: 3px solid #3b82f6;">
+                    <div class="exec-kpi-title">
+                      <span>CLUB RETAINED SHARE</span>
+                      <span class="exec-pill positive">Facility Profit</span>
+                    </div>
+                    <strong class="exec-kpi-value" style="color: #2563eb;">{{ moneyPrecise(pt.totalGymRetained) }}</strong>
+                    <div class="exec-kpi-foot">
+                      <span>Est. Pipeline Margin:</span>
+                      <span>{{ moneyPrecise(pt.contractedPtRevenue * 0.6) }} (~60% split)</span>
+                    </div>
+                  </div>
+
+                  <div class="exec-kpi-card" style="border-top: 3px solid var(--amber);">
+                    <div class="exec-kpi-title">
+                      <span>TRAINER COMMISSIONS</span>
+                      <span class="exec-pill negative">Trainer Accruals</span>
+                    </div>
+                    <strong class="exec-kpi-value">{{ moneyPrecise(pt.totalPtCommission) }}</strong>
+                    <div class="exec-kpi-foot">
+                      <span>Est. Trainer Pool:</span>
+                      <span>{{ moneyPrecise(pt.contractedPtRevenue * 0.4) }} (~40% split)</span>
+                    </div>
+                  </div>
+
+                  <div class="exec-kpi-card">
+                    <div class="exec-kpi-title">
+                      <span>SESSION INVENTORY</span>
+                      <span class="exec-pill neutral">Service Pipeline</span>
+                    </div>
+                    <strong class="exec-kpi-value">{{ pt.remainingSessions }}<small style="font-size: 14px; color: var(--muted); font-weight: 500;"> / {{ pt.allocatedSessions }} left</small></strong>
+                    <div class="exec-kpi-foot">
+                      <span>Active roster</span>
+                      <span>{{ pt.activePts }} / {{ pt.totalPts }} trainers active</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Visual PT Delivery & Revenue Split Charts -->
+                <div class="analytics-charts-grid">
+                  <!-- Session Inventory & Delivery Donut Chart -->
+                  <div class="modern-chart-panel">
+                    <div class="chart-panel-header">
+                      <div>
+                        <p class="chart-eyebrow">SESSION DELIVERY PIPELINE</p>
+                        <h3>Inventory & Verification Mix</h3>
+                        <p class="chart-subtitle">Completion progress of all contracted member sessions</p>
+                      </div>
+                      <span class="chart-badge badge-blue">{{ pt.remainingSessions }} Sessions Left</span>
+                    </div>
+                    <div class="chart-body-area">
+                      <div class="donut-viz-layout">
+                        <div class="donut-svg-wrap">
+                          <svg viewBox="0 0 100 100" class="donut-svg">
+                            <circle cx="50" cy="50" r="40" class="donut-bg"></circle>
+                            @for (slice of ptSessionInventoryDonutSlices(); track slice.name) {
+                              <circle cx="50" cy="50" r="40" class="donut-slice"
+                                [style.stroke]="slice.color"
+                                [style.strokeDasharray]="slice.dashArray"
+                                [style.strokeDashoffset]="slice.dashOffset">
+                              </circle>
+                            }
+                          </svg>
+                          <div class="donut-center-copy">
+                            <span class="center-val">{{ pt.allocatedSessions }}</span>
+                            <span class="center-lbl">Total Capacity</span>
+                          </div>
+                        </div>
+                        <div class="donut-legend-list">
+                          @for (slice of ptSessionInventoryDonutSlices(); track slice.name) {
+                            <div class="legend-row">
+                              <div class="legend-label-group">
+                                <span class="legend-color-dot" [style.background]="slice.color"></span>
+                                <span class="legend-name">{{ slice.name }}</span>
+                              </div>
+                              <div class="legend-numbers">
+                                <span class="legend-val">{{ slice.value }}</span>
+                                <span class="legend-pct">{{ slice.percent }}%</span>
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Margin Split (Club Profit vs Trainer Pool) Donut Chart -->
+                  <div class="modern-chart-panel">
+                    <div class="chart-panel-header">
+                      <div>
+                        <p class="chart-eyebrow">UNIT ECONOMICS SPLIT</p>
+                        <h3>Club Profit vs Trainer Pool</h3>
+                        <p class="chart-subtitle">Distribution between facility retained margin and trainer compensation</p>
+                      </div>
+                      <span class="chart-badge badge-emerald">Contracted: {{ money(pt.contractedPtRevenue) }}</span>
+                    </div>
+                    <div class="chart-body-area">
+                      <div class="donut-viz-layout">
+                        <div class="donut-svg-wrap">
+                          <svg viewBox="0 0 100 100" class="donut-svg">
+                            <circle cx="50" cy="50" r="40" class="donut-bg"></circle>
+                            @for (slice of ptRevenueSplitDonutSlices(); track slice.name) {
+                              <circle cx="50" cy="50" r="40" class="donut-slice"
+                                [style.stroke]="slice.color"
+                                [style.strokeDasharray]="slice.dashArray"
+                                [style.strokeDashoffset]="slice.dashOffset">
+                              </circle>
+                            }
+                          </svg>
+                          <div class="donut-center-copy">
+                            <span class="center-val">{{ money(pt.totalPtGrossRevenue > 0 ? pt.totalPtGrossRevenue : pt.contractedPtRevenue) }}</span>
+                            <span class="center-lbl">{{ pt.totalPtGrossRevenue > 0 ? 'Realized' : 'Pipeline' }}</span>
+                          </div>
+                        </div>
+                        <div class="donut-legend-list">
+                          @for (slice of ptRevenueSplitDonutSlices(); track slice.name) {
+                            <div class="legend-row">
+                              <div class="legend-label-group">
+                                <span class="legend-color-dot" [style.background]="slice.color"></span>
+                                <span class="legend-name">{{ slice.name }}</span>
+                              </div>
+                              <div class="legend-numbers">
+                                <span class="legend-val">{{ money(slice.value) }}</span>
+                                <span class="legend-pct">{{ slice.percent }}%</span>
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <section class="panel full-panel analytics-data-panel">
+                  <div class="panel-heading">
+                    <div>
+                      <p class="eyebrow">PERSONAL TRAINER WORKFORCE & UNIT ECONOMICS</p>
+                      <h2>Trainer performance & payout overview</h2>
+                      <p class="page-subtitle">Track trainer commission snapshots, sessions completed, and settlement status for the selected period.</p>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                      <button class="button button-dark" type="button" (click)="onNavigate('pt-management')">
+                        Manage Trainers →
+                      </button>
+                      <button class="button button-outline" type="button" (click)="onNavigate('pt-earnings')">
+                        Review Payout Ledgers →
+                      </button>
+                    </div>
+                  </div>
+                  <div style="padding: 20px 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; background: var(--surface-2); border-radius: var(--r-md); margin: 0 16px 16px;">
+                    <div>
+                      <h3 style="font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">Commission Integrity Snapshotting</h3>
+                      <p style="font-size: 11px; color: var(--muted); line-height: 1.5; margin: 0;">
+                        Trainer commissions are snapshotted at registration and session completion. Updating a trainer's commission rate never alters historical earnings or pending payout balances.
+                      </p>
+                    </div>
+                    <div>
+                      <h3 style="font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">Combined Package Split Formula</h3>
+                      <p style="font-size: 11px; color: var(--muted); line-height: 1.5; margin: 0;">
+                        For COMBINED packages, gym membership revenue is preserved under general membership sales, while the specified PT session fee is allocated directly between the assigned trainer and the club.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Individual Trainer Workforce Breakdown -->
+                  <div class="table-wrap" style="padding: 0 16px 16px;">
+                    <table class="member-list-table">
+                      <thead>
+                        <tr>
+                          <th>TRAINER</th>
+                          <th>LOCATION</th>
+                          <th>HOURLY RATE</th>
+                          <th>COMMISSION SPLIT</th>
+                          <th>ACTIVE CLIENTS</th>
+                          <th>STATUS</th>
+                          <th>SESSIONS & ROSTER</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (trainer of personalTrainers; track trainer.id) {
+                          <tr>
+                            <td>
+                              <div style="display: flex; align-items: center; gap: 8px;">
+                                <div class="staff-avatar" style="width: 28px; height: 28px; font-size: 11px;">{{ initials(trainer.fullName) }}</div>
+                                <div>
+                                  <strong>{{ trainer.fullName }}</strong>
+                                  <div class="status-detail">{{ trainer.email }}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td><span class="tag">{{ trainer.branchName || '🌐 All locations' }}</span></td>
+                            <td><strong>{{ money(trainer.sessionFeePerHour) }}</strong>/hr</td>
+                            <td>
+                              <span style="color: var(--emerald); font-weight: 700;">{{ trainer.commissionPercent }}% PT</span> / 
+                              <span style="color: var(--accent); font-weight: 700;">{{ 100 - trainer.commissionPercent }}% Gym</span>
+                            </td>
+                            <td><span class="tag">👥 {{ trainer.activeMembers }} active</span></td>
+                            <td>
+                              <span class="status-pill" [class.status-inactive]="!trainer.active">
+                                {{ trainer.active ? '● Active' : '○ Inactive' }}
+                              </span>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                class="member-action-button pt-btn-sessions"
+                                (click)="onOpenPtSessionsModal(trainer)"
+                                title="View and complete client sessions"
+                              >
+                                📅 View Sessions
+                              </button>
+                            </td>
+                          </tr>
+                        } @empty {
+                          <tr>
+                            <td colspan="7">
+                              <div class="table-empty">No personal trainers rostered yet.</div>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              } @else {
+                <div class="modern-member-empty-state">
+                  <div class="empty-icon-circle">🏋️</div>
+                  <h3>No Personal Training Records in this Range</h3>
+                  <p>Personal training session analytics and payout data will display once sessions are scheduled or completed in this period.</p>
+                </div>
+              }
+            }
+
+            <!-- 3. PACKAGE RANKINGS -->
+            @if (analyticsTab === 'packages') {
+              <!-- Visual Package Performance Charts Grid -->
+              <div class="analytics-charts-grid">
+                <!-- Package Market Share Donut Chart -->
+                <div class="modern-chart-panel">
+                  <div class="chart-panel-header">
+                    <div>
+                      <p class="chart-eyebrow">PACKAGE MARKET SHARE</p>
+                      <h3>Sales Mix by Package</h3>
+                      <p class="chart-subtitle">Revenue distribution across active catalog plans</p>
+                    </div>
+                    <span class="chart-badge badge-emerald">{{ analytics.packagePerformance.length }} Packages Active</span>
+                  </div>
+                  <div class="chart-body-area">
+                    <div class="donut-viz-layout">
+                      <div class="donut-svg-wrap">
+                        <svg viewBox="0 0 100 100" class="donut-svg">
+                          <circle cx="50" cy="50" r="40" class="donut-bg"></circle>
+                          @for (slice of packagePerformanceDonutSlices(); track slice.name) {
+                            <circle cx="50" cy="50" r="40" class="donut-slice"
+                              [style.stroke]="slice.color"
+                              [style.strokeDasharray]="slice.dashArray"
+                              [style.strokeDashoffset]="slice.dashOffset">
+                            </circle>
+                          }
+                        </svg>
+                        <div class="donut-center-copy">
+                          <span class="center-val">{{ analytics.packagePerformance.length }}</span>
+                          <span class="center-lbl">Plans Sold</span>
+                        </div>
+                      </div>
+                      <div class="donut-legend-list">
+                        @for (slice of packagePerformanceDonutSlices(); track slice.name) {
+                          <div class="legend-row">
+                            <div class="legend-label-group">
+                              <span class="legend-color-dot" [style.background]="slice.color"></span>
+                              <span class="legend-name">{{ slice.name }}</span>
+                            </div>
+                            <div class="legend-numbers">
+                              <span class="legend-val">{{ money(slice.value) }}</span>
+                              <span class="legend-pct">{{ slice.percent }}%</span>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Package Volume & Intake Comparative Ranked Bars -->
+                <div class="modern-chart-panel">
+                  <div class="chart-panel-header">
+                    <div>
+                      <p class="chart-eyebrow">VOLUME VS VALUE</p>
+                      <h3>Top Package Rankings</h3>
+                      <p class="chart-subtitle">Comparative intake and total terms sold</p>
+                    </div>
+                    <span class="chart-badge badge-blue">Ranked by Intake</span>
+                  </div>
+                  <div class="chart-body-area">
+                    <div class="horizontal-ranked-bars">
+                      @for (pkg of analytics.packagePerformance; track pkg.packageId) {
+                        <div class="ranked-bar-row">
+                          <div class="ranked-bar-meta">
+                            <span class="ranked-name">{{ pkg.packageName }}</span>
+                            <div class="ranked-val-group">
+                              <span class="ranked-amount">{{ money(pkg.revenue) }}</span>
+                              <span class="ranked-sub">({{ pkg.memberships }} terms · {{ pkg.salesSharePercent }}% mix)</span>
+                            </div>
+                          </div>
+                          <div class="ranked-track">
+                            <div class="ranked-fill"
+                              [style.width.%]="roundPct(pkg.revenue, maxPackageRevenue())"
+                              style="background: linear-gradient(90deg, #6366f1, #a855f7);">
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <section class="panel full-panel analytics-data-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">PACKAGE PERFORMANCE · SELECTED PERIOD</p>
+                    <h2>What members are buying</h2>
+                    <p class="page-subtitle">Ranked by recorded sales value; counts are membership terms, so renewals appear in the package chosen for that term.</p>
+                  </div>
+                </div>
+                <div class="table-wrap">
+                  <table class="member-list-table">
+                    <thead>
+                      <tr>
+                        <th>PACKAGE</th>
+                        <th>TERMS SOLD</th>
+                        <th>NEW MEMBERS</th>
+                        <th>RENEWALS</th>
+                        <th>RECORDED SALES</th>
+                        <th>SALES MIX</th>
+                        <th>AVG SALE</th>
+                        <th>DISCOUNTS BY SAVED RATE</th>
+                        <th>AMOUNT VARIANCE</th>
+                        <th>AVG DISCOUNT RATE</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (row of analytics.packagePerformance; track row.packageId + ':' + row.packageName) {
+                        <tr>
+                          <td><strong>{{ row.packageName }}</strong></td>
+                          <td>{{ row.memberships }}</td>
+                          <td>{{ row.newMembers }}</td>
+                          <td>{{ row.renewals }}</td>
+                          <td><strong>{{ moneyPrecise(row.revenue) }}</strong></td>
+                          <td>{{ row.salesSharePercent }}%</td>
+                          <td>{{ moneyPrecise(row.averageSale) }}</td>
+                          <td>{{ moneyPrecise(row.discountsGiven) }}</td>
+                          <td>{{ moneyPrecise(row.recordedPriceVariance) }}</td>
+                          <td>{{ row.averageDiscountPercent }}%</td>
+                        </tr>
+                      } @empty {
+                        <tr><td colspan="10"><div class="table-empty">No membership sales are recorded for this period.</div></td></tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            }
+
+            <!-- 4. COHORTS & RETENTION -->
+            @if (analyticsTab === 'retention') {
+              <h2 class="analytics-section-title">Cohort & Retention Dynamics</h2>
+              <div class="analytics-kpis">
+                <article><span>OPENING ACTIVE MEMBER BASE</span><strong>{{ analytics.openingMembers }}</strong></article>
+                <article><span>UNIQUE ACTIVE MEMBERS</span><strong>{{ analytics.activeMembers }}</strong></article>
+                <article><span>NEW MEMBERS JOINED</span><strong>{{ analytics.newMembers }}</strong></article>
+                <article><span>UNIQUE MEMBERS RENEWING</span><strong>{{ analytics.renewingMembers }}</strong></article>
+                <article><span>OPENING COHORT MEMBERS LOST</span><strong>{{ analytics.membersLeft }}</strong></article>
+                <article [style.border-color]="analytics.retentionRate >= 70 ? 'var(--emerald)' : analytics.retentionRate >= 50 ? 'var(--amber)' : 'var(--danger)'">
+                  <span>OPENING COHORT RETENTION</span>
+                  <strong [style.color]="analytics.retentionRate >= 70 ? 'var(--emerald)' : analytics.retentionRate >= 50 ? 'var(--amber)' : 'var(--danger)'">{{ analytics.retentionRate }}%</strong>
+                </article>
+                <article [style.border-color]="analytics.churnRate > 30 ? 'var(--danger)' : analytics.churnRate > 15 ? 'var(--amber)' : 'var(--border)'">
+                  <span>OPENING COHORT CHURN</span>
+                  <strong [style.color]="analytics.churnRate > 30 ? 'var(--danger)' : analytics.churnRate > 15 ? 'var(--amber)' : ''">{{ analytics.churnRate }}%</strong>
+                </article>
+                <article>
+                  <span>NET ACTIVE MEMBER GROWTH</span>
+                  <strong [style.color]="(analytics.membershipGrowthPercent ?? 0) >= 0 ? 'var(--emerald)' : 'var(--danger)'">{{ percentLabel(analytics.membershipGrowthPercent) }}</strong>
+                </article>
+              </div>
+              <p class="report-note">Retention and churn use the unique members active at the start of the selected period as the cohort. Active memberships count terms; unique active members are de-duplicated across overlapping terms.</p>
+
+              <!-- Visual Cohort Waterfall & Retention Mix Charts -->
+              <div class="analytics-charts-grid">
+                <!-- Member Flow Waterfall Visual -->
+                <div class="modern-chart-panel" style="grid-column: 1 / -1;">
+                  <div class="chart-panel-header">
+                    <div>
+                      <p class="chart-eyebrow">COHORT WATERFALL BRIDGE</p>
+                      <h3>Member Flow & Net Momentum</h3>
+                      <p class="chart-subtitle">Direct transition from opening active members to net closing cohort</p>
+                    </div>
+                    <span class="chart-badge" [class.badge-emerald]="(analytics.membershipGrowthPercent ?? 0) >= 0" [class.badge-amber]="(analytics.membershipGrowthPercent ?? 0) < 0">
+                      Growth: {{ percentLabel(analytics.membershipGrowthPercent) }}
+                    </span>
+                  </div>
+                  <div class="chart-body-area">
+                    <div class="waterfall-bridge-grid">
+                      <div class="waterfall-step step-start">
+                        <span class="step-badge">1. Starting Cohort</span>
+                        <strong class="step-big-val">{{ analytics.openingMembers }}</strong>
+                        <span class="step-subtext">Active at start of period</span>
+                      </div>
+                      <div class="waterfall-step step-plus">
+                        <span class="step-badge">2. New Joiners</span>
+                        <strong class="step-big-val">+{{ analytics.newMembers }}</strong>
+                        <span class="step-subtext">New memberships acquired</span>
+                      </div>
+                      <div class="waterfall-step step-minus">
+                        <span class="step-badge">3. Cohort Lost</span>
+                        <strong class="step-big-val">-{{ analytics.membersLeft }}</strong>
+                        <span class="step-subtext">{{ analytics.churnRate }}% opening cohort churned</span>
+                      </div>
+                      <div class="waterfall-step step-end">
+                        <span class="step-badge">4. Ending Base</span>
+                        <strong class="step-big-val">{{ analytics.activeMembers }}</strong>
+                        <span class="step-subtext">Net unique active members</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Retention Distribution Donut Chart -->
+                <div class="modern-chart-panel">
+                  <div class="chart-panel-header">
+                    <div>
+                      <p class="chart-eyebrow">COHORT EQUILIBRIUM</p>
+                      <h3>Active vs Lost Member Mix</h3>
+                      <p class="chart-subtitle">Relative proportion of retained, churned, and incoming members</p>
+                    </div>
+                    <span class="chart-badge badge-emerald">{{ analytics.retentionRate }}% Retained</span>
+                  </div>
+                  <div class="chart-body-area">
+                    <div class="donut-viz-layout">
+                      <div class="donut-svg-wrap">
+                        <svg viewBox="0 0 100 100" class="donut-svg">
+                          <circle cx="50" cy="50" r="40" class="donut-bg"></circle>
+                          @for (slice of retentionMemberSlices(); track slice.name) {
+                            <circle cx="50" cy="50" r="40" class="donut-slice"
+                              [style.stroke]="slice.color"
+                              [style.strokeDasharray]="slice.dashArray"
+                              [style.strokeDashoffset]="slice.dashOffset">
+                            </circle>
+                          }
+                        </svg>
+                        <div class="donut-center-copy">
+                          <span class="center-val">{{ analytics.activeMembers }}</span>
+                          <span class="center-lbl">Retained Base</span>
+                        </div>
+                      </div>
+                      <div class="donut-legend-list">
+                        @for (slice of retentionMemberSlices(); track slice.name) {
+                          <div class="legend-row">
+                            <div class="legend-label-group">
+                              <span class="legend-color-dot" [style.background]="slice.color"></span>
+                              <span class="legend-name">{{ slice.name }}</span>
+                            </div>
+                            <div class="legend-numbers">
+                              <span class="legend-val">{{ slice.value }}</span>
+                              <span class="legend-pct">{{ slice.percent }}%</span>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Repeat Behavior & Loyalty Share Meter -->
+                <div class="modern-chart-panel">
+                  <div class="chart-panel-header">
+                    <div>
+                      <p class="chart-eyebrow">RENEWAL DEPTH</p>
+                      <h3>Repeat Renewal Engagement</h3>
+                      <p class="chart-subtitle">Members renewing multiple consecutive terms</p>
+                    </div>
+                    <span class="chart-badge badge-blue">{{ analytics.renewingMembers }} Repeat Members</span>
+                  </div>
+                  <div class="chart-body-area">
+                    <div class="horizontal-ranked-bars">
+                      <div class="ranked-bar-row">
+                        <div class="ranked-bar-meta">
+                          <span class="ranked-name">Total Terms Generated</span>
+                          <span class="ranked-val-group">
+                            <span class="ranked-amount">{{ analytics.totalMembershipsSold }} terms</span>
+                          </span>
+                        </div>
+                        <div class="ranked-track">
+                          <div class="ranked-fill" style="width: 100%; background: #6366f1;"></div>
+                        </div>
+                      </div>
+                      <div class="ranked-bar-row">
+                        <div class="ranked-bar-meta">
+                          <span class="ranked-name">Renewal Terms</span>
+                          <span class="ranked-val-group">
+                            <span class="ranked-amount">{{ analytics.membershipRenewals }} renewals ({{ analytics.renewalRevenueSharePercent }}%)</span>
+                          </span>
+                        </div>
+                        <div class="ranked-track">
+                          <div class="ranked-fill" [style.width.%]="analytics.renewalRevenueSharePercent" style="background: #10b981;"></div>
+                        </div>
+                      </div>
+                      <div class="ranked-bar-row">
+                        <div class="ranked-bar-meta">
+                          <span class="ranked-name">New Member First Terms</span>
+                          <span class="ranked-val-group">
+                            <span class="ranked-amount">{{ analytics.newMembers }} ({{ 100 - analytics.renewalRevenueSharePercent }}%)</span>
+                          </span>
+                        </div>
+                        <div class="ranked-track">
+                          <div class="ranked-fill" [style.width.%]="100 - analytics.renewalRevenueSharePercent" style="background: #38bdf8;"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <section class="panel full-panel analytics-data-panel">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">REPEAT MEMBER BEHAVIOR</p>
+                    <h2>Members who renewed</h2>
+                    <p class="page-subtitle">Up to 100 members with at least one renewal record in this period. Annual consistency uses consecutive calendar years in which a renewal term started, across available history.</p>
+                  </div>
+                </div>
+                <div class="table-wrap">
+                  <table class="member-list-table">
+                    <thead>
+                      <tr>
+                        <th>MEMBER</th>
+                        <th>TERMS</th>
+                        <th>RENEWALS (LIFETIME)</th>
+                        <th>RENEWAL YEARS</th>
+                        <th>CONSECUTIVE YEARS</th>
+                        <th>LIFETIME RECORDED SALES</th>
+                        <th>LAST RENEWAL IN PERIOD</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (member of analytics.renewingMemberDetails; track member.memberId) {
+                        <tr>
+                          <td><strong>{{ member.memberName }}</strong><br><small>{{ member.memberEmail }}</small></td>
+                          <td>{{ member.terms }}</td>
+                          <td>{{ member.renewals }}</td>
+                          <td>{{ member.renewalYears }} ({{ member.firstRenewalYear ?? '—' }}–{{ member.lastRenewalYear ?? '—' }})</td>
+                          <td>{{ member.renewedInEveryObservedCalendarYear ? 'Yes' : member.renewalYears > 1 ? 'No — gaps' : 'Insufficient years' }}</td>
+                          <td>{{ moneyPrecise(member.lifetimeRevenue) }}</td>
+                          <td>{{ member.latestRenewalInPeriod | date:'mediumDate' }}</td>
+                        </tr>
+                      } @empty {
+                        <tr><td colspan="7"><div class="table-empty">No members renewed during this period.</div></td></tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            }
+
+            <!-- 5. GST & TAX BREAKDOWN -->
+            @if (analyticsTab === 'tax') {
+              <section class="panel tax-analytics">
+                <div class="panel-heading">
+                  <div>
+                    <p class="eyebrow">GST & TAX ESTIMATE</p>
+                    <h2>Estimated tax position</h2>
+                  </div>
+                  <span class="estimate-pill">ESTIMATE</span>
+                </div>
+                <div class="tax-metrics">
+                  <div><span>GROSS RECORDED SALES</span><strong>{{ moneyPrecise(analytics.tax.grossRecordedSales) }}</strong></div>
+                  <div><span>EST. TAXABLE SALES</span><strong>{{ moneyPrecise(analytics.tax.estimatedTaxableSales) }}</strong></div>
+                  <div><span>EST. GST INCLUDED IN SALES</span><strong>{{ moneyPrecise(analytics.tax.estimatedGstIncluded) }}</strong></div>
+                  <div><span>EST. CGST · {{ analytics.tax.cgstRate }}%</span><strong>{{ moneyPrecise(analytics.tax.estimatedCgst) }}</strong></div>
+                  <div><span>EST. SGST · {{ analytics.tax.sgstRate }}%</span><strong>{{ moneyPrecise(analytics.tax.estimatedSgst) }}</strong></div>
+                  <div><span>EST. IGST · {{ analytics.tax.igstRate }}%</span><strong>{{ moneyPrecise(analytics.tax.estimatedIgst) }}</strong></div>
+                  <div><span>RECORDED SALES EXCL. EST. GST</span><strong>{{ moneyPrecise(analytics.tax.recordedSalesExcludingEstimatedGst) }}</strong></div>
+                  <div><span>EST. OUTPUT GST BEFORE CREDITS</span><strong>{{ moneyPrecise(analytics.tax.estimatedOutputGst) }}</strong></div>
+                </div>
+
+                <!-- Visual Tax Split & Base Realization Charts -->
+                <div class="analytics-charts-grid" style="margin-top: 20px;">
+                  <!-- Tax Intake Split Donut Chart -->
+                  <div class="modern-chart-panel">
+                    <div class="chart-panel-header">
+                      <div>
+                        <p class="chart-eyebrow">GST COMPOSITION</p>
+                        <h3>Tax Component Distribution</h3>
+                        <p class="chart-subtitle">Split of estimated output taxes across CGST, SGST, and IGST</p>
+                      </div>
+                      <span class="chart-badge badge-amber">Total: {{ money(analytics.tax.estimatedOutputGst) }}</span>
+                    </div>
+                    <div class="chart-body-area">
+                      <div class="donut-viz-layout">
+                        <div class="donut-svg-wrap">
+                          <svg viewBox="0 0 100 100" class="donut-svg">
+                            <circle cx="50" cy="50" r="40" class="donut-bg"></circle>
+                            @for (slice of taxBreakdownDonutSlices(); track slice.name) {
+                              <circle cx="50" cy="50" r="40" class="donut-slice"
+                                [style.stroke]="slice.color"
+                                [style.strokeDasharray]="slice.dashArray"
+                                [style.strokeDashoffset]="slice.dashOffset">
+                              </circle>
+                            }
+                          </svg>
+                          <div class="donut-center-copy">
+                            <span class="center-val">{{ money(analytics.tax.estimatedOutputGst) }}</span>
+                            <span class="center-lbl">Total Tax</span>
+                          </div>
+                        </div>
+                        <div class="donut-legend-list">
+                          @for (slice of taxBreakdownDonutSlices(); track slice.name) {
+                            <div class="legend-row">
+                              <div class="legend-label-group">
+                                <span class="legend-color-dot" [style.background]="slice.color"></span>
+                                <span class="legend-name">{{ slice.name }}</span>
+                              </div>
+                              <div class="legend-numbers">
+                                <span class="legend-val">{{ money(slice.value) }}</span>
+                                <span class="legend-pct">{{ slice.percent }}%</span>
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Base Revenue vs Output Tax Margin Meter -->
+                  <div class="modern-chart-panel">
+                    <div class="chart-panel-header">
+                      <div>
+                        <p class="chart-eyebrow">GROSS REALIZATION</p>
+                        <h3>Net Base vs Output Tax</h3>
+                        <p class="chart-subtitle">Direct division between retained gym income and statutory tax liability</p>
+                      </div>
+                      <span class="chart-badge badge-blue">Gross: {{ money(analytics.tax.grossRecordedSales) }}</span>
+                    </div>
+                    <div class="chart-body-area">
+                      <div class="horizontal-ranked-bars">
+                        <div class="ranked-bar-row">
+                          <div class="ranked-bar-meta">
+                            <span class="ranked-name">Net Base Gym Sales (Excl. Tax)</span>
+                            <div class="ranked-val-group">
+                              <span class="ranked-amount">{{ money(analytics.tax.recordedSalesExcludingEstimatedGst) }}</span>
+                              <span class="ranked-sub">({{ roundPct(analytics.tax.recordedSalesExcludingEstimatedGst, analytics.tax.grossRecordedSales) }}%)</span>
+                            </div>
+                          </div>
+                          <div class="ranked-track">
+                            <div class="ranked-fill"
+                              [style.width.%]="roundPct(analytics.tax.recordedSalesExcludingEstimatedGst, analytics.tax.grossRecordedSales)"
+                              style="background: #6366f1;">
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="ranked-bar-row">
+                          <div class="ranked-bar-meta">
+                            <span class="ranked-name">Estimated Output GST (Before Credits)</span>
+                            <div class="ranked-val-group">
+                              <span class="ranked-amount" style="color: #f59e0b;">{{ money(analytics.tax.estimatedOutputGst) }}</span>
+                              <span class="ranked-sub">({{ roundPct(analytics.tax.estimatedOutputGst, analytics.tax.grossRecordedSales) }}%)</span>
+                            </div>
+                          </div>
+                          <div class="ranked-track">
+                            <div class="ranked-fill"
+                              [style.width.%]="roundPct(analytics.tax.estimatedOutputGst, analytics.tax.grossRecordedSales)"
+                              style="background: #f59e0b;">
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="ranked-bar-row">
+                          <div class="ranked-bar-meta">
+                            <span class="ranked-name">Intra-State CGST + SGST Share</span>
+                            <div class="ranked-val-group">
+                              <span class="ranked-amount">{{ money(analytics.tax.estimatedCgst + analytics.tax.estimatedSgst) }}</span>
+                              <span class="ranked-sub">({{ analytics.tax.cgstRate + analytics.tax.sgstRate }}% Combined)</span>
+                            </div>
+                          </div>
+                          <div class="ranked-track">
+                            <div class="ranked-fill"
+                              [style.width.%]="roundPct(analytics.tax.estimatedCgst + analytics.tax.estimatedSgst, analytics.tax.grossRecordedSales)"
+                              style="background: #10b981;">
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <p class="report-note">Indicative only: assumes recorded term amounts include GST at the configured rates and one configured supply type. The system has no per-sale tax/place-of-supply snapshots, payment/refund ledger, input-tax credits, or adjustments. This is estimated output GST before credits—not actual GST collected or payable and not a statutory reconciliation.</p>
+              </section>
+            }
+          }
+          <p class="report-note">Sales show the membership amount recorded on term creation. Discounts are calculated from each term's saved list price and discount rate; amount variance compares the recorded amount to that implied discounted price. Date ranges are limited to 366 days.</p>
+        </section>

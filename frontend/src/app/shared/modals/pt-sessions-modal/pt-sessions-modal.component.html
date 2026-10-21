@@ -1,0 +1,169 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="renewal-dialog sessions-modal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="pt-sessions-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">TRAINER SCHEDULE & FULFILLMENT</p>
+        <h2 id="pt-sessions-modal-title">{{ pt.fullName }} · Client Sessions</h2>
+        <p class="dialog-subtitle">{{ pt.specializations || 'Fitness Coach' }} · {{ money(pt.sessionFeePerHour) }}/hr · {{ pt.commissionPercent }}% trainer split</p>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Close sessions modal"
+        (click)="close.emit()"
+      >
+        ×
+      </button>
+    </div>
+
+    <div style="padding: 16px 20px;">
+      <!-- Filter Tabs -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <div class="branch-filter-tabs">
+          <button type="button" class="branch-filter-pill" [class.active]="filter === 'ALL'" (click)="filterChange.emit('ALL')">
+            All ({{ totalSessionsCount }})
+          </button>
+          <button type="button" class="branch-filter-pill" [class.active]="filter === 'BOOKED'" (click)="filterChange.emit('BOOKED')">
+            📅 Booked
+          </button>
+          <button type="button" class="branch-filter-pill" [class.active]="filter === 'COMPLETED'" (click)="filterChange.emit('COMPLETED')">
+            ✓ Completed
+          </button>
+          <button type="button" class="branch-filter-pill" [class.active]="filter === 'MISSED'" (click)="filterChange.emit('MISSED')">
+            ⚠️ Missed
+          </button>
+          <button type="button" class="branch-filter-pill" [class.active]="filter === 'CANCELLED'" (click)="filterChange.emit('CANCELLED')">
+            ✕ Cancelled
+          </button>
+        </div>
+        <button type="button" class="button button-outline" style="font-size: 11px; padding: 4px 10px;" (click)="refresh.emit(pt.id)" [disabled]="loading">
+          {{ loading ? 'Refreshing…' : '↻ Refresh' }}
+        </button>
+      </div>
+
+      @if (loading) {
+        <div style="text-align: center; padding: 30px; color: var(--muted);">Loading trainer session schedule…</div>
+      } @else {
+        <div class="table-wrap" style="max-height: 420px; overflow-y: auto;">
+          <table class="member-list-table">
+            <thead>
+              <tr>
+                <th>DATE & TIME</th>
+                <th>CLIENT MEMBER</th>
+                <th>SESSION FEE</th>
+                <th>COMMISSION</th>
+                <th>STATUS</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (session of sessions; track session.id) {
+                <tr>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div class="pt-session-calendar-badge" style="padding: 4px 8px; border-radius: var(--r-sm); background: var(--surface-2); font-size: 11px; text-align: center;">
+                        <strong>{{ session.scheduledDate | date:'dd MMM' }}</strong>
+                      </div>
+                      <div>
+                        <div style="font-weight: 700; font-size: 12px; color: var(--ink);">{{ dateLabel(session.scheduledDate) }}</div>
+                        <div class="status-detail">{{ session.startTime }} – {{ session.endTime }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <strong>{{ session.memberName }}</strong>
+                  </td>
+                  <td><strong>{{ money(session.sessionFeeSnapshot) }}</strong></td>
+                  <td>
+                    <span class="tag" style="color: var(--emerald); font-weight: 700;">
+                      {{ session.commissionRateSnapshot }}% ({{ money(roundCommission(session.sessionFeeSnapshot, session.commissionRateSnapshot)) }})
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-pill"
+                      [class.status-booked]="session.status === 'BOOKED'"
+                      [class.status-completed]="session.status === 'COMPLETED'"
+                      [class.status-missed]="session.status === 'MISSED'"
+                      [class.status-cancelled]="session.status === 'CANCELLED'"
+                      [class.status-tentative]="session.status === 'TENTATIVE'">
+                      {{ session.status === 'BOOKED' ? '📅 Booked' : session.status === 'COMPLETED' ? '✓ Completed' : session.status === 'MISSED' ? '⚠️ Missed' : session.status === 'CANCELLED' ? '✕ Cancelled' : session.status }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (session.status === 'BOOKED' || session.status === 'TENTATIVE') {
+                      <div class="member-actions">
+                        <button
+                          class="member-action-button member-action-renew"
+                          type="button"
+                          (click)="complete.emit(session)"
+                          [disabled]="busy"
+                          title="Mark session completed and generate trainer earnings"
+                        >
+                          ✓ Complete
+                        </button>
+                        <button
+                          class="member-action-button member-action-danger"
+                          type="button"
+                          (click)="markMissed.emit(session)"
+                          [disabled]="busy"
+                          title="Mark member as missed/no-show"
+                        >
+                          Missed
+                        </button>
+                        <button
+                          class="member-action-button"
+                          type="button"
+                          (click)="cancel.emit(session)"
+                          [disabled]="busy"
+                          title="Cancel session"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    } @else if (session.status === 'COMPLETED') {
+                      <div style="display: flex; flex-direction: column; gap: 3px;">
+                        <span style="color: var(--emerald); font-size: 11px; font-weight: 700;">
+                          ✓ Done {{ session.completedAt ? (session.completedAt | date:'shortDate') : '' }}
+                        </span>
+                        @if (session.verificationMethod === 'MEMBER_PIN') {
+                          <span class="verification-badge pin" title="Verified via Client Attendance PIN">🔐 Client PIN</span>
+                        } @else if (session.verificationMethod === 'STAFF_OVERRIDE') {
+                          <span class="verification-badge override" title="Verified via Supervisor Override">⚡ Staff Override</span>
+                        }
+                      </div>
+                    } @else {
+                      <span class="status-detail">{{ session.status }}</span>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="6">
+                    <div class="table-empty" style="padding: 30px; text-align: center;">
+                      No sessions found for this trainer under the selected filter.
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      @if (error) {
+        <p class="form-error" role="alert" style="margin-top: 14px;">{{ error }}</p>
+      }
+
+      <div class="form-actions" style="margin-top: 20px; display: flex; justify-content: flex-end;">
+        <button type="button" class="button button-quiet" (click)="close.emit()">Close</button>
+      </div>
+    </div>
+  </section>
+</div>
+

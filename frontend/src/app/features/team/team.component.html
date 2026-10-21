@@ -1,0 +1,348 @@
+<section class="page-content">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">ORGANIZATION & ACCESS</p>
+      <h1>Team & Staff Directory</h1>
+      <p class="page-subtitle">Manage staff logins, branch permissions, and role-based access control.</p>
+    </div>
+  </div>
+
+  <!-- Team KPI Strip -->
+  <div class="team-kpi-strip">
+    <div class="team-kpi-card">
+      <span class="team-kpi-label">STAFF SEATS ALLOCATED</span>
+      <strong class="team-kpi-val">{{ staff.length }} / {{ maxStaffDisplay }}</strong>
+      <small class="team-kpi-sub">
+        @if (hasReachedStaffLimit) {
+          <span style="color: var(--danger); font-weight: 700;">Plan limit reached ({{ maxStaffDisplay }} max)</span>
+        } @else {
+          Active front desk & operators
+        }
+      </small>
+    </div>
+    <div class="team-kpi-card">
+      <span class="team-kpi-label">BRANCHES COVERED</span>
+      <strong class="team-kpi-val">{{ activeBranches.length }}</strong>
+      <small class="team-kpi-sub">Assigned operating facilities</small>
+    </div>
+    <div class="team-kpi-card">
+      <span class="team-kpi-label">ACCESS SECURITY</span>
+      <strong class="team-kpi-val" style="color: var(--emerald);">ROLE-BASED</strong>
+      <small class="team-kpi-sub">Financials restricted to Owner</small>
+    </div>
+  </div>
+
+  <div class="team-layout">
+    <!-- Left Panel: Create Staff -->
+    <section class="panel team-editor">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">CREDENTIAL PROVISIONING</p>
+          <h2>Add Team Member</h2>
+          <p class="page-subtitle">Issue a secure sign-in for front desk or branch personnel.</p>
+        </div>
+      </div>
+
+      @if (hasReachedStaffLimit) {
+        <div class="staff-limit-warning-banner" style="background: rgba(239, 68, 68, 0.08); border: 1.5px dashed rgba(239, 68, 68, 0.4); border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+          <strong style="color: var(--danger); display: block; font-size: 13px; margin-bottom: 4px;">Staff Seat Limit Reached</strong>
+          <p style="font-size: 12px; color: var(--muted); margin: 0 0 10px;">
+            Your <strong>{{ tierBadgeLabel(subscriptionTier) }}</strong> plan allows up to <strong>{{ maxStaffDisplay }}</strong> staff logins. Upgrade your subscription to add additional team operators.
+          </p>
+          <button type="button" class="button button-dark" style="font-size: 11px; padding: 5px 12px;" (click)="openUpgradeModal.emit('general')">
+            ★ Upgrade Plan to Expand Seats ↗
+          </button>
+        </div>
+      }
+
+      <form class="team-form" (ngSubmit)="createStaff.emit()" novalidate>
+        <div class="form-group-block">
+          <span class="form-group-title">01 · Personal Information</span>
+          <label>
+            <span class="field-label-text">Full Name <span class="req-star">*</span></span>
+            <input
+              name="staffName"
+              [(ngModel)]="staffDraft.fullName"
+              [class.input-has-error]="hasFieldError('staffName')"
+              (input)="clearFieldError.emit('staffName')"
+              required
+              maxlength="100"
+              placeholder="e.g. Alex Rivera"
+            />
+            @if (hasFieldError('staffName')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('staffName') }}</span>
+            }
+          </label>
+          <label>
+            <span class="field-label-text">Email Address (Sign-in) <span class="req-star">*</span></span>
+            <input
+              name="staffEmail"
+              [(ngModel)]="staffDraft.email"
+              [class.input-has-error]="hasFieldError('staffEmail')"
+              (input)="clearFieldError.emit('staffEmail')"
+              type="email"
+              required
+              placeholder="alex@gymflow.com"
+            />
+            @if (hasFieldError('staffEmail')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('staffEmail') }}</span>
+            }
+          </label>
+          <label>
+            <span class="field-label-text">Phone Number <small class="opt-label">(Optional)</small></span>
+            <input
+              name="staffPhone"
+              [(ngModel)]="staffDraft.phoneNumber"
+              type="tel"
+              placeholder="+91 98765 43210"
+            />
+          </label>
+        </div>
+
+        <div class="form-group-block">
+          <span class="form-group-title">02 · Branch & Access Credentials</span>
+          <label>
+            <span class="field-label-text">Assigned Branch Facility <span class="req-star">*</span></span>
+            <select
+              name="staffBranch"
+              [(ngModel)]="staffDraft.branchId"
+              [class.input-has-error]="hasFieldError('staffBranch')"
+              (change)="clearFieldError.emit('staffBranch')"
+              required
+            >
+              <option value="" disabled>Select assigned branch</option>
+              @for (branch of activeBranches; track branch.id) {
+                <option [value]="branch.id">📍 {{ branch.name }} ({{ branch.code }})</option>
+              }
+            </select>
+            @if (hasFieldError('staffBranch')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('staffBranch') }}</span>
+            }
+          </label>
+          <label>
+            <span class="field-label-text">Temporary Password <span class="req-star">*</span></span>
+            <input
+              name="staffPassword"
+              [(ngModel)]="staffDraft.password"
+              [class.input-has-error]="hasFieldError('staffPassword')"
+              (input)="clearFieldError.emit('staffPassword')"
+              type="password"
+              required
+              minlength="8"
+              maxlength="72"
+              placeholder="Minimum 8 characters"
+            />
+            <small>Staff member will use this to sign into the front desk dashboard.</small>
+            @if (hasFieldError('staffPassword')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('staffPassword') }}</span>
+            }
+          </label>
+        </div>
+
+        <div class="team-security-callout">
+          <div class="callout-icon">🛡️</div>
+          <div class="callout-text">
+            <strong>Permission Scope:</strong> Staff accounts can enroll members, process renewals, verify facility access, and record freeze/term adjustments. Financial analytics, package pricing, and user accounts remain owner-only.
+          </div>
+        </div>
+
+        <button class="button button-dark" style="width: 100%; justify-content: center;" type="submit" [disabled]="busy || hasReachedStaffLimit">
+          {{ busy ? 'Provisioning Account…' : 'Create Staff Login ↗' }}
+        </button>
+      </form>
+    </section>
+
+    <!-- Right Panel: Staff Directory -->
+    <section class="panel team-list">
+      <div class="panel-heading team-list-header">
+        <div>
+          <p class="eyebrow">ACTIVE OPERATORS</p>
+          <h2>Staff Accounts ({{ filteredStaff.length }})</h2>
+        </div>
+        <!-- Search Box for instant filtering -->
+        <div class="staff-search-wrapper">
+          <span class="staff-search-icon">🔍</span>
+          <input
+            type="text"
+            [ngModel]="staffSearchTerm"
+            (ngModelChange)="staffSearchTermChange.emit($event)"
+            placeholder="Search staff by name, email, or branch…"
+            aria-label="Filter staff members"
+          />
+          @if (staffSearchTerm) {
+            <button type="button" class="staff-search-clear" (click)="staffSearchTermChange.emit('')">✕</button>
+          }
+        </div>
+      </div>
+
+      <div class="staff-cards-container">
+        @for (person of filteredStaff; track person.id) {
+          <article class="modern-staff-card">
+            <div class="staff-card-avatar">{{ initials(person.fullName) }}</div>
+            <div class="staff-card-content">
+              <div class="staff-card-top-row">
+                <strong class="staff-card-name">{{ person.fullName }}</strong>
+                <span class="staff-role-badge">🛡️ STAFF</span>
+              </div>
+              <div class="staff-card-contacts">
+                <a [href]="'mailto:' + person.email" class="staff-contact-link" title="Send email">
+                  ✉️ {{ person.email }}
+                </a>
+                @if (person.phoneNumber) {
+                  <a [href]="'tel:' + person.phoneNumber" class="staff-contact-link" title="Call phone">
+                    📞 {{ person.phoneNumber }}
+                  </a>
+                } @else {
+                  <span class="staff-contact-link muted">📞 No phone added</span>
+                }
+              </div>
+              <div class="staff-card-bottom-row">
+                <span class="staff-branch-pill">
+                  📍 {{ person.branchName || 'All Club Locations' }}
+                </span>
+                <div style="display: flex; gap: 8px;">
+                  <button
+                    class="staff-edit-btn"
+                    type="button"
+                    title="Edit staff details"
+                    (click)="openEditStaffModal.emit(person)"
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button
+                    class="staff-delete-btn"
+                    type="button"
+                    title="Revoke staff account access"
+                    (click)="deleteStaff.emit(person)"
+                  >
+                    Revoke
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        } @empty {
+          <div class="modern-member-empty-state">
+            <div class="empty-icon-circle">👥</div>
+            <h3>{{ staffSearchTerm ? 'No staff found matching "' + staffSearchTerm + '"' : 'No staff accounts configured' }}</h3>
+            <p>{{ staffSearchTerm ? 'Try clearing the search query to see all staff members.' : 'Use the form on the left to add your first staff member.' }}</p>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+  <footer class="page-footer">
+    <span>{{ staff.length }} STAFF ACCOUNTS</span><span>ROLE-BASED ACCESS CONTROL (RBAC)</span>
+  </footer>
+
+  <!-- Edit Staff Details Modal -->
+  @if (editingStaff) {
+    <div class="renewal-backdrop" (click)="closeEditStaffModal.emit()">
+      <section
+        class="renewal-dialog edit-staff-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-staff-title"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">UPDATE OPERATOR CREDENTIALS</p>
+            <h2 id="edit-staff-title">Edit Staff Member</h2>
+          </div>
+          <button
+            class="icon-button"
+            title="Close dialog"
+            aria-label="Close dialog"
+            (click)="closeEditStaffModal.emit()"
+          >
+            ×
+          </button>
+        </div>
+
+        <form class="renewal-form" (ngSubmit)="saveStaffEdit.emit()" novalidate>
+          <label>
+            <span class="field-label-text">Full Name <span class="req-star">*</span></span>
+            <input
+              name="editStaffFullName"
+              [(ngModel)]="staffEditDraft.fullName"
+              required
+              maxlength="100"
+              placeholder="e.g. Alex Rivera"
+              [class.input-has-error]="hasFieldError('staffEditFullName')"
+              (input)="clearFieldError.emit('staffEditFullName')"
+            />
+            @if (hasFieldError('staffEditFullName')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('staffEditFullName') }}</span>
+            }
+          </label>
+
+          <label>
+            Sign-in Email (Read-Only)
+            <input
+              [value]="staffEditDraft.email"
+              disabled
+              style="opacity: 0.7; cursor: not-allowed; background: var(--surface-2);"
+            />
+            <small style="color: var(--muted); font-size: 11px; text-transform: none; font-weight: 500;">
+              Primary identity email cannot be altered.
+            </small>
+          </label>
+
+          <label>
+            <span class="field-label-text">Phone Number <span class="label-note">OPTIONAL</span></span>
+            <input
+              name="editStaffPhone"
+              [(ngModel)]="staffEditDraft.phoneNumber"
+              type="tel"
+              placeholder="+91 98765 43210"
+            />
+          </label>
+
+          <label>
+            <span class="field-label-text">Assigned Branch Facility <span class="req-star">*</span></span>
+            <select
+              name="editStaffBranch"
+              [(ngModel)]="staffEditDraft.branchId"
+              [class.input-has-error]="hasFieldError('editStaffBranch')"
+              (change)="clearFieldError.emit('editStaffBranch')"
+              required
+            >
+              @for (branch of activeBranches; track branch.id) {
+                <option [value]="branch.id">📍 {{ branch.name }} ({{ branch.code }})</option>
+              }
+            </select>
+            @if (hasFieldError('editStaffBranch')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('editStaffBranch') }}</span>
+            }
+          </label>
+
+          <label>
+            <span class="field-label-text">Reset Password <span class="label-note">OPTIONAL</span></span>
+            <input
+              name="editStaffPassword"
+              [(ngModel)]="staffEditDraft.password"
+              type="password"
+              minlength="8"
+              maxlength="72"
+              placeholder="Leave blank to keep existing password"
+              [class.input-has-error]="hasFieldError('editStaffPassword')"
+              (input)="clearFieldError.emit('editStaffPassword')"
+            />
+            @if (hasFieldError('editStaffPassword')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('editStaffPassword') }}</span>
+            }
+          </label>
+
+          <div class="form-actions" style="margin-top: 6px;">
+            <button type="button" class="button button-quiet" (click)="closeEditStaffModal.emit()">Cancel</button>
+            <button type="submit" class="button button-dark" [disabled]="busy || !staffEditDraft.fullName.trim()">
+              {{ busy ? 'Saving…' : 'Save Details ↗' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+</section>
+

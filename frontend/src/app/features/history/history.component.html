@@ -1,0 +1,223 @@
+<section class="page-content history-page">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">AUDIT TRAILS & NOTIFICATIONS</p>
+      <h1>Action History & Reminders</h1>
+      <p class="page-subtitle">Complete chronological accountability logs of changes across packages, memberships, branches, and staff.</p>
+    </div>
+  </div>
+
+  <!-- History Sub-tabs -->
+  <div class="history-tab-switcher">
+    <button
+      type="button"
+      class="history-tab-chip"
+      [class.active]="historyTab === 'audit'"
+      (click)="historyTabChange.emit('audit')"
+    >
+      <span class="chip-count">{{ actionHistory.length }}</span> 📜 Operational Audit Log
+    </button>
+    <button
+      type="button"
+      class="history-tab-chip"
+      [class.active]="historyTab === 'email'"
+      (click)="historyTabChange.emit('email')"
+    >
+      <span class="chip-count">{{ renewalReminders.length }}</span> ✉️ Automated Renewal Reminders
+    </button>
+  </div>
+
+  @if (historyTab === 'audit') {
+    <!-- Audit Entity Filter Chips & Search Bar -->
+    <div class="audit-filter-bar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+      <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+        <span class="filter-label">Filter Events:</span>
+        <button type="button" class="audit-filter-chip" [class.selected]="auditFilter === 'ALL'" (click)="auditFilterChange.emit('ALL')">
+          All Events ({{ actionHistory.length }})
+        </button>
+        <button type="button" class="audit-filter-chip" [class.selected]="auditFilter === 'MEMBERSHIP'" (click)="auditFilterChange.emit('MEMBERSHIP')">
+          👥 Memberships ({{ auditMembershipCount }})
+        </button>
+        <button type="button" class="audit-filter-chip" [class.selected]="auditFilter === 'PACKAGE'" (click)="auditFilterChange.emit('PACKAGE')">
+          📦 Packages ({{ auditPackageCount }})
+        </button>
+        <button type="button" class="audit-filter-chip" [class.selected]="auditFilter === 'BRANCH'" (click)="auditFilterChange.emit('BRANCH')">
+          📍 Branches ({{ auditBranchCount }})
+        </button>
+        <button type="button" class="audit-filter-chip" [class.selected]="auditFilter === 'STAFF'" (click)="auditFilterChange.emit('STAFF')">
+          🛡️ Staff ({{ auditStaffCount }})
+        </button>
+        <button type="button" class="audit-filter-chip" [class.selected]="auditFilter === 'PT'" (click)="auditFilterChange.emit('PT')">
+          ⚡ Personal Training ({{ auditPtCount }})
+        </button>
+      </div>
+      <div class="staff-search-box" style="margin: 0; min-width: 260px;">
+        <span class="search-icon">🔍</span>
+        <input type="search" placeholder="Search actor, action, reason, ID..." [ngModel]="auditSearchTerm" (ngModelChange)="auditSearchTermChange.emit($event)" />
+      </div>
+    </div>
+
+    <section class="audit-list" aria-label="Recent audited actions">
+      @for (entry of filteredAuditHistory; track entry.id) {
+        <article class="modern-audit-card">
+          <div class="audit-card-top">
+            <span class="audit-action-pill" [class]="auditActionClass(entry.action)">
+              {{ auditActionLabel(entry.action) }}
+            </span>
+            <div class="audit-top-meta">
+              <span class="audit-entity-tag">{{ entry.entityType }} <b>#{{ entry.entityId }}</b></span>
+              <time class="audit-time">{{ entry.occurredAt | date:'medium' }}</time>
+            </div>
+          </div>
+
+          <div class="audit-actor-row">
+            <span class="actor-avatar">{{ initials(entry.actorName) }}</span>
+            <div class="actor-info">
+              <strong class="actor-name">{{ entry.actorName }}</strong>
+              <small class="actor-email">{{ entry.actorEmail }}</small>
+            </div>
+          </div>
+
+          @if (entry.reason) {
+            <div class="audit-reason-box">
+              <span class="reason-tag">REASON</span>
+              <p class="reason-text">{{ entry.reason }}</p>
+            </div>
+          }
+
+          <details class="audit-details">
+            <summary class="audit-summary-btn">
+              <span>View Field Modifications</span>
+              <span class="summary-arrow" aria-hidden="true">▾</span>
+            </summary>
+            <div class="audit-diff-container">
+              <table class="audit-diff-table">
+                <thead>
+                  <tr>
+                    <th>MODIFIED FIELD</th>
+                    <th>ORIGINAL VALUE</th>
+                    <th>NEW VALUE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (change of auditChanges(entry); track change.field) {
+                    <tr>
+                      <td class="diff-field"><strong>{{ change.field }}</strong></td>
+                      <td class="diff-before"><span>{{ change.before }}</span></td>
+                      <td class="diff-after"><strong>{{ change.after }}</strong></td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="3" class="diff-empty">No field-level delta recorded for this event.</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </article>
+      } @empty {
+        <div class="modern-member-empty-state">
+          <div class="empty-icon-circle">📜</div>
+          <h3>No audit logs match this filter</h3>
+          <p>Choose "All Events" or clear your search query to inspect recorded operational actions.</p>
+        </div>
+      }
+    </section>
+  } @else {
+    <section class="panel full-panel reminder-panel">
+      <div class="panel-heading" style="flex-wrap: wrap; gap: 12px;">
+        <div>
+          <p class="eyebrow">AUTOMATED EXPIRY DISPATCHER</p>
+          <h2>Renewal Email Notifications ({{ filteredRenewalReminders.length }})</h2>
+          <p class="page-subtitle">Multi-recipient alerts delivered 7, 3, and 1 days before membership term expiry.</p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <div class="branch-filter-tabs">
+            <button type="button" class="branch-filter-pill" [class.active]="reminderStatusFilter === 'ALL'" (click)="reminderStatusFilterChange.emit('ALL')">
+              All ({{ renewalReminders.length }})
+            </button>
+            <button type="button" class="branch-filter-pill" [class.active]="reminderStatusFilter === 'SENT'" (click)="reminderStatusFilterChange.emit('SENT')">
+              ✓ Delivered ({{ sentRemindersCount }})
+            </button>
+            <button type="button" class="branch-filter-pill" [class.active]="reminderStatusFilter === 'PENDING'" (click)="reminderStatusFilterChange.emit('PENDING')">
+              ⏳ Scheduled ({{ pendingRemindersCount }})
+            </button>
+            <button type="button" class="branch-filter-pill" [class.active]="reminderStatusFilter === 'FAILED'" (click)="reminderStatusFilterChange.emit('FAILED')">
+              ⚠️ Failed ({{ failedRemindersCount }})
+            </button>
+          </div>
+          <div class="staff-search-box">
+            <span class="search-icon">🔍</span>
+            <input type="search" placeholder="Search recipient, member..." [ngModel]="reminderSearchTerm" (ngModelChange)="reminderSearchTermChange.emit($event)" />
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="overview-table reminder-table">
+          <thead>
+            <tr>
+              <th>MEMBER</th>
+              <th>RECIPIENT & NOTICE</th>
+              <th>DISPATCH TIMING</th>
+              <th>DELIVERY STATUS</th>
+              <th>RETRIES</th>
+              <th>DELIVERY LOG / ERROR</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (reminder of filteredRenewalReminders; track reminder.id) {
+              <tr>
+                <td>
+                  <div class="overview-member-cell">
+                    <span class="overview-avatar">{{ initials(reminder.memberName) }}</span>
+                    <div class="overview-member-info">
+                      <strong class="overview-member-name">{{ reminder.memberName }}</strong>
+                      <small class="overview-member-email">Membership #{{ reminder.membershipId }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="reminder-recipient-cell">
+                    <span class="recipient-email-val">✉️ {{ reminder.recipientEmail }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="term-days-tag">⏰ {{ reminder.daysBefore }}d prior to expiry</span>
+                </td>
+                <td>
+                  <span
+                    class="status-pill"
+                    [class.status-completed]="reminder.status === 'SENT'"
+                    [class.status-pending]="reminder.status === 'PENDING'"
+                    [class.status-inactive]="reminder.status === 'FAILED' || reminder.status === 'SUPPRESSED'"
+                  >
+                    {{ reminder.status === 'SENT' ? '✓ Delivered' : reminder.status === 'PENDING' ? '⏳ Scheduled' : reminder.status }}
+                  </span>
+                </td>
+                <td>
+                  <span class="retry-count-badge">{{ reminder.attempts }} {{ reminder.attempts === 1 ? 'try' : 'tries' }}</span>
+                </td>
+                <td>
+                  <small class="reminder-log-text">
+                    {{ reminder.sentAt ? (reminder.sentAt | date:'medium') : reminder.lastError || 'Pending queue execution' }}
+                  </small>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">
+                  <div class="table-empty">No renewal notifications found matching the selected filter. The automated reminder engine evaluates terms ending within 7 days every 15 minutes.</div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+  <footer class="page-footer">
+    <span>SYSTEM AUDIT & NOTIFICATIONS</span><span>TAMPER-RESISTANT LOGS</span>
+  </footer>
+</section>
+

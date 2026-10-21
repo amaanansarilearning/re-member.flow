@@ -1,0 +1,366 @@
+        <section class="page-content member-page-container">
+          <!-- Page Header -->
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">COMMUNITY & MEMBERSHIPS</p>
+              <h1>{{ user!.role === 'MEMBER' ? 'My Membership & Access' : 'Member Directory' }}</h1>
+              <p class="page-subtitle">{{ user!.role === 'MEMBER' ? 'Review your active plan, facility check-in status, and trainer attendance credentials.' : 'Manage memberships, check facility access, and review member histories.' }}</p>
+            </div>
+            @if (user!.role !== 'MEMBER') {
+              <button class="button button-lime" (click)="navigate.emit('register')">
+                <span>＋</span> Register member
+              </button>
+            }
+          </div>
+
+          @if (user!.role === 'MEMBER' && user!.memberPin) {
+            <div class="member-pin-banner">
+              <div class="pin-banner-icon">🔐</div>
+              <div class="pin-banner-info">
+                <span class="pin-banner-kicker">PERSONAL TRAINING ATTENDANCE PIN</span>
+                <h3>Your Session Verification PIN is <span class="pin-code">{{ user!.memberPin }}</span></h3>
+                <p>Provide this 4-digit code to your trainer at the end of every workout to verify mutual attendance.</p>
+              </div>
+              <button type="button" class="pin-copy-btn" (click)="onCopy(user!.memberPin!, 'Attendance PIN copied: ' + user!.memberPin)">
+                Copy PIN
+              </button>
+            </div>
+          }
+
+          @if (user!.role !== 'MEMBER') {
+            <!-- Quick Interactive KPI Metric Chips -->
+            <div class="member-stat-strip">
+              <button type="button" class="stat-pill-chip" [class.active]="memberFilter === 'all'" (click)="selectMemberFilter.emit('all')">
+                <span class="stat-indicator-dot dot-all"></span>
+                <span class="stat-label">All Members</span>
+                <span class="stat-count">{{ membershipTotal }}</span>
+              </button>
+              <button type="button" class="stat-pill-chip" [class.active]="memberFilter === 'active'" (click)="selectMemberFilter.emit('active')">
+                <span class="stat-indicator-dot dot-active"></span>
+                <span class="stat-label">In Term</span>
+                <span class="stat-count">{{ activeMembersCount }}</span>
+              </button>
+              <button type="button" class="stat-pill-chip" [class.active]="memberFilter === 'expiring'" (click)="selectMemberFilter.emit('expiring')">
+                <span class="stat-indicator-dot dot-expiring"></span>
+                <span class="stat-label">Ending Soon</span>
+                <span class="stat-count">{{ expiringMembersCount }}</span>
+              </button>
+              <button type="button" class="stat-pill-chip" [class.active]="memberFilter === 'cancelled'" (click)="selectMemberFilter.emit('cancelled')">
+                <span class="stat-indicator-dot dot-cancelled"></span>
+                <span class="stat-label">Cancelled</span>
+                <span class="stat-count">{{ cancelledMembersCount }}</span>
+              </button>
+            </div>
+
+            <!-- Search & Utility Controls Toolbar -->
+            <div class="member-modern-toolbar">
+              <div class="searchbox member-search-input">
+                <span class="search-icon" aria-hidden="true">⌕</span>
+                <input
+                  aria-label="Search members"
+                  placeholder="Search member by name or email…"
+                  [ngModel]="searchTerm" (ngModelChange)="onSearchTermChange($event)"
+                />
+                @if (searchTerm) {
+                  <button type="button" class="search-clear-btn" aria-label="Clear search" (click)="onClearSearch()">×</button>
+                }
+              </div>
+
+              <div class="member-toolbar-actions">
+                <span class="member-count-pill">
+                  <strong>{{ membershipGroups.length }}</strong> of {{ membershipTotal }} members
+                </span>
+
+                <button type="button" class="toolbar-btn" (click)="refreshMembersDirectory.emit()" [disabled]="busy" title="Refresh member directory">
+                  <span class="btn-icon" aria-hidden="true">↻</span>
+                  <span>Refresh</span>
+                </button>
+
+                @if (user!.role === 'OWNER') {
+                  <button type="button" class="toolbar-btn toolbar-btn-export" (click)="exportReport.emit('memberships')" title="Export member list as CSV">
+                    <span class="btn-icon" aria-hidden="true">📥</span>
+                    <span>Export CSV</span>
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Member Cards List -->
+          <div class="member-roster-grid">
+            @for (group of membershipGroups; track group.memberId) {
+              @let member = currentTerm(group);
+              <article class="modern-member-card">
+                <!-- Card Header -->
+                <div class="modern-card-header">
+                  <div class="member-identity-group">
+                    <div class="modern-avatar-badge">
+                      <span class="avatar-initials">{{ initials(group.memberName) }}</span>
+                      <span class="status-indicator-dot"
+                        [class.dot-active]="groupState(group) === 'Active' || groupState(group) === 'Active · renewal scheduled'"
+                        [class.dot-expiring]="groupState(group) === 'Expiring'"
+                        [class.dot-frozen]="groupState(group) === 'Frozen' || groupState(group) === 'Freeze scheduled'"
+                        [class.dot-cancelled]="groupState(group) === 'Cancelled' || groupState(group) === 'Expired'"
+                        [class.dot-upcoming]="isUpcoming(member.startDate)">
+                      </span>
+                    </div>
+
+                    <div class="member-title-block">
+                      <div class="member-name-row">
+                        <h2 class="member-display-name">{{ group.memberName }}</h2>
+                        <span class="branch-pill-tag">
+                          <span class="branch-icon" aria-hidden="true">📍</span> {{ member.branchName || 'All locations' }}
+                        </span>
+                      </div>
+                      <div class="member-contact-row">
+                        <button type="button" class="contact-pill copyable" (click)="onCopy(group.email, 'Email copied: ' + group.email)" title="Click to copy email">
+                          <span aria-hidden="true">✉</span> {{ group.email }}
+                        </button>
+                        @if (group.phoneNumber) {
+                          <button type="button" class="contact-pill copyable" (click)="onCopy(group.phoneNumber, 'Phone copied: ' + group.phoneNumber)" title="Click to copy phone">
+                            <span aria-hidden="true">📞</span> {{ group.phoneNumber }}
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="member-status-group">
+                    <span class="status-pill"
+                      [class.status-expiring]="groupState(group) === 'Expiring'"
+                      [class.status-upcoming]="isUpcoming(member.startDate)"
+                      [class.status-renewed]="groupState(group) === 'Active · renewal scheduled'"
+                      [class.status-frozen]="groupState(group) === 'Frozen'"
+                      [class.status-freeze-scheduled]="groupState(group) === 'Freeze scheduled'"
+                      [class.status-inactive]="groupState(group) === 'Cancelled' || groupState(group) === 'Expired'"
+                    >{{ groupState(group) }}</span>
+                    <span class="term-countdown-tag">{{ termDaysRemainingLabel(member) }}</span>
+                  </div>
+                </div>
+
+                <!-- Card Details Grid -->
+                <div class="modern-card-body">
+                  <!-- Col 1: Package -->
+                  <div class="card-metric-block">
+                    <span class="metric-caption">PACKAGE</span>
+                    <strong class="metric-primary-val">{{ member.planName }}</strong>
+                    <span class="metric-sub-val">{{ money(member.listPrice) }} · {{ member.planDurationMonths ? member.planDurationMonths + ' mo' : member.planDurationDays + ' days' }}</span>
+                  </div>
+
+                  <!-- Col 2: Trainer Assignment -->
+                  <div class="card-metric-block">
+                    <span class="metric-caption">PERSONAL TRAINER</span>
+                    @if (member.personalTrainerName) {
+                      <strong class="metric-primary-val trainer-name-val">
+                        <span class="pt-icon" aria-hidden="true">⚡</span> {{ member.personalTrainerName }}
+                      </strong>
+                      <div class="pt-session-tracker">
+                        <div class="pt-progress-track">
+                          <div class="pt-progress-fill" [style.width.%]="ptSessionProgress(member)"></div>
+                        </div>
+                        <span class="pt-progress-label">
+                          {{ member.ptSessionsUsed ?? 0 }} of {{ member.ptSessionsIncluded ?? 0 }} sessions used
+                        </span>
+                      </div>
+                    } @else {
+                      <strong class="metric-primary-val pt-none-val">No trainer</strong>
+                      <span class="metric-sub-val">Standard access</span>
+                    }
+                  </div>
+
+                  <!-- Col 3: Term Period -->
+                  <div class="card-metric-block">
+                    <span class="metric-caption">MEMBERSHIP TERM</span>
+                    <strong class="metric-primary-val">{{ dateLabel(member.startDate) }}</strong>
+                    <span class="metric-sub-val">Thru {{ dateLabel(member.endDate) }}</span>
+                  </div>
+
+                  <!-- Col 4: Payment -->
+                  <div class="card-metric-block metric-payment-block">
+                    <span class="metric-caption">AMOUNT PAID</span>
+                    <strong class="metric-primary-val payment-amount-val">{{ money(member.amountPaid) }}</strong>
+                    @if (member.paymentMethod) {
+                      <span class="metric-sub-val" style="font-weight: 600; font-size: 11px;">{{ member.paymentMethod }} @if (member.transactionId) { · #{{ member.transactionId }} }</span>
+                    }
+                    @if (member.discountPercent > 0) {
+                      <span class="discount-chip">−{{ member.discountPercent }}% off</span>
+                    } @else if (!member.paymentMethod) {
+                      <span class="metric-sub-val">Full payment</span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Access Check Alert (if tested) -->
+                @if (accessResults[member.id]; as access) {
+                  <div class="modern-access-banner" [class.banner-denied]="!access.allowed">
+                    <div class="banner-icon-circle">{{ access.allowed ? '✓' : '✕' }}</div>
+                    <div class="banner-text">
+                      <strong>{{ access.allowed ? 'Facility entry approved' : 'Facility entry restricted' }}</strong>
+                      <span>{{ access.message }} · Checked {{ dateLabel(access.checkedOn) }}.</span>
+                    </div>
+                  </div>
+                }
+
+                <!-- Card Actions Footer -->
+                <div class="modern-card-footer">
+                  <div class="footer-left-actions">
+                    <button class="action-btn action-btn-access" type="button"
+                      title="Check access eligibility" (click)="checkMembershipAccess.emit(member)">
+                      <span class="btn-icon" aria-hidden="true">✓</span>
+                      <span>Check access</span>
+                    </button>
+                    <button class="action-btn action-btn-history" type="button"
+                      [class.expanded]="isMemberHistoryExpanded(group.memberId)"
+                      [attr.aria-expanded]="isMemberHistoryExpanded(group.memberId)"
+                      (click)="toggleMemberHistory.emit(group.memberId)">
+                      <span class="btn-icon chevron-icon" aria-hidden="true">{{ isMemberHistoryExpanded(group.memberId) ? '⌄' : '›' }}</span>
+                      <span>History</span>
+                      <span class="history-count-badge">{{ group.terms.length }}</span>
+                    </button>
+                  </div>
+
+                  <div class="footer-right-actions">
+                    @if (canUpgradeMembership(member)) {
+                      <button class="action-btn action-btn-upgrade-member" type="button" title="Upgrade package mid-cycle" (click)="openMemberUpgradeModal.emit(member)">
+                        <span class="btn-icon" aria-hidden="true">⬆</span>
+                        <span>Upgrade</span>
+                      </button>
+                    }
+                    @if (canRenewMembership(member)) {
+                      <button class="action-btn action-btn-renew" type="button" title="Schedule renewal" (click)="openRenewal.emit(member)">
+                        <span class="btn-icon" aria-hidden="true">↻</span>
+                        <span>Renew</span>
+                      </button>
+                    }
+                    @if (canFreezeMembership(member)) {
+                      <button class="action-btn action-btn-quiet" type="button" title="Schedule freeze" (click)="onOpenAdjustment('freeze', member)">
+                        <span class="btn-icon" aria-hidden="true">❄</span>
+                        <span>Freeze</span>
+                      </button>
+                    }
+                    @if (canSendRenewalReminder(member)) {
+                      <button class="action-btn action-btn-quiet" type="button" title="Send renewal reminder email" (click)="sendManualReminder.emit(member)">
+                        <span class="btn-icon" aria-hidden="true">✉</span>
+                        <span>Send reminder</span>
+                      </button>
+                    }
+                    <button class="action-btn action-btn-quiet" type="button" title="Print tax receipt" (click)="printMembershipReceipt.emit(member)">
+                      <span class="btn-icon" aria-hidden="true">🧾</span>
+                      <span>Receipt</span>
+                    </button>
+                    @if (user!.role === 'OWNER') {
+                      <button class="action-btn action-btn-quiet" type="button" title="Move branch" [disabled]="!hasTransferTarget(member)" (click)="onOpenAdjustment('transfer', member)">
+                        <span class="btn-icon" aria-hidden="true">⇄</span>
+                        <span>Transfer</span>
+                      </button>
+                      <button class="action-btn action-btn-quiet" type="button" title="Edit membership" (click)="onOpenAdjustment('correct', member)">
+                        <span class="btn-icon" aria-hidden="true">✎</span>
+                        <span>Edit</span>
+                      </button>
+                    }
+                    @if (canCancelRenewal(member)) {
+                      <button class="action-btn action-btn-danger" type="button" title="Cancel renewal" (click)="cancelScheduledRenewal.emit(member)">
+                        <span class="btn-icon" aria-hidden="true">↶</span>
+                        <span>Cancel renewal</span>
+                      </button>
+                    }
+                    @if ((user!.role === 'OWNER' || user!.role === 'STAFF') && member.status === 'ACTIVE' && !isExpired(member.endDate)) {
+                      <button class="action-btn action-btn-danger" type="button"
+                        [title]="member.renewalStartDate ? 'Cancel term & renewal' : 'Cancel membership term'"
+                        (click)="cancelMembership.emit(member)">
+                        <span class="btn-icon" aria-hidden="true">×</span>
+                        <span>Cancel term</span>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <!-- History Timeline Expansion Drawer -->
+                @if (isMemberHistoryExpanded(group.memberId)) {
+                  <div class="modern-history-drawer">
+                    <div class="history-drawer-header">
+                      <span class="drawer-title">MEMBERSHIP HISTORY TIMELINE</span>
+                      <span class="drawer-count">{{ group.terms.length }} total recorded {{ group.terms.length === 1 ? 'term' : 'terms' }}</span>
+                    </div>
+                    <ol class="modern-history-timeline">
+                      @for (term of historyTerms(group); track term.id) {
+                        <li class="timeline-item">
+                          <div class="timeline-dot" aria-hidden="true"></div>
+                          <div class="timeline-card">
+                            <div class="timeline-card-header">
+                              <div class="timeline-plan-group">
+                                <strong class="timeline-plan-name">{{ term.planName }}</strong>
+                                <span class="timeline-branch-tag">{{ term.branchName || 'No branch' }}</span>
+                              </div>
+                              <span class="status-pill history-status"
+                                [class.status-frozen]="term.frozen"
+                                [class.status-inactive]="term.status === 'CANCELLED' || isExpired(term.endDate) || historyTermStatus(group, term) === 'Superseded'"
+                                [class.status-upcoming]="isUpcoming(term.startDate)"
+                                [class.status-expiring]="term.status === 'ACTIVE' && isMemberExpiring(term)"
+                              >{{ historyTermStatus(group, term) }}</span>
+                            </div>
+
+                            <div class="timeline-meta-row">
+                              <span class="timeline-date-range">
+                                📅 {{ dateLabel(term.startDate) }} – {{ dateLabel(term.endDate) }}
+                              </span>
+                              <span class="timeline-payment-badge">
+                                Paid {{ money(term.amountPaid) }}
+                                @if (term.discountPercent > 0) { ({{ term.discountPercent }}% off) }
+                                @if (term.paymentMethod) { · {{ term.paymentMethod }} }
+                                @if (term.transactionId) { · Ref: #{{ term.transactionId }} }
+                              </span>
+                              @if (term.personalTrainerName) {
+                                <span class="timeline-pt-badge">
+                                  ⚡ Trainer: {{ term.personalTrainerName }} ({{ term.ptSessionsUsed }}/{{ term.ptSessionsIncluded }} sessions)
+                                </span>
+                              }
+                            </div>
+
+                            @if (term.freezes.length > 0) {
+                              <div class="timeline-freezes">
+                                @for (freeze of term.freezes; track freeze.id) {
+                                  <div class="timeline-freeze-item">
+                                    <span class="freeze-info">
+                                      <strong>❄ {{ freezeStatus(freeze) }}</strong>: {{ dateLabel(freeze.startDate) }} – {{ dateLabel(freeze.endDate) }} · {{ freeze.reason }}
+                                    </span>
+                                    @if (user!.role !== 'MEMBER' && term.status === 'ACTIVE' && canCancelFreeze(freeze)) {
+                                      <button class="freeze-control" type="button" (click)="onOpenAdjustment('cancel-freeze', term, freeze)">Cancel scheduled freeze</button>
+                                    } @else if (user!.role !== 'MEMBER' && term.status === 'ACTIVE' && canEndFreezeEarly(freeze)) {
+                                      <button class="freeze-control" type="button" (click)="onOpenAdjustment('end-freeze', term, freeze)">End freeze today</button>
+                                    }
+                                  </div>
+                                }
+                              </div>
+                            }
+                          </div>
+                        </li>
+                      }
+                    </ol>
+                  </div>
+                }
+              </article>
+            } @empty {
+              <div class="modern-member-empty-state">
+                <div class="empty-icon-circle">⌕</div>
+                <h3>No members found</h3>
+                <p>No members match the current search or filter query. Try modifying your search term or select "All members".</p>
+                <button type="button" class="button button-quiet" (click)="onResetSearchAndFilter()">
+                  Reset search & filters
+                </button>
+              </div>
+            }
+          </div>
+
+          <!-- Pagination -->
+          @if (membershipTotal > 0) {
+            <nav class="membership-pagination" aria-label="Member list pages">
+              <span>Showing {{ membershipGroups.length }} of {{ membershipTotal }} members</span>
+              <div>
+                <button class="button button-quiet" type="button" (click)="moveMembershipPage.emit(-1)" [disabled]="membershipPageIndex === 0">Previous</button>
+                <span>Page {{ membershipTotalPages === 0 ? 0 : membershipPageIndex + 1 }} of {{ membershipTotalPages }}</span>
+                <button class="button button-quiet" type="button" (click)="moveMembershipPage.emit(1)" [disabled]="membershipPageIndex + 1 >= membershipTotalPages">Next</button>
+              </div>
+            </nav>
+          }
+        </section>

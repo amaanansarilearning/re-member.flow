@@ -1,0 +1,214 @@
+.modern-audit-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-bottom: 12px;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+.audit-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.audit-action-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+
+  &.action-positive {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--emerald);
+  }
+  &.action-negative {
+    background: rgba(244, 63, 94, 0.12);
+    color: var(--danger);
+  }
+  &.action-warning {
+    background: rgba(245, 158, 11, 0.12);
+    color: #b45309;
+  }
+  &.action-info {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--accent);
+  }
+}
+
+.audit-top-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.audit-entity-tag {
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+
+  b { color: var(--ink); }
+}
+
+.audit-actor-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.actor-avatar {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  border: 1px solid var(--border);
+}
+
+.actor-info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.actor-name {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.actor-email {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.audit-reason-box {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.reason-tag {
+  color: var(--muted-light);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
+.reason-text {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 11px;
+}
+
+.audit-summary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  transition: all 0.15s;
+
+  &:hover { background: rgba(99, 102, 241, 0.08); }
+}
+
+.summary-arrow { transition: transform 0.2s; }
+details[open] .summary-arrow { transform: rotate(180deg); }
+
+.audit-diff-container {
+  margin-top: 10px;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.audit-diff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+
+  th {
+    padding: 8px 12px;
+    background: var(--surface-2);
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  tr:last-child td { border-bottom: 0; }
+}
+
+.diff-field { color: var(--ink); }
+.diff-before { color: var(--muted); text-decoration: line-through; }
+.diff-after { color: var(--emerald); font-weight: 700; }
+.diff-empty { color: var(--muted); text-align: center; padding: 12px; }
+
+/* Reminders table */
+.reminder-recipient-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recipient-email-val {
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.retry-count-badge {
+  display: inline-flex;
+  padding: 2px 7px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.reminder-log-text {
+  color: var(--muted);
+  font-size: 10px;
+}
+

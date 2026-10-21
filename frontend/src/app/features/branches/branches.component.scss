@@ -1,0 +1,319 @@
+:host {
+  display: block;
+}
+
+.branch-filter-strip {
+  margin-bottom: 18px;
+}
+.branch-filter-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+}
+.branch-filter-tabs button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.branch-filter-tabs button.selected {
+  background: var(--surface);
+  color: var(--accent);
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+.branch-filter-tabs button:hover:not(.selected) {
+  background: rgba(99, 102, 241, 0.05);
+  color: var(--accent);
+}
+
+.modern-branch-editor {
+  margin-bottom: 20px;
+}
+.branch-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 0 20px 20px;
+}
+.branch-form label {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.branch-form input,
+.branch-form select {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 13px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  outline: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.branch-form input:focus,
+.branch-form select:focus {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-glow);
+}
+.branch-wide {
+  grid-column: 1 / -1;
+}
+.branch-form .form-actions {
+  grid-column: 1 / -1;
+}
+
+.branch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.modern-branch-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--accent);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modern-branch-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--accent);
+}
+.modern-branch-card.branch-paused {
+  opacity: 0.65;
+}
+
+.branch-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.branch-code-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.branch-status-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.branch-type-pill {
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.branch-type-pill.type-franchise {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--emerald);
+}
+.branch-status-pill {
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  font-size: 9px;
+  font-weight: 700;
+}
+.branch-status-pill.active {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--emerald);
+}
+.branch-status-pill.paused {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--muted);
+}
+
+.branch-card-body {
+  margin: 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.branch-card-title {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.branch-card-address,
+.branch-card-phone {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.branch-icon {
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.branch-member-metric {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  margin-top: auto;
+  margin-bottom: 14px;
+}
+.metric-icon-wrap {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.metric-info strong {
+  display: block;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.metric-info span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.branch-card-actions {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.branch-toggle-active-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+.branch-toggle-active-btn:hover {
+  background: var(--surface-2);
+}
+.branch-toggle-active-btn.paused-action {
+  color: var(--amber);
+}
+.branch-view-overview-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+.branch-view-overview-btn:hover {
+  background: var(--surface-2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.branch-edit-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.branch-edit-action-btn:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+.enterprise-gating-modal {
+  max-width: 520px;
+  width: 90vw;
+}
+
+@media (max-width: 640px) {
+  .branch-form {
+    grid-template-columns: 1fr;
+  }
+  .branch-filter-tabs {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+}
+

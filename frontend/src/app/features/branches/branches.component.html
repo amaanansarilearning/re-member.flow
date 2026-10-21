@@ -1,0 +1,230 @@
+<section class="page-content">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">YOUR LOCATIONS & HUBS</p>
+      <h1>Club Branches</h1>
+      <p class="page-subtitle">Oversee company-owned facilities and franchise locations under your organization.</p>
+    </div>
+    <button class="button button-lime" (click)="startNewBranch.emit()">
+      <span>＋</span> Add Branch Facility
+    </button>
+  </div>
+
+  <!-- Branch Summary KPI Strip -->
+  <div class="team-kpi-strip">
+    <div class="team-kpi-card">
+      <span class="team-kpi-label">LOCATIONS CAPACITY</span>
+      <strong class="team-kpi-val">{{ branches.length }} / {{ maxBranchesDisplay }}</strong>
+      <small class="team-kpi-sub">{{ activeBranches.length }} operational · {{ branches.length - activeBranches.length }} paused</small>
+    </div>
+    <div class="team-kpi-card">
+      <span class="team-kpi-label">OPERATING MODEL</span>
+      <strong class="team-kpi-val">{{ companyOwnedCount }} / {{ franchiseCount }}</strong>
+      <small class="team-kpi-sub">{{ companyOwnedCount }} Company-Owned · {{ franchiseCount }} Franchise</small>
+    </div>
+    <div class="team-kpi-card">
+      <span class="team-kpi-label">TOTAL ENROLLED MEMBERS</span>
+      <strong class="team-kpi-val" style="color: var(--accent);">{{ totalBranchMembers }}</strong>
+      <small class="team-kpi-sub">Across all organization branches</small>
+    </div>
+  </div>
+
+  <!-- Branch Type Filter Tabs -->
+  <div class="branch-filter-strip">
+    <div class="branch-filter-tabs">
+      <button type="button" [class.selected]="branchFilter === 'ALL'" (click)="branchFilterChange.emit('ALL')">
+        All Locations ({{ branches.length }})
+      </button>
+      <button type="button" [class.selected]="branchFilter === 'COMPANY_OWNED'" (click)="branchFilterChange.emit('COMPANY_OWNED')">
+        🏢 Company-Owned ({{ companyOwnedCount }})
+      </button>
+      <button type="button" [class.selected]="branchFilter === 'FRANCHISE'" (click)="branchFilterChange.emit('FRANCHISE')">
+        🤝 Franchise ({{ franchiseCount }})
+      </button>
+      <button type="button" [class.selected]="branchFilter === 'ACTIVE'" (click)="branchFilterChange.emit('ACTIVE')">
+        ● Active Only ({{ activeBranches.length }})
+      </button>
+    </div>
+  </div>
+
+  @if (editingBranch) {
+    <section class="panel editor-panel modern-branch-editor">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">LOCATION PROFILE</p>
+          <h2>{{ branchDraft.id ? 'Edit Branch: ' + branchDraft.name : 'New Branch Facility' }}</h2>
+        </div>
+        <button class="icon-button" title="Close branch editor" aria-label="Close branch editor" (click)="closeEditingBranch.emit()">×</button>
+      </div>
+      <form class="branch-form" (ngSubmit)="saveBranch.emit()" novalidate>
+        <label>
+          <span class="field-label-text">Branch Facility Name <span class="req-star">*</span></span>
+          <input
+            name="branchName"
+            [(ngModel)]="branchDraft.name"
+            [class.input-has-error]="hasFieldError('branchName')"
+            (input)="clearFieldError.emit('branchName')"
+            required
+            maxlength="100"
+            placeholder="e.g. West District Gym & Fitness"
+          />
+          @if (hasFieldError('branchName')) {
+            <span class="field-error-msg">⚠️ {{ getFieldError('branchName') }}</span>
+          }
+        </label>
+        <label>
+          <span class="field-label-text">Branch Code (Uppercase) <span class="req-star">*</span></span>
+          <input
+            name="branchCode"
+            [(ngModel)]="branchDraft.code"
+            [class.input-has-error]="hasFieldError('branchCode')"
+            (input)="clearFieldError.emit('branchCode')"
+            required
+            maxlength="30"
+            placeholder="WEST-01"
+            style="text-transform: uppercase;"
+          />
+          @if (hasFieldError('branchCode')) {
+            <span class="field-error-msg">⚠️ {{ getFieldError('branchCode') }}</span>
+          }
+        </label>
+        <label>
+          <span class="field-label-text">Operating Model <span class="req-star">*</span></span>
+          <select name="branchType" [(ngModel)]="branchDraft.type">
+            <option value="COMPANY_OWNED">🏢 Company-Owned</option>
+            <option value="FRANCHISE">🤝 Franchise</option>
+          </select>
+        </label>
+        <label>
+          <span class="field-label-text">Contact Phone <small class="opt-label">(Optional)</small></span>
+          <input name="branchPhone" [(ngModel)]="branchDraft.phoneNumber" type="tel" placeholder="+91 98765 43210">
+        </label>
+        <label class="branch-wide">
+          <span class="field-label-text">Physical Address <small class="opt-label">(Optional)</small></span>
+          <input name="branchAddress" [(ngModel)]="branchDraft.address" maxlength="500" placeholder="Street name, floor, landmark, city">
+        </label>
+        <div class="branch-wide" style="margin-top: 4px;">
+          <label class="check-field">
+            <input name="branchActive" [(ngModel)]="branchDraft.active" type="checkbox">
+            <strong>Active Facility: Available for new member registrations and staff assignments</strong>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button class="button button-quiet" type="button" (click)="closeEditingBranch.emit()">Cancel</button>
+          <button class="button button-dark" type="submit" [disabled]="busy || !branchDraft.name || !branchDraft.code">
+            {{ busy ? 'Saving…' : (branchDraft.id ? 'Save Changes ↗' : 'Create Branch ↗') }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  <div class="branch-grid">
+    @for (branch of filteredBranches; track branch.id) {
+      <article class="modern-branch-card" [class.branch-paused]="!branch.active">
+        <div class="branch-card-header">
+          <div class="branch-code-badge">
+            <span>📍</span> {{ branch.code }}
+          </div>
+          <div class="branch-status-tags">
+            <span class="branch-type-pill" [class.type-franchise]="branch.type === 'FRANCHISE'">
+              {{ branch.type === 'FRANCHISE' ? '🤝 FRANCHISE' : '🏢 COMPANY-OWNED' }}
+            </span>
+            <span class="branch-status-pill" [class.active]="branch.active" [class.paused]="!branch.active">
+              {{ branch.active ? '● Active' : '○ Paused' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="branch-card-body">
+          <h2 class="branch-card-title">{{ branch.name }}</h2>
+          <p class="branch-card-address">
+            <span class="branch-icon">🧭</span> {{ branch.address || 'No physical address specified' }}
+          </p>
+          <p class="branch-card-phone">
+            <span class="branch-icon">📞</span> {{ branch.phoneNumber || 'No contact phone added' }}
+          </p>
+        </div>
+
+        <div class="branch-member-metric">
+          <div class="metric-icon-wrap">👥</div>
+          <div class="metric-info">
+            <strong>{{ branch.memberCount }} Memberships</strong>
+            <span>Enrolled at this location</span>
+          </div>
+        </div>
+
+        <div class="branch-card-actions">
+          <button
+            class="branch-toggle-active-btn"
+            [class.paused-action]="branch.active"
+            type="button"
+            [title]="branch.active ? 'Pause branch operations' : 'Activate branch operations'"
+            (click)="toggleBranchActive.emit(branch)"
+          >
+            <span>{{ branch.active ? '⏸ Pause Facility' : '▶ Activate Facility' }}</span>
+          </button>
+          <button
+            class="branch-view-overview-btn"
+            type="button"
+            title="Filter overview metrics to this branch"
+            (click)="viewBranchInOverview.emit(branch.id)"
+          >
+            <span>⌖</span> View in Overview
+          </button>
+          <button
+            class="branch-edit-action-btn"
+            type="button"
+            title="Edit branch details"
+            (click)="editBranch.emit(branch)"
+          >
+            <span>✏️</span> Edit
+          </button>
+        </div>
+      </article>
+    } @empty {
+      <div class="modern-member-empty-state">
+        <div class="empty-icon-circle">⌖</div>
+        <h3>No branches match the current filter</h3>
+        <p>Adjust your filter or click "Add Branch Facility" to register a new gym location.</p>
+      </div>
+    }
+  </div>
+  <footer class="page-footer">
+    <span>{{ branches.length }} LOCATIONS</span><span>ORGANIZATION BRANCH PORTFOLIO</span>
+  </footer>
+
+  <!-- Enterprise Multi-Branch Gating Modal -->
+  @if (enterpriseBranchPromptOpen) {
+    <div class="modal-backdrop" (click)="closeEnterpriseBranchPrompt.emit()">
+      <div class="modal-content enterprise-gating-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="pro-tag" style="background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff; margin: 0;">👑 ENTERPRISE ONLY</span>
+            <h2 style="margin: 0; font-size: 16px;">Multi-Branch Facility Gating</h2>
+          </div>
+          <button class="icon-button" (click)="closeEnterpriseBranchPrompt.emit()" title="Close dialog">✕</button>
+        </div>
+        <div class="modal-body" style="text-align: center; padding: 24px 20px;">
+          <div style="font-size: 42px; margin-bottom: 10px;">🏢✨</div>
+          <h3 style="font-size: 17px; margin: 0 0 8px; color: var(--ink);">Multiple Branches is an Enterprise Tier Feature</h3>
+          <p style="font-size: 13px; color: var(--muted); max-width: 440px; margin: 0 auto 16px; line-height: 1.5;">
+            Your current <strong>{{ tierBadgeLabel(subscriptionTier) }}</strong> plan includes <strong>1 branch location</strong>. Operating more than 1 facility, franchise hubs, and cross-branch analytics requires an <strong>Enterprise</strong> subscription.
+          </p>
+          <div class="enterprise-feature-pills" style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+            <span class="feat-pill" style="padding: 5px 12px; background: var(--surface-subtle); border-radius: 20px; font-size: 12px; border: 1px solid var(--border);">🏢 Unlimited Gym Locations</span>
+            <span class="feat-pill" style="padding: 5px 12px; background: var(--surface-subtle); border-radius: 20px; font-size: 12px; border: 1px solid var(--border);">🤝 Franchise & Company Hubs</span>
+            <span class="feat-pill" style="padding: 5px 12px; background: var(--surface-subtle); border-radius: 20px; font-size: 12px; border: 1px solid var(--border);">📊 Cross-Location Unified BI</span>
+          </div>
+          <div style="display: flex; justify-content: center; gap: 12px;">
+            <button type="button" class="button button-quiet" (click)="closeEnterpriseBranchPrompt.emit()">Cancel</button>
+            <button type="button" class="button button-dark" (click)="closeEnterpriseBranchPrompt.emit(); openUpgradeModal.emit('general')">
+              ★ Upgrade to Enterprise ↗
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</section>
+

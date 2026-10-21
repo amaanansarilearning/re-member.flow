@@ -1,0 +1,133 @@
+<aside class="sidebar">
+  <div class="sidebar-brand-card">
+    <a class="brand" href="#overview" (click)="$event.preventDefault(); navigate.emit('overview')" [title]="(hasBrandingAccess && user?.organizationName) ? user!.organizationName : 'Re-member Flow'">
+      <div class="brand-badge">
+        <img class="brand-mark" [src]="(hasBrandingAccess && user?.organizationLogo) ? user!.organizationLogo : '/form-mark.svg'" alt="Gym Logo" />
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">{{ (hasBrandingAccess && user?.organizationName) ? user!.organizationName : 'Re-member Flow' }}</span>
+        <div class="brand-meta">
+          @if (isSuperAdmin) {
+            <span class="tier-chip tier-chip-enterprise">👑 Super Admin</span>
+          } @else if (user?.role === 'OWNER') {
+            <span class="tier-chip" [ngClass]="'tier-chip-' + tierPillClass(user?.subscriptionTier).replace('tier-', '')">
+              {{ tierBadgeLabel(user?.subscriptionTier) }}
+            </span>
+            @if (canUpgradeTier) {
+              <button type="button" class="sidebar-upgrade-link" (click)="$event.stopPropagation(); openUpgradeModal.emit('general')" title="Upgrade Subscription">
+                Upgrade ↗
+              </button>
+            } @else {
+              <span class="tier-status-active" title="Active & Entitled">
+                <span class="pulse-dot"></span> Active
+              </span>
+            }
+          } @else if (user?.role === 'MEMBER') {
+            <span class="tier-chip" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">💪 Member Portal</span>
+          } @else if (user?.role === 'PERSONAL_TRAINER') {
+            <span class="tier-chip" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">⚡ Trainer Portal</span>
+          } @else {
+            <span class="tier-chip" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">🛡️ Staff Portal</span>
+          }
+        </div>
+      </div>
+    </a>
+  </div>
+  <nav class="side-nav" aria-label="Main navigation">
+    @if (user?.role === 'SUPER_ADMIN') {
+      <button type="button" [class.active]="view === 'platform-admin'" [attr.aria-current]="view === 'platform-admin' ? 'page' : null" (click)="navigate.emit('platform-admin')" title="SaaS Platform Command Center">
+        <span class="nav-icon">🌐</span> Platform Ops
+        @if (pendingUpgradeRequestsCount > 0) {
+          <span class="nav-count">{{ pendingUpgradeRequestsCount }}</span>
+        }
+      </button>
+    }
+    @if (user?.role === 'OWNER') {
+      <button type="button" [class.active]="view === 'overview'" [attr.aria-current]="view === 'overview' ? 'page' : null" (click)="navigate.emit('overview')" title="Club Overview">
+        <span class="nav-icon">⬡</span> Overview
+      </button>
+    } @else if (user?.role === 'STAFF') {
+      <button type="button" [class.active]="view === 'overview'" [attr.aria-current]="view === 'overview' ? 'page' : null" (click)="navigate.emit('overview')" title="Front Desk Hub">
+        <span class="nav-icon">⬡</span> Front Desk
+      </button>
+    }
+    @if (user?.role === 'MEMBER') {
+      <button type="button" [class.active]="view === 'members'" [attr.aria-current]="view === 'members' ? 'page' : null" (click)="navigate.emit('members')" title="My Membership Pass">
+        <span class="nav-icon">◎</span> My Membership
+      </button>
+      <button type="button" [class.active]="view === 'packages'" [attr.aria-current]="view === 'packages' ? 'page' : null" (click)="navigate.emit('packages')" title="Browse Gym Packages">
+        <span class="nav-icon">▤</span> Browse Plans
+      </button>
+    } @else if (user?.role !== 'SUPER_ADMIN') {
+      <button type="button" [class.active]="view === 'members'" [attr.aria-current]="view === 'members' ? 'page' : null" (click)="navigate.emit('members')" title="Members Directory">
+        <span class="nav-icon">◎</span> Members
+        @if (membershipTotal > 0) {
+          <span class="nav-count">{{ membershipTotal }}</span>
+        }
+      </button>
+      <button type="button" [class.active]="view === 'packages'" [attr.aria-current]="view === 'packages' ? 'page' : null" (click)="navigate.emit('packages')" title="Membership Packages">
+        <span class="nav-icon">▤</span> Packages
+      </button>
+    }
+    @if (user?.role === 'OWNER') {
+      <button type="button" [class.active]="view === 'pt-management'" [attr.aria-current]="view === 'pt-management' ? 'page' : null" (click)="navigate.emit('pt-management')" title="Trainers & Commissions">
+        <span class="nav-icon">🏋</span> Trainers
+        @if (!hasPtAccess) {
+          <span class="pro-tag" style="background: linear-gradient(135deg, #a855f7, #ec4899);">👑 ENTERPRISE</span>
+        }
+      </button>
+      <button type="button" [class.active]="view === 'team'" [attr.aria-current]="view === 'team' ? 'page' : null" (click)="navigate.emit('team')" title="Staff Directory & RBAC">
+        <span class="nav-icon">⚭</span> Team
+      </button>
+      <button type="button" [class.active]="view === 'branches'" [attr.aria-current]="view === 'branches' ? 'page' : null" (click)="navigate.emit('branches')" title="Branch Facilities">
+        <span class="nav-icon">⌂</span> Branches
+      </button>
+      <button type="button" [class.active]="view === 'reports'" [attr.aria-current]="view === 'reports' ? 'page' : null" (click)="navigate.emit('reports')" title="Financial Analytics & GST">
+        <span class="nav-icon">▦</span> Analytics
+        @if (!hasAnalyticsAccess) {
+          <span class="pro-tag" style="background: linear-gradient(135deg, #a855f7, #ec4899);">👑 ENTERPRISE</span>
+        }
+      </button>
+      <button type="button" [class.active]="view === 'history'" [attr.aria-current]="view === 'history' ? 'page' : null" (click)="navigate.emit('history')" title="Audit Trail & Notifications">
+        <span class="nav-icon">◷</span> History
+        @if (!hasHistoryAccess) {
+          <span class="pro-tag">⚡ PRO</span>
+        }
+      </button>
+    }
+    @if (user?.role === 'PERSONAL_TRAINER') {
+      <button type="button" [class.active]="view === 'pt-dashboard'" [attr.aria-current]="view === 'pt-dashboard' ? 'page' : null" (click)="navigate.emit('pt-dashboard')" title="My Training Sessions">
+        <span class="nav-icon">⚡</span> My Sessions
+      </button>
+      <button type="button" [class.active]="view === 'pt-earnings'" [attr.aria-current]="view === 'pt-earnings' ? 'page' : null" (click)="navigate.emit('pt-earnings')" title="My Commission Earnings">
+        <span class="nav-icon">₹</span> My Earnings
+      </button>
+    }
+    <button type="button" [class.active]="view === 'account'" [attr.aria-current]="view === 'account' ? 'page' : null" (click)="navigate.emit('account')" title="My Account Settings">
+      <span class="nav-icon">◉</span> Account
+    </button>
+  </nav>
+  <div class="sidebar-bottom">
+    @if (user?.role !== 'MEMBER' && user?.role !== 'PERSONAL_TRAINER' && user?.role !== 'SUPER_ADMIN') {
+      <button class="quick-add" (click)="navigate.emit('register')">
+        <span>＋</span> Register member
+      </button>
+    }
+    <div class="user-chip">
+      <div class="avatar">{{ initials(user?.fullName || '') }}</div>
+      <div class="user-meta">
+        <strong>{{ user?.fullName }}</strong>
+        <span>{{ user?.role === 'SUPER_ADMIN' ? 'Platform Admin' : user?.role === 'OWNER' ? 'Club Owner' : user?.role === 'PERSONAL_TRAINER' ? 'Trainer' : user?.role === 'MEMBER' ? 'Member' : 'Front Desk' }}</span>
+      </div>
+      <button class="logout" title="Sign out" aria-label="Sign out" (click)="logout.emit()">
+        <span aria-hidden="true">⎋</span>
+      </button>
+    </div>
+    <div class="sidebar-legal-bar">
+      <button type="button" class="sidebar-legal-btn" (click)="openLegal.emit('terms')" title="Review legal terms & privacy">
+        ⚖️ Legal & Privacy
+      </button>
+    </div>
+  </div>
+</aside>
+

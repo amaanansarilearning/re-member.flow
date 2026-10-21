@@ -1,0 +1,498 @@
+<section class="page-content">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">MEMBERSHIP DESIGN</p>
+      <h1>Packages</h1>
+      <p class="page-subtitle">Shape the offer. Build a reason to stay.</p>
+    </div>
+    @if (userRole === 'OWNER') {
+      <button class="button button-lime" (click)="startNewPlan.emit()">
+        <span>＋</span> New package
+      </button>
+    }
+  </div>
+
+  @if (userRole === 'OWNER' && editingPlan) {
+    <section class="panel editor-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">PACKAGE DETAILS</p>
+          <h2>{{ planDraft.id ? 'Edit package' : 'Create a package' }}</h2>
+        </div>
+        <button
+          class="icon-button"
+          title="Close editor"
+          aria-label="Close editor"
+          (click)="closeEditingPlan.emit()"
+        >
+          ×
+        </button>
+      </div>
+      <form class="plan-form" (ngSubmit)="savePlan.emit()" #planForm="ngForm">
+        <label>
+          <span class="field-label-text">Package name <span class="req-star">*</span></span>
+          <input
+            name="planName"
+            [(ngModel)]="planDraft.name"
+            [class.input-has-error]="hasFieldError('planName')"
+            (input)="clearFieldError.emit('planName')"
+            required
+            maxlength="80"
+            placeholder="e.g. Performance" />
+          @if (hasFieldError('planName')) {
+            <span class="field-error-msg">⚠️ {{ getFieldError('planName') }}</span>
+          }
+        </label>
+        <label>
+          <span class="field-label-text">Price (₹) <span class="req-star">*</span></span>
+          <input
+            name="planPrice"
+            [(ngModel)]="planDraft.price"
+            [class.input-has-error]="hasFieldError('planPrice')"
+            (input)="clearFieldError.emit('planPrice')"
+            type="number"
+            min="0.01"
+            step="0.01"
+            required />
+          @if (hasFieldError('planPrice')) {
+            <span class="field-error-msg">⚠️ {{ getFieldError('planPrice') }}</span>
+          }
+        </label>
+        <label>
+          <span class="field-label-text">Duration type <span class="req-star">*</span></span>
+          <select name="durationMode" [(ngModel)]="planDraft.durationMode" required>
+            <option value="months">Calendar months</option>
+            <option value="days">Exact number of days</option>
+          </select>
+        </label>
+        @if (planDraft.durationMode === 'months') {
+          <label>
+            <span class="field-label-text">Months <span class="req-star">*</span></span>
+            <select name="durationMonths" [(ngModel)]="planDraft.durationMonths" required>
+              <option [ngValue]="1">1 month</option>
+              <option [ngValue]="3">3 months</option>
+              <option [ngValue]="6">6 months</option>
+              <option [ngValue]="12">1 year (12 months)</option>
+            </select>
+          </label>
+        } @else {
+          <label>
+            <span class="field-label-text">Number of days <span class="req-star">*</span></span>
+            <input
+              name="durationDays"
+              [(ngModel)]="planDraft.durationDays"
+              [class.input-has-error]="hasFieldError('planDays')"
+              (input)="clearFieldError.emit('planDays')"
+              type="number"
+              min="1"
+              max="3650"
+              required
+            />
+            @if (hasFieldError('planDays')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('planDays') }}</span>
+            }
+          </label>
+        }
+        <label>
+          <span class="field-label-text">Available at <small class="opt-label">(Optional)</small></span>
+          <select name="planBranch" [(ngModel)]="planDraft.branchId">
+            <option value="">All branches</option>
+            @for (branch of activeBranches; track branch.id) {
+              <option [value]="branch.id">{{ branch.name }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          <span class="field-label-text">Trainer package type <span class="req-star">*</span></span>
+          <select name="ptPackageType" [(ngModel)]="planDraft.ptPackageType">
+            <option value="NONE">Standard gym (No PT)</option>
+            <option value="PT_ONLY">Personal training only</option>
+            <option value="COMBINED">Combined gym + personal training</option>
+          </select>
+        </label>
+        @if (planDraft.ptPackageType !== 'NONE') {
+          <label>
+            <span class="field-label-text">Included PT sessions <span class="req-star">*</span></span>
+            <input
+              name="includedPtSessions"
+              [(ngModel)]="planDraft.includedPtSessions"
+              [class.input-has-error]="hasFieldError('planPtSessions')"
+              (input)="clearFieldError.emit('planPtSessions')"
+              type="number"
+              min="1"
+              max="100"
+              placeholder="e.g. 10"
+            />
+            @if (hasFieldError('planPtSessions')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('planPtSessions') }}</span>
+            }
+          </label>
+          <label>
+            <span class="field-label-text">PT fee component (₹) <span class="req-star">*</span></span>
+            <input
+              name="ptFeeIncluded"
+              [(ngModel)]="planDraft.ptFeeIncluded"
+              [class.input-has-error]="hasFieldError('planPtFee')"
+              (input)="clearFieldError.emit('planPtFee')"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="e.g. 5000"
+            />
+            @if (hasFieldError('planPtFee')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('planPtFee') }}</span>
+            }
+          </label>
+          <div class="wide-field" style="background: var(--surface-subtle); border-radius: 8px; padding: 12px 14px; margin: 4px 0 10px; font-size: 13px; border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-weight: 600; color: var(--ink);">Per-Session Valuation:</span>
+              <strong style="color: var(--accent); font-size: 14px;">{{ money(planPtSessionRate) }} / session</strong>
+            </div>
+            <p style="font-size: 12px; color: var(--muted); margin: 0;">
+              Derived valuation: {{ money(planDraft.ptFeeIncluded || planDraft.price) }} divided across {{ planDraft.includedPtSessions || 1 }} sessions. Each completed session credits this exact amount towards the trainer commission split, guaranteeing PT fees never exceed the package.
+            </p>
+            @if (planPtValidationError) {
+              <div class="field-error-msg" style="margin-top: 8px; font-weight: 700;">
+                ⚠️ {{ planPtValidationError }}
+              </div>
+            }
+          </div>
+        }
+        <label class="wide-field">
+          <span class="field-label-text">Description <small class="opt-label">(Optional)</small></span>
+          <input
+            name="planDescription"
+            [(ngModel)]="planDraft.description"
+            maxlength="1000"
+            placeholder="What is included?" />
+        </label>
+        <label class="check-field">
+          <input name="planActive" [(ngModel)]="planDraft.active" type="checkbox" />
+          Available for new members
+        </label>
+        <div class="form-actions">
+          <button
+            class="button button-quiet"
+            type="button"
+            (click)="closeEditingPlan.emit()"
+          >
+            Cancel
+          </button>
+          <button class="button button-dark" type="submit" [disabled]="busy || planForm.invalid || !!planPtValidationError">
+            Save package <span>↗</span>
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+
+  @if (userRole === 'OWNER') {
+    <div class="member-stat-strip" aria-label="Package status filter" style="margin-bottom: 12px;">
+      <button type="button" class="stat-pill-chip" [class.active]="planFilter === 'active'" (click)="planFilterChange.emit('active')">
+        <span class="chip-count">{{ activePlans.length }}</span> Available packages
+      </button>
+      <button type="button" class="stat-pill-chip" [class.active]="planFilter === 'archived'" (click)="planFilterChange.emit('archived')">
+        <span class="chip-count">{{ plans.length - activePlans.length }}</span> Archived packages
+      </button>
+      <button type="button" class="stat-pill-chip" [class.active]="planFilter === 'all'" (click)="planFilterChange.emit('all')">
+        <span class="chip-count">{{ plans.length }}</span> All packages
+      </button>
+
+      <span style="display: inline-block; width: 1px; height: 24px; background: var(--border); margin: 0 4px; align-self: center;"></span>
+
+      <button type="button" class="stat-pill-chip" [class.active]="planTypeFilter === 'ALL'" (click)="planTypeFilterChange.emit('ALL')">
+        All Types
+      </button>
+      <button type="button" class="stat-pill-chip" [class.active]="planTypeFilter === 'STANDARD'" (click)="planTypeFilterChange.emit('STANDARD')">
+        🏋️ Standard Gym
+      </button>
+      <button type="button" class="stat-pill-chip" [class.active]="planTypeFilter === 'COMBINED'" (click)="planTypeFilterChange.emit('COMBINED')">
+        ⚡ Gym + PT Bundle
+      </button>
+      <button type="button" class="stat-pill-chip" [class.active]="planTypeFilter === 'PT_ONLY'" (click)="planTypeFilterChange.emit('PT_ONLY')">
+        🎯 PT Only
+      </button>
+
+      <span style="display: inline-block; width: 1px; height: 24px; background: var(--border); margin: 0 4px; align-self: center;"></span>
+
+      <!-- Package View Mode Toggle -->
+      <div class="matrix-toggle-group" role="group" aria-label="Package presentation mode">
+        <button
+          type="button"
+          class="matrix-toggle-btn"
+          [class.active]="packageViewMode === 'cards'"
+          (click)="packageViewModeChange.emit('cards')"
+          title="View packages as interactive cards"
+        >
+          🗂 Cards View
+        </button>
+        <button
+          type="button"
+          class="matrix-toggle-btn"
+          [class.active]="packageViewMode === 'matrix'"
+          (click)="packageViewModeChange.emit('matrix')"
+          title="View side-by-side feature comparison matrix"
+        >
+          📊 Feature Matrix
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (packageViewMode === 'cards') {
+    <div class="package-grid">
+      @for (plan of visiblePlans; track plan.id) {
+        <article
+          class="package-card"
+          [class.package-inactive]="!plan.active"
+          [class.type-combined]="plan.ptPackageType === 'COMBINED'"
+          [class.type-pt-only]="plan.ptPackageType === 'PT_ONLY'"
+          [class.type-standard]="!plan.ptPackageType || plan.ptPackageType === 'NONE'"
+        >
+          <div class="package-top">
+            <span class="package-index">0{{ $index + 1 }}</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              @if (plan.branchName) {
+                <span class="package-branch-badge">📍 {{ plan.branchName }}</span>
+              } @else {
+                <span class="package-branch-badge">🌍 All Branches</span>
+              }
+              <span class="status-pill" [class.status-completed]="plan.active" [class.status-inactive]="!plan.active">
+                {{ plan.active ? 'Available' : 'Archived' }}
+              </span>
+            </div>
+          </div>
+          <h2>{{ plan.name }}</h2>
+          <p class="package-description">
+            {{ plan.description || 'A flexible membership tailored for standard and specialized training.' }}
+          </p>
+          <div class="package-price">
+            {{ money(plan.price) }}<span>/ {{ planDurationLabel(plan) }}</span>
+            @if (monthlyEquivalent(plan); as mo) {
+              <small class="package-monthly-tag">≈ {{ money(mo) }} / month</small>
+            }
+          </div>
+          @if (plan.ptPackageType === 'COMBINED') {
+            <div class="package-pt-pill combined">
+              <span>⚡ Gym + PT · {{ plan.includedPtSessions ?? 0 }} sessions included</span>
+            </div>
+            <ul class="package-perks">
+              <li><span>✓</span> Full facility and workout floor privileges</li>
+              <li><span>⚡</span> <strong>{{ plan.includedPtSessions ?? 0 }}</strong> 1-on-1 personal trainer sessions</li>
+              <li><span>✓</span> Trainer assignment & progress log tracking</li>
+            </ul>
+          } @else if (plan.ptPackageType === 'PT_ONLY') {
+            <div class="package-pt-pill pt-only">
+              <span>⚡ PT Only · {{ plan.includedPtSessions ?? 0 }} sessions</span>
+            </div>
+            <ul class="package-perks">
+              <li><span>🎯</span> <strong>{{ plan.includedPtSessions ?? 0 }}</strong> Dedicated personal training sessions</li>
+              <li><span>⚡</span> Custom workout regimen with assigned trainer</li>
+              <li><span>✓</span> Session schedule management & attendance logs</li>
+            </ul>
+          } @else {
+            <div class="package-pt-pill standard">
+              <span>Standard gym membership (No PT)</span>
+            </div>
+            <ul class="package-perks">
+              <li><span>✓</span> Full gym floor access for {{ planDurationLabel(plan) }}</li>
+              <li><span>✓</span> Cardio, free weights, and strength equipment</li>
+              <li><span>✓</span> General facility & locker amenities</li>
+            </ul>
+          }
+          <div class="package-foot">
+            <span>MEMBERSHIPS ENROLLED</span><strong>{{ countForPlan(plan.id) }}</strong>
+          </div>
+          <div class="package-actions-row">
+            @if (plan.active) {
+              <button
+                class="package-enroll-btn"
+                type="button"
+                (click)="enrollWithPlan.emit(plan)"
+                title="Register a member with this package"
+              >
+                <span>⚡</span> Enroll Member →
+              </button>
+            }
+            @if (userRole === 'OWNER') {
+              <button
+                class="package-edit-compact-btn"
+                type="button"
+                title="Edit package settings"
+                (click)="editPlan.emit(plan)"
+              >
+                ✏️ Edit
+              </button>
+            }
+          </div>
+        </article>
+      } @empty {
+        <div class="modern-member-empty-state">
+          <div class="empty-icon-circle">📦</div>
+          <h3>No packages found</h3>
+          <p>No membership packages match the current filter. Create a new package or select 'All packages'.</p>
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- Side-by-Side Feature Comparison Matrix View -->
+    <div class="package-comparison-container">
+      <div class="package-matrix-header">
+        <div>
+          <h2 style="font-size: 18px; margin: 0 0 4px; color: var(--ink);">Package Feature Comparison Matrix</h2>
+          <p style="font-size: 13px; color: var(--muted); margin: 0;">Comprehensive side-by-side entitlement & pricing breakdown for all {{ visiblePlans.length }} packages.</p>
+        </div>
+      </div>
+      <div class="package-matrix-scroll">
+        <table class="package-comparison-table">
+          <thead>
+            <tr>
+              <th class="matrix-feature-col">Feature / Entitlement</th>
+              @for (plan of visiblePlans; track plan.id) {
+                <th class="matrix-plan-col" [class.archived]="!plan.active">
+                  <div class="matrix-plan-name">{{ plan.name }}</div>
+                  <div class="matrix-plan-status">
+                    <span class="status-pill" [class.status-completed]="plan.active" [class.status-inactive]="!plan.active">
+                      {{ plan.active ? 'Available' : 'Archived' }}
+                    </span>
+                  </div>
+                  <div class="matrix-plan-price">
+                    {{ money(plan.price) }}
+                    <small>/ {{ planDurationLabel(plan) }}</small>
+                  </div>
+                  @if (monthlyEquivalent(plan); as mo) {
+                    <div class="matrix-monthly-equiv">≈ {{ money(mo) }} / mo</div>
+                  }
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="matrix-feature-name"><strong>Training Format</strong></td>
+              @for (plan of visiblePlans; track plan.id) {
+                <td>
+                  @if (plan.ptPackageType === 'COMBINED') {
+                    <span class="package-pt-pill combined" style="display: inline-block;">⚡ Gym + PT Bundle</span>
+                  } @else if (plan.ptPackageType === 'PT_ONLY') {
+                    <span class="package-pt-pill pt-only" style="display: inline-block;">🎯 PT Only</span>
+                  } @else {
+                    <span class="package-pt-pill standard" style="display: inline-block;">🏋️ Standard Gym</span>
+                  }
+                </td>
+              }
+            </tr>
+            <tr>
+              <td class="matrix-feature-name"><strong>Membership Duration</strong></td>
+              @for (plan of visiblePlans; track plan.id) {
+                <td><strong>{{ planDurationLabel(plan) }}</strong></td>
+              }
+            </tr>
+            <tr>
+              <td class="matrix-feature-name"><strong>Gym Floor & Cardio Access</strong></td>
+              @for (plan of visiblePlans; track plan.id) {
+                <td>
+                  @if (plan.ptPackageType === 'PT_ONLY') {
+                    <span style="color: var(--muted);">Trainer sessions only</span>
+                  } @else {
+                    <span style="color: var(--emerald); font-weight: 700;">✓ Unlimited Floor Access</span>
+                  }
+                </td>
+              }
+            </tr>
+            <tr>
+              <td class="matrix-feature-name"><strong>Branch Access Scope</strong></td>
+              @for (plan of visiblePlans; track plan.id) {
+                <td>
+                  @if (plan.branchName) {
+                    <span>📍 {{ plan.branchName }}</span>
+                  } @else {
+                    <span style="color: var(--accent); font-weight: 700;">🌍 All Club Branches</span>
+                  }
+                </td>
+              }
+            </tr>
+            <tr>
+              <td class="matrix-feature-name"><strong>Personal Trainer Sessions</strong></td>
+              @for (plan of visiblePlans; track plan.id) {
+                <td>
+                  @if (plan.ptPackageType === 'NONE' || !plan.ptPackageType) {
+                    <span style="color: var(--muted);">— None (Standard Gym)</span>
+                  } @else {
+                    <strong style="color: var(--accent); font-size: 13.5px;">⚡ {{ plan.includedPtSessions ?? 0 }} Sessions</strong>
+                  }
+                </td>
+              }
+            </tr>
+            <tr>
+              <td class="matrix-feature-name"><strong>PT Valuation / Session Rate</strong></td>
+              @for (plan of visiblePlans; track plan.id) {
+                <td>
+                  @if (plan.ptPackageType === 'NONE' || !plan.ptPackageType) {
+                    <span style="color: var(--muted);">—</span>
+                  } @else {
+                    <div>
+                      <strong>{{ money(Math.round(((plan.ptFeeIncluded || plan.price) / (plan.includedPtSessions || 1)) * 100) / 100) }} / session</strong>
+                      <small style="display: block; color: var(--muted); font-size: 11px;">Pool: {{ money(plan.ptFeeIncluded || plan.price) }}</small>
+                    </div>
+                  }
+                </td>
+              }
+            </tr>
+            <tr>
+              <td class="matrix-feature-name"><strong>Trainer Tracking & Regimen</strong></td>
+              @for (plan of visiblePlans; track plan.id) {
+                <td>
+                  @if (plan.ptPackageType === 'NONE' || !plan.ptPackageType) {
+                    <span style="color: var(--muted);">Standard front-desk check-in</span>
+                  } @else {
+                    <span style="color: var(--emerald); font-weight: 700;">✓ Dedicated Trainer + Logs</span>
+                  }
+                </td>
+              }
+            </tr>
+            <tr>
+              <td class="matrix-feature-name"><strong>Enrolled Memberships</strong></td>
+              @for (plan of visiblePlans; track plan.id) {
+                <td><strong>{{ countForPlan(plan.id) }}</strong> active</td>
+              }
+            </tr>
+            <tr>
+              <td class="matrix-feature-name"><strong>Package Actions</strong></td>
+              @for (plan of visiblePlans; track plan.id) {
+                <td>
+                  <div style="display: flex; gap: 6px; flex-direction: column;">
+                    @if (plan.active) {
+                      <button
+                        class="package-enroll-btn"
+                        type="button"
+                        style="font-size: 11px; padding: 6px 10px;"
+                        (click)="enrollWithPlan.emit(plan)"
+                      >
+                        ⚡ Enroll Member →
+                      </button>
+                    }
+                    @if (userRole === 'OWNER') {
+                      <button
+                        class="package-edit-compact-btn"
+                        type="button"
+                        style="font-size: 11px; padding: 5px 8px;"
+                        (click)="editPlan.emit(plan)"
+                      >
+                        ✏️ Edit Package
+                      </button>
+                    }
+                  </div>
+                </td>
+              }
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+  <footer class="page-footer">
+    <span>{{ visiblePlans.length }} PACKAGES</span><span>MEMBERSHIP CATALOG</span>
+  </footer>
+</section>
+

@@ -1,0 +1,80 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="renewal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="generate-key-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">PLATFORM SUPER-ADMIN CONTROL</p>
+        <h2 id="generate-key-title">Generate Offline License Key</h2>
+        <p class="dialog-subtitle">Create cryptographically secure activation vouchers for B2B contracts</p>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Close generate key modal"
+        (click)="close.emit()"
+      >
+        ×
+      </button>
+    </div>
+
+    <form class="renewal-form" (ngSubmit)="confirm.emit()" #generateKeyForm="ngForm">
+      <label>Target Subscription Tier
+        <select name="genTier" [(ngModel)]="draft.tier" required>
+          <option value="STARTER">STARTER (Custom Gym Logo &amp; White-Label Gym Name)</option>
+          <option value="PRO">PRO (Starter + Receipt Upload + Audit History)</option>
+          <option value="ENTERPRISE">ENTERPRISE (Pro + Personal Trainers + Advanced Analytics)</option>
+          <option value="STANDARD">STANDARD (Base Operations Tier)</option>
+        </select>
+      </label>
+
+      <div>
+        <label style="margin-bottom: 6px; display: block;">License Duration (Days)
+          <input
+            type="number"
+            name="genDuration"
+            [(ngModel)]="draft.durationDays"
+            min="1"
+            placeholder="e.g. 365 (leave empty for perpetual/lifetime)"
+          >
+        </label>
+        <div style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;">
+          <button type="button" class="button button-quiet" style="font-size: 11px; padding: 3px 8px;" (click)="setPreset(30)">1 Month (30d)</button>
+          <button type="button" class="button button-quiet" style="font-size: 11px; padding: 3px 8px;" (click)="setPreset(90)">3 Months (90d)</button>
+          <button type="button" class="button button-quiet" style="font-size: 11px; padding: 3px 8px;" (click)="setPreset(180)">6 Months (180d)</button>
+          <button type="button" class="button button-quiet" style="font-size: 11px; padding: 3px 8px;" (click)="setPreset(365)">1 Year (365d)</button>
+          <button type="button" class="button button-quiet" style="font-size: 11px; padding: 3px 8px;" (click)="setPreset(null)">Perpetual (No Expiry)</button>
+        </div>
+      </div>
+
+      <label style="margin-top: 10px;">Contract Notes / Customer Reference
+        <textarea
+          name="genNotes"
+          [(ngModel)]="draft.notes"
+          rows="3"
+          placeholder="e.g., Annual contract deal with Metro Fitness Club, signed Oct 2026. Invoice #8832."
+        ></textarea>
+      </label>
+
+      @if (error) {
+        <p class="form-error" role="alert">{{ error }}</p>
+      }
+
+      <div class="form-actions" style="margin-top: 20px;">
+        <button type="button" class="button button-quiet" (click)="close.emit()">Cancel</button>
+        <button
+          type="submit"
+          class="button button-dark"
+          [disabled]="loading"
+        >
+          {{ loading ? 'Minting Key…' : '⚡ Generate & Issue Key' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+

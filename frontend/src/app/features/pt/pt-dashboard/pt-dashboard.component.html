@@ -1,0 +1,237 @@
+        <section class="page-content">
+          <div class="pt-hero-card">
+            <div class="pt-hero-profile">
+              <div class="pt-hero-avatar">{{ initials(user!.fullName) }}</div>
+              <div class="pt-hero-details">
+                <span class="role-badge" style="background: rgba(99, 102, 241, 0.12); color: var(--accent);">⚡ PERSONAL TRAINER</span>
+                <h1>Hello, {{ user!.fullName }}</h1>
+                <p class="page-subtitle">{{ myPtProfile?.specializations || 'Personal Trainer' }} · {{ myPtProfile?.branchName || '🌐 All locations' }}</p>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span class="status-pill status-paid">● Available for Bookings</span>
+            </div>
+          </div>
+
+          <!-- Trainer KPI cards -->
+          <div class="team-kpi-strip">
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">ACTIVE CLIENTS</span>
+              <strong class="team-kpi-value">{{ myPtProfile?.activeMembers ?? 0 }} <span class="team-kpi-sub">assigned</span></strong>
+            </div>
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">SESSION RATE</span>
+              <strong class="team-kpi-value">{{ money(myPtProfile?.sessionFeePerHour ?? 0) }} <span class="team-kpi-sub">/hr</span></strong>
+            </div>
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">COMMISSION SHARE</span>
+              <strong class="team-kpi-value" style="color: var(--emerald);">{{ myPtProfile?.commissionPercent ?? 0 }}% <span class="team-kpi-sub">payout</span></strong>
+            </div>
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">UPCOMING SESSIONS</span>
+              <strong class="team-kpi-value" style="color: var(--accent);">{{ upcomingPtSessions.length }}</strong>
+            </div>
+          </div>
+
+          <!-- Assigned Clients / Trainees Panel -->
+          <section class="panel full-panel" style="margin-bottom: 24px;">
+            <div class="panel-heading" style="flex-wrap: wrap; gap: 12px;">
+              <div>
+                <p class="eyebrow">CLIENT ROSTER & REMAINING SESSIONS</p>
+                <h2>My Assigned Clients & Trainees ({{ ptTrainees.length }})</h2>
+                <p class="page-subtitle">Members assigned to you for 1-on-1 coaching. Start a live workout or schedule upcoming sessions.</p>
+              </div>
+            </div>
+
+            @if (ptTrainees.length > 0) {
+              <div class="pt-trainees-grid">
+                @for (trainee of ptTrainees; track trainee.id) {
+                  <div class="pt-trainee-card">
+                    <div class="pt-trainee-header">
+                      <div class="pt-trainee-avatar">{{ initials(trainee.memberName) }}</div>
+                      <div class="pt-trainee-info">
+                        <h3>{{ trainee.memberName }}</h3>
+                        <div class="pt-trainee-contact">
+                          <span class="contact-pill copyable" (click)="onCopy(trainee.email, 'Email copied!')" title="Click to copy email">✉ {{ trainee.email }}</span>
+                          @if (trainee.phoneNumber) {
+                            <span class="contact-pill copyable" (click)="onCopy(trainee.phoneNumber, 'Phone copied!')" title="Click to copy phone">📞 {{ trainee.phoneNumber }}</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="pt-trainee-package-block">
+                      <div class="pt-trainee-pkg-meta">
+                        <span class="pkg-label">ENROLLED PACKAGE</span>
+                        <strong class="pkg-name">{{ trainee.planName }}</strong>
+                      </div>
+                      <div class="pt-session-tracker" style="margin-top: 10px;">
+                        <div class="pt-progress-track">
+                          <div class="pt-progress-fill" [style.width.%]="ptSessionProgress(trainee)"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-top: 4px;">
+                          <span style="color: var(--ink);">{{ trainee.ptSessionsUsed ?? 0 }} of {{ trainee.ptSessionsIncluded ?? 0 }} used</span>
+                          <span style="color: var(--emerald);">{{ (trainee.ptSessionsIncluded ?? 0) - (trainee.ptSessionsUsed ?? 0) }} remaining</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="pt-trainee-actions">
+                      <button
+                        type="button"
+                        class="button button-lime button-quick-start"
+                        [disabled]="busy || ((trainee.ptSessionsIncluded ?? 0) > 0 && (trainee.ptSessionsUsed ?? 0) >= (trainee.ptSessionsIncluded ?? 0))"
+                        (click)="quickStartSessionNow.emit(trainee)"
+                        title="Start workout now and verify attendance PIN with client"
+                      >
+                        ⚡ Start Session (Now)
+                      </button>
+                      <button
+                        type="button"
+                        class="button button-outline button-schedule-session"
+                        [disabled]="busy || ((trainee.ptSessionsIncluded ?? 0) > 0 && (trainee.ptSessionsUsed ?? 0) >= (trainee.ptSessionsIncluded ?? 0))"
+                        (click)="openBookSessionModal.emit(trainee)"
+                        title="Schedule a future session date & time"
+                      >
+                        📅 Schedule
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="table-empty" style="padding: 36px 20px; text-align: center;">
+                <div style="font-size: 32px; margin-bottom: 8px;">🏋️</div>
+                <h3 style="font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 4px;">No Assigned Trainees Yet</h3>
+                <p style="font-size: 12px; color: var(--muted); max-width: 450px; margin: 0 auto;">
+                  When a gym owner or front desk staff enrolls a member in a package with personal training and assigns you as their coach, they will appear here with their session balance and attendance PIN.
+                </p>
+              </div>
+            }
+          </section>
+
+          <!-- Sessions Panel with filter tabs -->
+          <section class="panel full-panel">
+            <div class="panel-heading" style="flex-wrap: wrap; gap: 12px;">
+              <div>
+                <p class="eyebrow">SCHEDULE & SESSIONS</p>
+                <h2>My Training Sessions ({{ filteredPtSessionsWithDate.length }})</h2>
+              </div>
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <div class="branch-filter-tabs">
+                  <button type="button" class="branch-filter-pill" [class.active]="ptSessionDateFilter === 'ALL'" (click)="onDateFilterChange('ALL')">
+                    All Dates
+                  </button>
+                  <button type="button" class="branch-filter-pill" [class.active]="ptSessionDateFilter === 'TODAY'" (click)="onDateFilterChange('TODAY')">
+                    📅 Today
+                  </button>
+                  <button type="button" class="branch-filter-pill" [class.active]="ptSessionDateFilter === 'UPCOMING'" (click)="onDateFilterChange('UPCOMING')">
+                    ⚡ Upcoming
+                  </button>
+                </div>
+                <div class="member-page-filter">
+                  <button type="button" [class.selected]="ptSessionStatusFilter === 'all'" (click)="onStatusFilterChange('all')">All</button>
+                  <button type="button" [class.selected]="ptSessionStatusFilter === 'BOOKED'" (click)="onStatusFilterChange('BOOKED')">Booked</button>
+                  <button type="button" [class.selected]="ptSessionStatusFilter === 'COMPLETED'" (click)="onStatusFilterChange('COMPLETED')">Completed</button>
+                  <button type="button" [class.selected]="ptSessionStatusFilter === 'MISSED'" (click)="onStatusFilterChange('MISSED')">Missed</button>
+                  <button type="button" [class.selected]="ptSessionStatusFilter === 'CANCELLED'" (click)="onStatusFilterChange('CANCELLED')">Cancelled</button>
+                </div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="member-list-table">
+                <thead>
+                  <tr>
+                    <th>DATE & TIME</th>
+                    <th>MEMBER CLIENT</th>
+                    <th>STATUS</th>
+                    <th>FEE SNAPSHOT</th>
+                    <th>MY COMMISSION</th>
+                    <th>NOTES / REASON</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (session of filteredPtSessionsWithDate; track session.id) {
+                    <tr>
+                      <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                          <div class="pt-session-calendar-badge">
+                            <strong>{{ session.scheduledDate | date:'dd MMM' }}</strong>
+                            <span>{{ session.startTime }}</span>
+                          </div>
+                          <div>
+                            <div style="font-weight: 700; font-size: 12px; color: var(--ink);">{{ dateLabel(session.scheduledDate) }}</div>
+                            <div class="status-detail">{{ session.startTime }} – {{ session.endTime }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <div class="staff-avatar" style="width: 28px; height: 28px; font-size: 11px;">{{ initials(session.memberName) }}</div>
+                          <strong>{{ session.memberName }}</strong>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="status-pill"
+                          [class.status-booked]="session.status === 'BOOKED'"
+                          [class.status-completed]="session.status === 'COMPLETED'"
+                          [class.status-missed]="session.status === 'MISSED'"
+                          [class.status-cancelled]="session.status === 'CANCELLED'"
+                          [class.status-tentative]="session.status === 'TENTATIVE'">
+                          {{ session.status === 'BOOKED' ? '📅 Booked' : session.status === 'COMPLETED' ? '✓ Completed' : session.status === 'MISSED' ? '⚠️ Missed' : session.status === 'CANCELLED' ? '✕ Cancelled' : session.status }}
+                        </span>
+                      </td>
+                      <td><strong>{{ money(session.sessionFeeSnapshot) }}</strong></td>
+                      <td>
+                        <span class="tag" style="color: var(--emerald); font-weight: 700;">
+                          {{ session.commissionRateSnapshot }}% ({{ money(Math.round(session.sessionFeeSnapshot * session.commissionRateSnapshot / 100)) }})
+                        </span>
+                      </td>
+                      <td>
+                        <span style="font-size: 11px;">{{ session.notes || '—' }}</span>
+                        @if (session.cancelReason) {
+                          <div class="status-detail" style="color: var(--danger); font-weight: 600;">Reason: {{ session.cancelReason }}</div>
+                        }
+                      </td>
+                      <td>
+                        @if (session.status === 'BOOKED' || session.status === 'TENTATIVE') {
+                          <div class="member-actions">
+                            <button class="member-action-button member-action-renew" type="button" (click)="completePtSessionQuick.emit(session)" [disabled]="busy" title="Mark Completed">
+                              ✓ Complete
+                            </button>
+                            <button class="member-action-button member-action-danger" type="button" (click)="missedPtSessionQuick.emit(session)" [disabled]="busy" title="Mark Missed">
+                              Missed
+                            </button>
+                            <button class="member-action-button" type="button" (click)="cancelPtSessionQuick.emit(session)" [disabled]="busy" title="Cancel Session">
+                              Cancel
+                            </button>
+                          </div>
+                        } @else if (session.status === 'COMPLETED') {
+                          <div style="display: flex; flex-direction: column; gap: 3px;">
+                            <span style="color: var(--emerald); font-size: 11px; font-weight: 700;">
+                              ✓ Completed {{ session.completedAt ? (session.completedAt | date:'shortTime') : '' }}
+                            </span>
+                            @if (session.verificationMethod === 'MEMBER_PIN') {
+                              <span class="verification-badge pin" title="Verified via Client Attendance PIN">🔐 Client PIN</span>
+                            } @else if (session.verificationMethod === 'STAFF_OVERRIDE') {
+                              <span class="verification-badge override" title="Verified via Supervisor Override">⚡ Staff Override</span>
+                            }
+                          </div>
+                        } @else {
+                          <span class="status-detail">{{ session.status }}</span>
+                        }
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="7">
+                        <div class="table-empty">No sessions matching the selected filter.</div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>

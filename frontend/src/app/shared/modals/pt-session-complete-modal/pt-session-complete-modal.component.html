@@ -1,0 +1,130 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="renewal-dialog session-completion-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="session-completion-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">ATTENDANCE VERIFICATION & SETTLEMENT</p>
+        <h2 id="session-completion-title">Complete Training Session</h2>
+        <p class="dialog-subtitle">Verify mutual client attendance before booking session revenue and commission ledger.</p>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Close session completion modal"
+        (click)="close.emit()"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="session-modal-body">
+      <!-- Session Overview Summary Box -->
+      <div class="session-summary-box">
+        <div class="summary-row">
+          <div class="summary-col">
+            <span class="summary-label">CLIENT MEMBER</span>
+            <strong class="summary-val">{{ session.memberName }}</strong>
+          </div>
+          <div class="summary-col">
+            <span class="summary-label">COACH / TRAINER</span>
+            <strong class="summary-val">{{ session.ptName }}</strong>
+          </div>
+          <div class="summary-col">
+            <span class="summary-label">DATE & TIME</span>
+            <strong class="summary-val">{{ dateLabel(session.scheduledDate) }} ({{ session.startTime }} – {{ session.endTime }})</strong>
+          </div>
+        </div>
+        <div class="summary-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
+          <div class="summary-col">
+            <span class="summary-label">SESSION REVENUE VALUE</span>
+            <strong class="summary-val" style="color: var(--emerald);">{{ money(session.sessionFeeSnapshot) }}</strong>
+          </div>
+          <div class="summary-col">
+            <span class="summary-label">TRAINER COMMISSION</span>
+            <strong class="summary-val" style="color: var(--accent);">{{ session.commissionRateSnapshot }}% ({{ money(roundCommission(session.sessionFeeSnapshot, session.commissionRateSnapshot)) }})</strong>
+          </div>
+          <div class="summary-col">
+            <span class="summary-label">CLUB RETAINED</span>
+            <strong class="summary-val">{{ money(session.sessionFeeSnapshot - roundCommission(session.sessionFeeSnapshot, session.commissionRateSnapshot)) }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security / Mutual Presence Notice -->
+      <div class="completion-security-banner">
+        <span class="security-badge-icon">🔐</span>
+        <div>
+          <strong>Client Mutual Presence Verification</strong>
+          <p>To prevent unauthorized session completion, personal trainers must request the 4-digit Attendance PIN shown on the member's profile or card.</p>
+        </div>
+      </div>
+
+      <form class="completion-form" (ngSubmit)="submit.emit(false)">
+        <label>
+          <span>Member 4-digit Attendance PIN <span class="required-star">*</span></span>
+          <input
+            name="sessionPin"
+            type="password"
+            inputmode="numeric"
+            maxlength="8"
+            [ngModel]="pin"
+            (ngModelChange)="pinChange.emit($event)"
+            placeholder="Enter client's 4-digit PIN (e.g. 1234)"
+            autocomplete="one-time-code"
+            [required]="userRole === 'PERSONAL_TRAINER'"
+            class="session-pin-input"
+          />
+          <small class="field-hint">Ask the member for their PIN, visible in their member portal or on their membership card.</small>
+        </label>
+
+        <label style="margin-top: 14px;">
+          <span>Session Workout Notes & Milestones <span class="label-note">OPTIONAL</span></span>
+          <textarea
+            name="sessionNotes"
+            [ngModel]="notes"
+            (ngModelChange)="notesChange.emit($event)"
+            rows="3"
+            maxlength="500"
+            placeholder="e.g. Upper body hypertrophy: Bench press 4x8, dumbbell rows 3x10, mobility cooldown..."
+          ></textarea>
+        </label>
+
+        @if (error) {
+          <p class="form-error" role="alert" style="margin-top: 12px;">{{ error }}</p>
+        }
+
+        <div class="form-actions completion-actions" style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+          <button type="button" class="button button-quiet" (click)="close.emit()">Cancel</button>
+
+          <div style="display: flex; gap: 8px;">
+            @if (userRole === 'OWNER' || userRole === 'STAFF') {
+              <button
+                type="button"
+                class="button button-outline"
+                style="border-color: var(--amber); color: #b45309;"
+                [disabled]="busy"
+                (click)="submit.emit(true)"
+                title="Supervisor override when client is unable to provide PIN"
+              >
+                ⚡ Staff Override
+              </button>
+            }
+            <button
+              type="submit"
+              class="button button-dark button-verify-complete"
+              [disabled]="busy || (!pin && userRole === 'PERSONAL_TRAINER')"
+            >
+              {{ busy ? 'Verifying…' : '✓ Verify PIN & Complete' }}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+

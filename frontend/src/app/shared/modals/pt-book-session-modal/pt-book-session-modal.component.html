@@ -1,0 +1,68 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="renewal-dialog"
+    style="max-width: 480px;"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="book-pt-session-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">SCHEDULE TRAINING SESSION</p>
+        <h2 id="book-pt-session-title">Book Session with {{ trainee.memberName }}</h2>
+        <p class="dialog-subtitle">{{ trainee.planName }} · {{ (trainee.ptSessionsIncluded ?? 0) - (trainee.ptSessionsUsed ?? 0) }} sessions remaining</p>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Close booking modal"
+        (click)="close.emit()"
+      >
+        ×
+      </button>
+    </div>
+
+    <form class="renewal-form" (ngSubmit)="submit.emit()">
+      <label>
+        <span>Scheduled Date <span class="required-star">*</span></span>
+        <input name="bookDate" [ngModel]="scheduledDate" (ngModelChange)="scheduledDateChange.emit($event)" type="date" required [min]="minDate">
+      </label>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;">
+        <label>
+          <span>Start Time <span class="required-star">*</span></span>
+          <input name="bookStartTime" [ngModel]="startTime" (ngModelChange)="startTimeChange.emit($event)" type="time" required>
+        </label>
+        <label>
+          <span>End Time <span class="required-star">*</span></span>
+          <input name="bookEndTime" [ngModel]="endTime" (ngModelChange)="endTimeChange.emit($event)" type="time" required>
+        </label>
+      </div>
+
+      <label style="margin-top: 10px;">
+        <span>Workout Focus / Objectives <span class="label-note">OPTIONAL</span></span>
+        <textarea
+          name="bookNotes"
+          [ngModel]="notes"
+          (ngModelChange)="notesChange.emit($event)"
+          rows="2"
+          maxlength="250"
+          placeholder="e.g. Lower body strength & deadlift form analysis"
+        ></textarea>
+      </label>
+
+      @if (error) {
+        <p class="form-error" role="alert" style="margin-top: 12px;">{{ error }}</p>
+      }
+
+      <div class="form-actions" style="margin-top: 20px;">
+        <button type="button" class="button button-quiet" (click)="close.emit()">Cancel</button>
+        <button type="submit" class="button button-dark" [disabled]="busy">
+          {{ busy ? 'Scheduling…' : '✓ Confirm Session' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+

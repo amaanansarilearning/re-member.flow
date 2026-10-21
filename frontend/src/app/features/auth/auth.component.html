@@ -1,0 +1,205 @@
+<main class="login-screen">
+  <section class="login-art" aria-label="Gym management">
+    <div class="art-top"><img class="brand-mark" src="/form-mark.svg" alt="" /><span>Re-member Flow</span></div>
+    <div class="art-copy">
+      <p class="eyebrow">THE BUSINESS OF BETTER</p>
+      <h1>Make every<br />rep count.</h1>
+      <p>Memberships, momentum, and the numbers behind your club.</p>
+    </div>
+    <div class="art-stamp">
+      <span>EST.</span><strong>2026</strong><span>TRAIN<br />TOGETHER</span>
+    </div>
+    <div class="art-grid" aria-hidden="true"></div>
+  </section>
+  <section class="login-panel">
+    <button class="auth-home-link" type="button" (click)="backToHome.emit()">← Back to Re-member Flow</button>
+    <div class="login-box">
+      @if (authMode === 'login') {
+        <p class="eyebrow">CLUB SIGN IN · PORTAL ACCESS</p>
+        <h2>Welcome back.</h2>
+        <p class="muted">Sign in to run your club.</p>
+        @if (notice) {
+          <p class="login-notice" role="status">{{ notice }}</p>
+        }
+        <form (ngSubmit)="login.emit()" #loginForm="ngForm">
+          <label
+            >Email address<input
+              name="loginEmail"
+              type="email"
+              autocomplete="username"
+              [(ngModel)]="loginEmail"
+              (ngModelChange)="loginEmailChange.emit($event)"
+              required /></label
+          ><label
+            >Password<input
+              name="loginPassword"
+              type="password"
+              autocomplete="current-password"
+              [(ngModel)]="loginPassword"
+              (ngModelChange)="loginPasswordChange.emit($event)"
+              required
+          /></label>
+          @if (error) {
+            <p class="form-error" role="alert">{{ error }}</p>
+          }
+          <button
+            class="button button-dark button-wide"
+            type="submit"
+            [disabled]="busy || loginForm.invalid"
+          >
+            {{ busy ? 'Signing in…' : 'Sign in' }} <span aria-hidden="true">↗</span>
+          </button>
+        </form>
+        <div class="auth-links">
+          <button (click)="setAuthMode.emit('forgot-password')">
+            Forgot password?</button
+          ><button (click)="setAuthMode.emit('register-gym')">
+            Register New Gym
+          </button>
+        </div>
+        <div class="auth-legal-notice">
+          <p>Protected by multi-tenant authentication security.</p>
+          <div class="auth-legal-links">
+            <button type="button" class="auth-legal-btn" (click)="openLegal.emit('terms')">Terms of Use</button>
+            <span>·</span>
+            <button type="button" class="auth-legal-btn" (click)="openLegal.emit('privacy')">Privacy Policy</button>
+            <span>·</span>
+            <button type="button" class="auth-legal-btn" (click)="openLegal.emit('disclaimer')">Health Waiver</button>
+          </div>
+        </div>
+      } @else if (authMode === 'register-gym') {
+        <p class="eyebrow">MULTI-TENANT SAAS ONBOARDING</p>
+        <h2>Register your Gym</h2>
+        <p class="muted">Set up your gym's dedicated workspace and start managing members.</p>
+        <form (ngSubmit)="registerGym.emit()" #regGymForm="ngForm">
+          <label>Gym / Organization name
+            <input name="regOrgName" [(ngModel)]="registerGymDraft.organizationName" required maxlength="120" placeholder="e.g. Iron Peak Fitness">
+          </label>
+          <label>Gym unique code (slug)
+            <input name="regOrgCode" [(ngModel)]="registerGymDraft.organizationCode" required maxlength="40" placeholder="e.g. IRONPEAK" style="text-transform: uppercase;">
+          </label>
+          <label>Initial Branch name
+            <input name="regBranchName" [(ngModel)]="registerGymDraft.branchName" placeholder="e.g. Main Facility (optional)">
+          </label>
+          <label>Your full name
+            <input name="regOwnerName" [(ngModel)]="registerGymDraft.fullName" required maxlength="100" placeholder="e.g. Alex Morgan">
+          </label>
+          <label>Owner email address
+            <input name="regOwnerEmail" type="email" [(ngModel)]="registerGymDraft.email" required placeholder="owner@ironpeak.com">
+          </label>
+          <label>Password
+            <input name="regOwnerPassword" type="password" [(ngModel)]="registerGymDraft.password" required minlength="8" maxlength="72">
+          </label>
+          <label>Phone number
+            <input name="regOwnerPhone" type="tel" [(ngModel)]="registerGymDraft.phoneNumber" placeholder="+1234567890">
+          </label>
+          <div class="legal-consent-card">
+            <label class="legal-checkbox-label">
+              <input
+                type="checkbox"
+                name="regAcceptTerms"
+                [(ngModel)]="registerGymDraft.acceptTerms"
+                required
+              />
+              <span class="legal-checkbox-text">
+                I have read, understood, and agree to the
+                <button type="button" class="legal-inline-btn" (click)="openLegal.emit('terms'); $event.preventDefault()">Terms of Use</button>,
+                <button type="button" class="legal-inline-btn" (click)="openLegal.emit('privacy'); $event.preventDefault()">Privacy Policy</button>, and
+                <button type="button" class="legal-inline-btn" (click)="openLegal.emit('disclaimer'); $event.preventDefault()">Health & Safety Disclaimer</button>.
+                I certify that I am authorized to bind this gym organization.
+              </span>
+            </label>
+          </div>
+          @if (error) {
+            <p class="form-error" role="alert">{{ error }}</p>
+          }
+          <button
+            class="button button-dark button-wide"
+            type="submit"
+            [disabled]="busy || regGymForm.invalid || !registerGymDraft.acceptTerms"
+          >
+            {{ busy ? 'Setting up gym…' : 'Complete Registration & Launch' }} <span aria-hidden="true">↗</span>
+          </button>
+        </form>
+        <div class="auth-links">
+          <button (click)="setAuthMode.emit('login')">
+            ← Already registered? Sign in
+          </button>
+        </div>
+      } @else {
+        <p class="eyebrow">ACCOUNT RECOVERY</p>
+        <h2>Reset password.</h2>
+        <p class="muted">Get a one-time code by email. It expires after 10 minutes.</p>
+        @if (resetStep === 'request') {
+          <form (ngSubmit)="requestPasswordReset.emit()" #resetRequestForm="ngForm">
+            <label
+              >Account email<input
+                name="resetEmail"
+                type="email"
+                [(ngModel)]="resetDraft.email"
+                required
+                autocomplete="email"
+            /></label>
+            @if (error) {
+              <p class="form-error" role="alert">{{ error }}</p>
+            }
+            <button
+              class="button button-dark button-wide"
+              type="submit"
+              [disabled]="busy || resetRequestForm.invalid"
+            >
+              {{ busy ? 'Sending code…' : 'Send reset code' }} <span>↗</span>
+            </button>
+          </form>
+        } @else {
+          <form (ngSubmit)="confirmPasswordReset.emit()" #resetConfirmForm="ngForm">
+            <label
+              >Verification code<input
+                name="resetCode"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                [(ngModel)]="resetDraft.code"
+                required
+                minlength="6"
+                maxlength="6"
+            /></label>
+            <label
+              >New password<input
+                name="newPassword"
+                type="password"
+                [(ngModel)]="resetDraft.newPassword"
+                required
+                minlength="8"
+                maxlength="72"
+                autocomplete="new-password"
+            /></label>
+            @if (error) {
+              <p class="form-error" role="alert">{{ error }}</p>
+            }
+            <button
+              class="button button-dark button-wide"
+              type="submit"
+              [disabled]="busy || resetConfirmForm.invalid"
+            >
+              {{ busy ? 'Updating password…' : 'Verify code and reset' }} <span>↗</span>
+            </button>
+          </form>
+          <div class="auth-links">
+            <button
+              (click)="setResetStep.emit('request')"
+            >
+              Request another code
+            </button>
+          </div>
+        }
+        <div class="auth-links">
+          <button (click)="showLogin.emit(); setResetStep.emit('request')">
+            ← Back to sign in
+          </button>
+        </div>
+      }
+    </div>
+    <span class="login-version">Re-member FLOW · 01</span>
+  </section>
+</main>
+

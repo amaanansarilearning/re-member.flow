@@ -1,0 +1,644 @@
+        <section class="page-content platform-admin-page">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">SAAS GLOBAL OPERATIONS · MULTI-TENANT CONTROL PLANE</p>
+              <h1>SaaS Platform Command Center</h1>
+              <p class="page-subtitle">Tenant health monitoring, active subscription management, and license key generation.</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="button button-dark" type="button" (click)="openGenerateCodeModal.emit()">
+                <span>＋</span> Generate New License Key
+              </button>
+              <button class="button button-outline" type="button" (click)="loadPlatformData.emit()" [disabled]="busy">
+                {{ busy ? 'Refreshing…' : '↻ Refresh Data' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Platform Navigation Tabs -->
+          <div class="platform-tabs">
+            <button type="button" [class.active]="platformTab === 'metrics'" (click)="setTab('metrics')">
+              📊 SaaS Telemetry & KPI Metrics
+            </button>
+            <button type="button" [class.active]="platformTab === 'organizations'" (click)="setTab('organizations')">
+              🏢 Gym Tenants Directory ({{ platformOrganizations.length }})
+            </button>
+            <button type="button" [class.active]="platformTab === 'codes'" (click)="setTab('codes')">
+              🔑 Activation Codes & Licenses ({{ platformCodes.length }})
+            </button>
+            <button type="button" [class.active]="platformTab === 'upgrade-requests'" (click)="setTab('upgrade-requests')">
+              📥 Tenant Upgrade Requests ({{ platformUpgradeRequests.length }})
+              @if (pendingUpgradeRequestsCount > 0) {
+                <span class="badge badge-warning" style="margin-left: 6px; padding: 2px 7px; border-radius: 9999px; font-size: 11px;">{{ pendingUpgradeRequestsCount }} PENDING</span>
+              }
+            </button>
+          </div>
+
+          <!-- Tab 1: SaaS Telemetry & KPI Metrics -->
+          @if (platformTab === 'metrics') {
+            @if (pendingUpgradeRequestsCount > 0) {
+              <div class="pending-admin-alert-banner" (click)="setTab('upgrade-requests')" role="button" tabindex="0">
+                <span class="alert-icon">⚡</span>
+                <div class="alert-text">
+                  <strong>{{ pendingUpgradeRequestsCount }} Commercial Upgrade Request{{ pendingUpgradeRequestsCount > 1 ? 's' : '' }} Awaiting Review</strong>
+                  <p>Gym owners have submitted payment and requested PRO activation. Review and issue keys to activate.</p>
+                </div>
+                <button type="button" class="action-btn-review" (click)="setTab('upgrade-requests'); $event.stopPropagation()">
+                  Review Requests →
+                </button>
+              </div>
+            }
+
+            <div class="platform-kpi-grid">
+              <div class="platform-stat-card">
+                <p class="stat-eyebrow">Total Gym Tenants</p>
+                <div class="stat-value">{{ platformMetrics?.totalGyms ?? 0 }}</div>
+                <p class="stat-subtext">Registered SaaS organizations</p>
+              </div>
+              <div class="platform-stat-card">
+                <p class="stat-eyebrow">Active Premium PRO Gyms</p>
+                <div class="stat-value" style="color: #a855f7;">{{ platformMetrics?.activePremiumGyms ?? 0 }}</div>
+                <p class="stat-subtext">Commercial paying subscriptions</p>
+              </div>
+              <div class="platform-stat-card">
+                <p class="stat-eyebrow">Standard Tier Gyms</p>
+                <div class="stat-value" style="color: #64748b;">{{ platformMetrics?.standardGyms ?? 0 }}</div>
+                <p class="stat-subtext">Core operational accounts</p>
+              </div>
+              <div class="platform-stat-card">
+                <p class="stat-eyebrow">Global Members Managed</p>
+                <div class="stat-value" style="color: #10b981;">{{ platformMetrics?.totalMembersAcrossGyms ?? 0 }}</div>
+                <p class="stat-subtext">Active gym attendees platform-wide</p>
+              </div>
+              <div class="platform-stat-card">
+                <p class="stat-eyebrow">Total Branch Facilities</p>
+                <div class="stat-value">{{ platformMetrics?.totalBranches ?? 0 }}</div>
+                <p class="stat-subtext">Operating fitness locations</p>
+              </div>
+              <div class="platform-stat-card">
+                <p class="stat-eyebrow">Available License Keys</p>
+                <div class="stat-value" style="color: #6366f1;">{{ platformMetrics?.availableCodes ?? 0 }}</div>
+                <p class="stat-subtext">Ready for sales distribution</p>
+              </div>
+            </div>
+          }
+
+          <!-- Tab 2: Gym Tenants Directory -->
+          @if (platformTab === 'organizations') {
+            <div style="margin-bottom: 16px; display: flex; gap: 12px; align-items: center;">
+              <input
+                type="text"
+                placeholder="Search gyms by name or code..."
+                [ngModel]="platformOrgSearch" (ngModelChange)="onOrgSearchChange($event)"
+                (ngModelChange)="loadPlatformData.emit()"
+                style="max-width: 360px; padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--border); font-size: 13px;"
+              />
+              <span class="report-note">{{ platformOrganizations.length }} gym organizations enrolled</span>
+            </div>
+
+            <div class="platform-table-wrapper">
+              <table class="platform-table">
+                <thead>
+                  <tr>
+                    <th>Organization</th>
+                    <th>Code</th>
+                    <th>Owner Contact</th>
+                    <th>Branches</th>
+                    <th>Members</th>
+                    <th>Tier</th>
+                    <th>Status</th>
+                    <th>Subscription Expiry</th>
+                    <th>Management Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (org of platformOrganizations; track org.id) {
+                    <tr>
+                      <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          @if (org.logoData) {
+                            <img [src]="org.logoData" alt="" style="width: 24px; height: 24px; object-fit: contain; border-radius: 4px;" />
+                          }
+                          <strong>{{ org.name }}</strong>
+                        </div>
+                      </td>
+                      <td><code>{{ org.code }}</code></td>
+                      <td>
+                        @if (org.ownerEmail) {
+                          <div>{{ org.ownerName }}</div>
+                          <small style="color: var(--muted);">{{ org.ownerEmail }}</small>
+                        } @else {
+                          <span style="color: var(--muted);">Unassigned</span>
+                        }
+                      </td>
+                      <td>{{ org.branchCount }}</td>
+                      <td>{{ org.memberCount }}</td>
+                      <td>
+                        <span class="tier-pill" [ngClass]="tierPillClass(org.subscriptionTier)">
+                          {{ tierBadgeLabel(org.subscriptionTier) }}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="status-badge"
+                              [class.status-active]="org.subscriptionStatus === 'ACTIVE'"
+                              [class.status-cancelled]="org.subscriptionStatus === 'CANCELLED'"
+                              [class.status-suspended]="org.subscriptionStatus === 'SUSPENDED'">
+                          {{ org.subscriptionStatus }}
+                        </span>
+                      </td>
+                      <td>{{ org.subscriptionExpiresAt ? dateLabel(org.subscriptionExpiresAt) : 'Perpetual / Ongoing' }}</td>
+                      <td>
+                        <div class="table-actions-cell">
+                          <select
+                            style="padding: 3px 6px; font-size: 11px; font-weight: 700; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); color: var(--ink);"
+                            [ngModel]="org.subscriptionTier"
+                            (ngModelChange)="onUpdateOrgTier(org.id, $event)"
+                            title="Change Subscription Tier"
+                          >
+                            <option value="STANDARD">Standard</option>
+                            <option value="STARTER">Starter</option>
+                            <option value="PRO">Pro</option>
+                            <option value="ENTERPRISE">Enterprise</option>
+                          </select>
+                          <button type="button" title="Extend subscription by 30 days" (click)="onExtendOrgSubscription(org.id, 30)">
+                            +30d
+                          </button>
+                          <button type="button" title="Extend subscription by 365 days" (click)="onExtendOrgSubscription(org.id, 365)">
+                            +1yr
+                          </button>
+                          <button type="button"
+                                  [class.btn-danger]="org.subscriptionStatus !== 'SUSPENDED'"
+                                  [class.btn-success]="org.subscriptionStatus === 'SUSPENDED'"
+                                  (click)="toggleOrgSuspension.emit(org)">
+                            {{ org.subscriptionStatus === 'SUSPENDED' ? 'Unsuspend' : 'Suspend' }}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="9" style="text-align: center; padding: 32px; color: var(--muted);">
+                        No gym organizations found matching your search.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <!-- Tab 3: Activation Codes & Licenses -->
+          @if (platformTab === 'codes') {
+            <div class="platform-table-wrapper">
+              <table class="platform-table">
+                <thead>
+                  <tr>
+                    <th>License Key</th>
+                    <th>Tier</th>
+                    <th>Validity Duration</th>
+                    <th>Status</th>
+                    <th>Notes / Invoice Reference</th>
+                    <th>Redeemed By</th>
+                    <th>Redeemed At</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (code of platformCodes; track code.id) {
+                    <tr>
+                      <td>
+                        <div class="code-display">
+                          <span>{{ code.code }}</span>
+                          <button type="button" class="copy-key-btn" title="Copy key to clipboard" (click)="copyActivationCode.emit(code.code)">
+                            {{ copiedCode === code.code ? '✓' : '📋' }}
+                          </button>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="tier-pill" [ngClass]="tierPillClass(code.tier)">
+                          {{ tierBadgeLabel(code.tier) }}
+                        </span>
+                      </td>
+                      <td>{{ code.durationDays ? (code.durationDays + ' Days') : 'Perpetual / Lifetime' }}</td>
+                      <td>
+                        <span class="status-badge"
+                              [class.status-available]="code.status === 'AVAILABLE'"
+                              [class.status-redeemed]="code.status === 'REDEEMED'"
+                              [class.status-cancelled]="code.status === 'REVOKED'"
+                              [class.status-suspended]="code.status === 'EXPIRED'">
+                          {{ code.status }}
+                        </span>
+                      </td>
+                      <td>{{ code.notes || '—' }}</td>
+                      <td>
+                        @if (code.redeemedByOrgName) {
+                          <strong>{{ code.redeemedByOrgName }}</strong>
+                          <br><small style="color: var(--muted);">{{ code.redeemedByEmail }}</small>
+                        } @else {
+                          <span style="color: var(--muted);">Unused</span>
+                        }
+                      </td>
+                      <td>{{ code.redeemedAt ? dateLabel(code.redeemedAt) : '—' }}</td>
+                      <td>
+                        @if (code.status === 'AVAILABLE') {
+                          <button type="button" class="btn-danger" style="font-size: 11px; padding: 4px 8px;" (click)="revokeLicenseKey.emit(code.id)">
+                            Revoke Key
+                          </button>
+                        } @else {
+                          <span style="color: var(--muted); font-size: 12px;">Archived</span>
+                        }
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="8" style="text-align: center; padding: 32px; color: var(--muted);">
+                        No activation codes generated yet. Click "Generate New License Key" to create your first voucher.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <!-- Tab 4: Tenant Upgrade Requests & Inquiries -->
+          @if (platformTab === 'upgrade-requests') {
+            <div class="panel-heading" style="margin-bottom: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+              <div>
+                <p class="eyebrow">COMMERCIAL B2B PIPELINE</p>
+                <h2>Tenant Upgrade Inquiries &amp; Licensing Requests</h2>
+                <p class="dialog-subtitle">Verify payment receipts, issue cryptographically signed keys, or perform instant cloud upgrades</p>
+              </div>
+              <div class="filter-pills" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="pill" [class.active]="platformUpgradeRequestFilter === 'ALL'" (click)="setPlatformUpgradeFilter.emit('ALL')">
+                  All ({{ platformUpgradeRequests.length }})
+                </button>
+                <button type="button" class="pill" [class.active]="platformUpgradeRequestFilter === 'PENDING'" (click)="setPlatformUpgradeFilter.emit('PENDING')">
+                  ⏳ Pending ({{ pendingUpgradeRequestsCount }})
+                </button>
+                <button type="button" class="pill" [class.active]="platformUpgradeRequestFilter === 'APPROVED_KEY_ISSUED'" (click)="setPlatformUpgradeFilter.emit('APPROVED_KEY_ISSUED')">
+                  🔑 Key Issued
+                </button>
+                <button type="button" class="pill" [class.active]="platformUpgradeRequestFilter === 'APPROVED_DIRECT_UPGRADE'" (click)="setPlatformUpgradeFilter.emit('APPROVED_DIRECT_UPGRADE')">
+                  ⚡ Direct Upgraded
+                </button>
+                <button type="button" class="pill" [class.active]="platformUpgradeRequestFilter === 'REJECTED'" (click)="setPlatformUpgradeFilter.emit('REJECTED')">
+                  ✕ Rejected
+                </button>
+              </div>
+            </div>
+
+            <!-- Toolbar: Search & View Mode Switcher -->
+            <div class="pipeline-toolbar">
+              <div class="pipeline-search-box">
+                <span style="font-size: 14px; color: var(--muted);" aria-hidden="true">🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search by gym name, code, requester email, ref ID..."
+                  [ngModel]="platformUpgradeSearch"
+                  (ngModelChange)="onUpgradeSearchChange($event)"
+                />
+                @if (platformUpgradeSearch) {
+                  <button type="button" class="clear-search-btn" (click)="onUpgradeSearchChange('')">✕</button>
+                }
+              </div>
+
+              <div class="view-toggle-group">
+                <button
+                  type="button"
+                  [class.active]="platformUpgradeViewMode === 'cards'"
+                  (click)="setPlatformUpgradeViewMode.emit('cards')"
+                  title="Executive pipeline card feed"
+                >
+                  🗂️ Pipeline Cards
+                </button>
+                <button
+                  type="button"
+                  [class.active]="platformUpgradeViewMode === 'table'"
+                  (click)="setPlatformUpgradeViewMode.emit('table')"
+                  title="Compact spreadsheet view"
+                >
+                  📋 Compact Table
+                </button>
+              </div>
+            </div>
+
+            <!-- CARDS PIPELINE VIEW -->
+            @if (platformUpgradeViewMode === 'cards') {
+              <div class="upgrade-pipeline-feed">
+                @for (req of filteredPlatformUpgradeRequests; track req.id) {
+                  <article
+                    class="pipeline-card"
+                    [class.pending-card]="req.status === 'PENDING'"
+                    [class.approved-card]="req.status.startsWith('APPROVED')"
+                    [class.rejected-card]="req.status === 'REJECTED'"
+                  >
+                    <!-- Card Top Bar -->
+                    <div class="pipeline-card-header">
+                      <div class="header-left">
+                        <span class="req-id-badge">REQ-{{ req.id }}</span>
+                        <strong class="org-title">{{ req.organizationName }}</strong>
+                        <span class="code-pill">{{ req.organizationCode }}</span>
+                        <span class="badge" style="background: rgba(168, 85, 247, 0.12); color: #c084fc; font-weight: 700; font-size: 10.5px;">
+                          ★ TARGET: {{ req.targetTier }}
+                        </span>
+                      </div>
+                      <div class="header-right">
+                        @if (req.status === 'PENDING') {
+                          <span class="badge badge-warning" style="font-size: 11px; padding: 4px 10px; font-weight: 800;">
+                            ⏳ PENDING VERIFICATION
+                          </span>
+                        } @else if (req.status === 'APPROVED_KEY_ISSUED') {
+                          <span class="badge badge-success" style="font-size: 11px; padding: 4px 10px; background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 800;">
+                            🔑 KEY ISSUED
+                          </span>
+                        } @else if (req.status === 'APPROVED_DIRECT_UPGRADE') {
+                          <span class="badge" style="font-size: 11px; padding: 4px 10px; background: rgba(168, 85, 247, 0.15); color: #c084fc; font-weight: 800;">
+                            ⚡ DIRECT UPGRADED
+                          </span>
+                        } @else {
+                          <span class="badge" style="font-size: 11px; padding: 4px 10px; background: rgba(239, 68, 68, 0.15); color: #f87171; font-weight: 800;">
+                            ✕ REJECTED
+                          </span>
+                        }
+                      </div>
+                    </div>
+
+                    <!-- Card Body Grid -->
+                    <div class="pipeline-card-grid">
+                      <!-- Col 1: Requester Info -->
+                      <div class="pipeline-section">
+                        <div class="section-label">Requester &amp; Contact</div>
+                        <div class="info-row">
+                          <span aria-hidden="true">👤</span>
+                          <strong>{{ req.requesterName || 'Gym Owner' }}</strong>
+                        </div>
+                        <div class="info-row">
+                          <span aria-hidden="true">✉️</span>
+                          <span style="word-break: break-all;">{{ req.requesterEmail }}</span>
+                        </div>
+                        @if (req.requesterPhone) {
+                          <div class="info-row">
+                            <span aria-hidden="true">📞</span>
+                            <span>{{ req.requesterPhone }}</span>
+                          </div>
+                        }
+                        <div class="info-row" style="font-size: 11.5px; margin-top: 2px;">
+                          <span aria-hidden="true">📅</span>
+                          <span>Submitted: {{ dateLabel(req.createdAt) }}</span>
+                        </div>
+                      </div>
+
+                      <!-- Col 2: Terms & Invoicing -->
+                      <div class="pipeline-section">
+                        <div class="section-label">Commercial Terms</div>
+                        <div class="info-row">
+                          <span aria-hidden="true">📦</span>
+                          <strong>{{ req.billingPlanName }}</strong>
+                          <span>({{ req.durationDays }} Days)</span>
+                        </div>
+                        <div class="info-row">
+                          <span aria-hidden="true">💳</span>
+                          <span>Method: <strong>{{ req.paymentMethod }}</strong></span>
+                        </div>
+                        @if (req.gstNumber) {
+                          <div class="info-row">
+                            <span aria-hidden="true">🏢</span>
+                            <span>GSTIN: <code style="color: var(--primary);">{{ req.gstNumber }}</code></span>
+                          </div>
+                        }
+                        @if (req.billingAddress) {
+                          <div class="info-row">
+                            <span aria-hidden="true">📍</span>
+                            <span style="font-size: 11.5px;">{{ req.billingAddress }}</span>
+                          </div>
+                        }
+                      </div>
+
+                      <!-- Col 3: Proof / Narration Notes -->
+                      <div class="pipeline-section">
+                        <div class="section-label">Payment Proof / UTR Reference</div>
+                        @if (req.notes) {
+                          <div class="notes-callout">
+                            {{ req.notes }}
+                          </div>
+                        } @else {
+                          <div class="notes-callout" style="color: var(--muted); font-style: italic;">
+                            No payment remarks or UTR narration provided
+                          </div>
+                        }
+                      </div>
+                    </div>
+
+                    <!-- Card Actions Strip (IMPOSSIBLE TO MISS) -->
+                    <div class="pipeline-card-actions">
+                      @if (req.status === 'PENDING') {
+                        <div class="actions-left">
+                          <span style="color: #f59e0b; font-weight: 700;">⚡ Action Required:</span>
+                          <span>Verify settlement with bank/UPI statement, then choose action:</span>
+                        </div>
+                        <div class="actions-buttons">
+                          <button
+                            type="button"
+                            class="action-btn-issue"
+                            [disabled]="issuingKeyId === req.id"
+                            (click)="approveRequestWithKey.emit(req)"
+                            title="Mint single-use cryptographic voucher key and dispatch invoice email"
+                          >
+                            {{ issuingKeyId === req.id ? 'Minting Key…' : '🔑 Issue Key & Email Voucher' }}
+                          </button>
+                          <button
+                            type="button"
+                            class="action-btn-direct"
+                            [disabled]="directUpgradingId === req.id"
+                            (click)="approveRequestDirect.emit(req)"
+                            title="Immediately elevate organization to Premium PRO in cloud"
+                          >
+                            {{ directUpgradingId === req.id ? 'Upgrading…' : '⚡ Instant Direct Upgrade' }}
+                          </button>
+                          <button
+                            type="button"
+                            class="action-btn-reject"
+                            (click)="openRejectModal.emit(req)"
+                            title="Reject this upgrade inquiry"
+                          >
+                            ✕ Reject
+                          </button>
+                        </div>
+                      } @else if (req.status === 'APPROVED_KEY_ISSUED') {
+                        <div class="actions-left">
+                          <span style="color: #10b981; font-weight: 700;">✓ Voucher Issued:</span>
+                          <span>Delivered to {{ req.requesterEmail }} · Reviewed by {{ req.reviewedBy || 'Admin' }} on {{ req.reviewedAt ? dateLabel(req.reviewedAt) : 'Recently' }}</span>
+                        </div>
+                        <div class="code-display">
+                          <span style="color: var(--primary);">{{ req.issuedActivationCode }}</span>
+                          <button type="button" class="copy-key-btn" (click)="copyPlatformKey.emit(req.issuedActivationCode!)" title="Copy code">
+                            {{ copiedPlatformKey === req.issuedActivationCode ? '✓ Copied' : '📋 Copy' }}
+                          </button>
+                        </div>
+                      } @else if (req.status === 'APPROVED_DIRECT_UPGRADE') {
+                        <div class="actions-left">
+                          <span style="color: #8b5cf6; font-weight: 700;">⚡ Direct Upgrade:</span>
+                          <span>Elevated in cloud to PREMIUM PRO (+{{ req.durationDays }} days) by {{ req.reviewedBy || 'Admin' }} on {{ req.reviewedAt ? dateLabel(req.reviewedAt) : 'Recently' }}</span>
+                        </div>
+                        <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc; font-weight: 700; font-size: 11px;">
+                          PRO ACTIVE
+                        </span>
+                      } @else {
+                        <div class="actions-left">
+                          <span style="color: #ef4444; font-weight: 700;">✕ Inquiry Rejected:</span>
+                          <span>Processed by {{ req.reviewedBy || 'Admin' }} on {{ req.reviewedAt ? dateLabel(req.reviewedAt) : 'Recently' }}</span>
+                        </div>
+                        @if (req.rejectionReason) {
+                          <span style="color: #ef4444; font-size: 12px; font-weight: 600;">Reason: {{ req.rejectionReason }}</span>
+                        }
+                      }
+                    </div>
+                  </article>
+                } @empty {
+                  <div style="text-align: center; padding: 48px 24px; background: var(--surface); border: 1px dashed var(--border); border-radius: var(--r-xl); color: var(--muted);">
+                    <span style="font-size: 32px; display: block; margin-bottom: 8px;">📥</span>
+                    <strong style="font-size: 14px; color: var(--ink); display: block; margin-bottom: 4px;">No Upgrade Requests Found</strong>
+                    <p style="font-size: 12.5px; margin: 0;">No inquiries match the current filter or search criteria.</p>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- COMPACT TABLE VIEW WITH STICKY ACTION COLUMN -->
+            @if (platformUpgradeViewMode === 'table') {
+              <div class="platform-table-wrapper">
+                <table class="platform-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 80px;">Ref ID</th>
+                      <th>Gym Organization</th>
+                      <th>Requester</th>
+                      <th>Plan &amp; Term</th>
+                      <th>Payment &amp; Settlement</th>
+                      <th>Submitted</th>
+                      <th>Status</th>
+                      <th class="sticky-action-col" style="min-width: 260px;">Operator Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (req of filteredPlatformUpgradeRequests; track req.id) {
+                      <tr>
+                        <td>
+                          <strong style="font-family: monospace; color: var(--primary);">REQ-{{ req.id }}</strong>
+                        </td>
+                        <td>
+                          <strong>{{ req.organizationName }}</strong>
+                          <br><span class="code-pill" style="font-size: 10px;">{{ req.organizationCode }}</span>
+                        </td>
+                        <td>
+                          <strong>{{ req.requesterName || 'Owner' }}</strong>
+                          <br><small style="color: var(--muted);">{{ req.requesterEmail }}</small>
+                          @if (req.requesterPhone) {
+                            <br><small style="color: var(--muted);">📞 {{ req.requesterPhone }}</small>
+                          }
+                        </td>
+                        <td>
+                          <span class="badge" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; font-weight: 700;">
+                            {{ req.billingPlanName }}
+                          </span>
+                          <div style="font-size: 11px; color: var(--muted); margin-top: 3px;">{{ req.durationDays }} Days</div>
+                        </td>
+                        <td>
+                          <strong style="font-size: 11.5px; display: block;">{{ req.paymentMethod }}</strong>
+                          @if (req.gstNumber) {
+                            <div style="font-size: 11px; margin-top: 2px;">GST: <code style="color: var(--primary);">{{ req.gstNumber }}</code></div>
+                          }
+                          @if (req.notes) {
+                            <small style="color: var(--muted); display: block; max-width: 200px; word-break: break-word; margin-top: 2px;">{{ req.notes }}</small>
+                          }
+                          @if (!req.gstNumber && !req.notes) {
+                            <span style="color: var(--muted);">—</span>
+                          }
+                        </td>
+                        <td>
+                          <span style="font-size: 11.5px; white-space: nowrap;">{{ dateLabel(req.createdAt) }}</span>
+                        </td>
+                        <td>
+                          @if (req.status === 'PENDING') {
+                            <span class="badge badge-warning" style="font-size: 10.5px; padding: 4px 8px; font-weight: 800; white-space: nowrap;">⏳ PENDING REVIEW</span>
+                          } @else if (req.status === 'APPROVED_KEY_ISSUED') {
+                            <span class="badge badge-success" style="font-size: 10.5px; padding: 4px 8px; background: rgba(16, 185, 129, 0.15); color: #34d399; font-weight: 800; white-space: nowrap;">🔑 KEY ISSUED</span>
+                            @if (req.issuedActivationCode) {
+                              <div style="font-family: monospace; font-size: 11px; margin-top: 4px; color: var(--text);">
+                                {{ req.issuedActivationCode }}
+                              </div>
+                            }
+                          } @else if (req.status === 'APPROVED_DIRECT_UPGRADE') {
+                            <span class="badge" style="font-size: 10.5px; padding: 4px 8px; background: rgba(168, 85, 247, 0.15); color: #c084fc; font-weight: 800; white-space: nowrap;">⚡ DIRECT UPGRADED</span>
+                          } @else {
+                            <span class="badge" style="font-size: 10.5px; padding: 4px 8px; background: rgba(239, 68, 68, 0.15); color: #f87171; font-weight: 800; white-space: nowrap;">✕ REJECTED</span>
+                            @if (req.rejectionReason) {
+                              <small style="display: block; color: var(--muted); margin-top: 2px; max-width: 150px;">{{ req.rejectionReason }}</small>
+                            }
+                          }
+                        </td>
+                        <td class="sticky-action-col">
+                          @if (req.status === 'PENDING') {
+                            <div style="display: flex; gap: 8px; flex-wrap: nowrap; align-items: center;">
+                              <button
+                                type="button"
+                                class="action-btn-issue"
+                                style="padding: 6px 12px; font-size: 11.5px; white-space: nowrap;"
+                                [disabled]="issuingKeyId === req.id"
+                                title="Mint cryptographic key &amp; email to owner"
+                                (click)="approveRequestWithKey.emit(req)"
+                              >
+                                {{ issuingKeyId === req.id ? 'Minting…' : '🔑 Issue Key' }}
+                              </button>
+                              <button
+                                type="button"
+                                class="action-btn-direct"
+                                style="padding: 6px 12px; font-size: 11.5px; white-space: nowrap;"
+                                [disabled]="directUpgradingId === req.id"
+                                title="Directly upgrade organization in cloud"
+                                (click)="approveRequestDirect.emit(req)"
+                              >
+                                {{ directUpgradingId === req.id ? 'Upgrading…' : '⚡ Direct' }}
+                              </button>
+                              <button
+                                type="button"
+                                class="action-btn-reject"
+                                style="padding: 6px 10px; font-size: 11.5px; white-space: nowrap;"
+                                title="Reject request with note"
+                                (click)="openRejectModal.emit(req)"
+                              >
+                                ✕ Reject
+                              </button>
+                            </div>
+                          } @else {
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                              <span style="font-size: 11.5px; color: var(--muted); white-space: nowrap;">
+                                {{ req.status === 'APPROVED_KEY_ISSUED' ? 'Key sent' : req.status === 'APPROVED_DIRECT_UPGRADE' ? 'Upgraded' : 'Rejected' }} by {{ req.reviewedBy || 'Admin' }}
+                              </span>
+                              @if (req.issuedActivationCode) {
+                                <button type="button" class="copy-key-btn" style="padding: 2px 8px; font-size: 10.5px;" (click)="copyPlatformKey.emit(req.issuedActivationCode)">
+                                  {{ copiedPlatformKey === req.issuedActivationCode ? '✓ Copied' : '📋 Copy' }}
+                                </button>
+                              }
+                            </div>
+                          }
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="8" style="text-align: center; padding: 36px; color: var(--muted);">
+                          No upgrade requests match the selected filter.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          }
+
+          <footer class="page-footer">
+            <span>PLATFORM OPERATOR</span><span>GLOBAL TENANT MANAGEMENT</span>
+          </footer>
+        </section>

@@ -1,0 +1,62 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="renewal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="redeem-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">OFFLINE VOUCHER & ACTIVATION</p>
+        <h2 id="redeem-modal-title">Redeem Activation Key</h2>
+        <p class="dialog-subtitle">Unlock GymFlow Premium PRO instantly with your commercial license voucher</p>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        aria-label="Close redeem modal"
+        (click)="close.emit()"
+      >
+        ×
+      </button>
+    </div>
+
+    <form class="renewal-form" (ngSubmit)="confirm.emit()" #redeemForm="ngForm">
+      <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: var(--r-md); padding: 12px 16px; margin-bottom: 16px;">
+        <p style="margin: 0; font-size: 13px; color: var(--ink); line-height: 1.4;">
+          💡 <strong>Have an offline license code?</strong> Enter your code (e.g., <code>GF-PRO-XXXX-XXXX</code>) below.
+          Upon verification, your organization will immediately receive full Premium PRO features (Personal Trainers &amp; Audit History) and your subscription validity will be updated.
+        </p>
+      </div>
+
+      <label>Activation Key / License Voucher
+        <input
+          type="text"
+          name="redeemCodeInput"
+          [ngModel]="code"
+          (ngModelChange)="codeChange.emit($event)"
+          placeholder="GF-PRO-XXXX-XXXX"
+          required
+          style="font-family: monospace; font-size: 16px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; padding: 10px 14px;"
+        >
+      </label>
+
+      @if (error) {
+        <p class="form-error" role="alert">{{ error }}</p>
+      }
+
+      <div class="form-actions" style="margin-top: 20px;">
+        <button type="button" class="button button-quiet" (click)="close.emit()">Cancel</button>
+        <button
+          type="submit"
+          class="button button-dark"
+          [disabled]="loading || !code.trim()"
+        >
+          {{ loading ? 'Validating & Activating…' : '✓ Redeem & Activate License' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+

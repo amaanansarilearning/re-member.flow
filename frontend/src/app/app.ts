@@ -5,6 +5,42 @@ import { firstValueFrom } from 'rxjs';
 import { GymApiService, MembershipUpgradeQuote, MembershipUpgradePayload, SaasUpgradeQuote, ActionHistory, Analytics, Branch, BranchPayload, BranchType, CancellationReason, Dashboard, Freeze, Membership, MembershipAccess, MembershipGroup, Plan, RenewalReminder, User, PtProfile, PtSession, PtEarning, PtPayout, PtAnalytics, PtPackageType, ActivationCode, PlatformMetrics, PlatformOrganization, UpgradeRequest, UpgradeRequestPayload, TenantBackup, BulkMemberImportRow, BulkMemberImportResult } from './gym-api.service';
 import { CsrfTokenService } from './csrf-token.service';
 import { ALL_LEGAL_DOCUMENTS, LegalDocument } from './legal-content';
+import { CookieBannerComponent, LegalModalComponent } from './shared/components';
+import {
+  PublicSiteComponent,
+  AuthComponent,
+  SidebarComponent,
+  TopbarComponent,
+  OwnerOverviewComponent,
+  StaffOverviewComponent,
+  MembersComponent,
+  PackagesComponent,
+  RegisterComponent,
+  TeamComponent,
+  BranchesComponent,
+  AccountComponent,
+  PlatformAdminComponent,
+  ReportsComponent,
+  HistoryComponent,
+  PtManagementComponent,
+  PtDashboardComponent,
+  PtEarningsComponent
+} from './features';
+import {
+  CancellationModalComponent,
+  RenewalModalComponent,
+  AdjustmentModalComponent,
+  PtPayoutModalComponent,
+  MembershipUpgradeModalComponent,
+  RejectRequestModalComponent,
+  RedeemModalComponent,
+  CancelSubscriptionModalComponent,
+  GenerateCodeModalComponent,
+  PtSessionsModalComponent,
+  PtSessionCompleteModalComponent,
+  PtBookSessionModalComponent,
+  UpgradeModalComponent
+} from './shared/modals';
 
 type View = 'overview' | 'members' | 'packages' | 'register' | 'team' | 'account' | 'branches' | 'reports' | 'history' | 'pt-management' | 'pt-dashboard' | 'pt-earnings' | 'platform-admin';
 type AuthMode = 'home' | 'login' | 'forgot-password' | 'register-gym';
@@ -19,7 +55,43 @@ function hasExpiredSession(): boolean {
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule, CommonModule],
+  imports: [
+    FormsModule,
+    CommonModule,
+    CookieBannerComponent,
+    LegalModalComponent,
+    PublicSiteComponent,
+    AuthComponent,
+    SidebarComponent,
+    TopbarComponent,
+    OwnerOverviewComponent,
+    StaffOverviewComponent,
+    MembersComponent,
+    PackagesComponent,
+    RegisterComponent,
+    TeamComponent,
+    BranchesComponent,
+    AccountComponent,
+    PlatformAdminComponent,
+    ReportsComponent,
+    HistoryComponent,
+    PtManagementComponent,
+    PtDashboardComponent,
+    PtEarningsComponent,
+    CancellationModalComponent,
+    RenewalModalComponent,
+    AdjustmentModalComponent,
+    PtPayoutModalComponent,
+    MembershipUpgradeModalComponent,
+    RejectRequestModalComponent,
+    RedeemModalComponent,
+    CancelSubscriptionModalComponent,
+    GenerateCodeModalComponent,
+    PtSessionsModalComponent,
+    PtSessionCompleteModalComponent,
+    PtBookSessionModalComponent,
+    UpgradeModalComponent
+  ],
   templateUrl: './dashboard.html',
   styleUrl: './app.scss'
 })

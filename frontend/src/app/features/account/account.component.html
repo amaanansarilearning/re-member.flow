@@ -1,0 +1,644 @@
+<section class="page-content account-page">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">YOUR CREDENTIALS & PREFERENCES</p>
+      <h1>Account Settings</h1>
+      <p class="page-subtitle">Manage personal profile details, contact reachability, and password security.</p>
+    </div>
+  </div>
+
+  @if (user) {
+    <!-- Account Profile Hero Card -->
+    <div class="account-profile-banner">
+      <div class="profile-avatar-large">{{ initials(user.fullName) }}</div>
+      <div class="profile-banner-info">
+        <div class="profile-title-row">
+          <h2>{{ user.fullName }}</h2>
+          <span class="profile-role-tag" [class.role-owner]="user.role === 'OWNER'" [class.role-trainer]="user.role === 'PERSONAL_TRAINER'" [class.role-member]="user.role === 'MEMBER'">
+            {{ user.role === 'SUPER_ADMIN' ? '👑 PLATFORM ADMIN' : user.role === 'OWNER' ? '👑 CLUB OWNER & ADMIN' : user.role === 'PERSONAL_TRAINER' ? '⚡ PERSONAL TRAINER' : user.role === 'MEMBER' ? '💪 GYM MEMBER / CLIENT' : '🛡️ FRONT DESK / STAFF' }}
+          </span>
+        </div>
+        <p class="profile-banner-email">
+          <span>✉️ {{ user.email }}</span>
+          @if (user.phoneNumber) {
+            <span class="profile-banner-dot">·</span>
+            <span>📞 {{ user.phoneNumber }}</span>
+          }
+          <span class="profile-banner-dot">·</span>
+          <span>📍 {{ user.branchName || 'Central Facility' }}</span>
+        </p>
+        <div class="profile-security-badge">
+          <span class="badge-dot"></span>
+          <span>Authenticated Session Active · Role-Based Security Enforcement</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="account-layout">
+    <!-- Profile Details Section -->
+    <section class="panel account-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">PERSONAL DETAILS</p>
+          <h2>Contact Information</h2>
+          <p class="page-subtitle">Update your full name and reachable contact points.</p>
+        </div>
+      </div>
+      <form class="account-modern-form" (ngSubmit)="saveProfile.emit()">
+        <label>Full Legal Name
+          <div class="input-with-icon">
+            <span class="input-icon">👤</span>
+            <input
+              name="profileName"
+              [(ngModel)]="profileDraft.fullName"
+              required
+              maxlength="100"
+              placeholder="e.g. Jamie Morgan"
+            />
+          </div>
+        </label>
+        <label>Sign-in Email Address
+          <div class="input-with-icon">
+            <span class="input-icon">✉️</span>
+            <input
+              name="profileEmail"
+              [(ngModel)]="profileDraft.email"
+              type="email"
+              required
+              placeholder="name@gymflow.com"
+            />
+          </div>
+          <small>This email address serves as your primary login identifier.</small>
+        </label>
+        <label>Direct Phone Number
+          <div class="input-with-icon">
+            <span class="input-icon">📞</span>
+            <input
+              name="profilePhone"
+              [(ngModel)]="profileDraft.phoneNumber"
+              type="tel"
+              placeholder="+91 98765 43210"
+            />
+          </div>
+        </label>
+        <button class="button button-dark" type="submit" [disabled]="busy || !profileDraft.fullName || !profileDraft.email">
+          {{ busy ? 'Saving…' : 'Save Profile Changes ↗' }}
+        </button>
+      </form>
+    </section>
+
+    <!-- Password Security Section -->
+    <section class="panel account-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">AUTHENTICATION & ACCESS</p>
+          <h2>Change Password</h2>
+          <p class="page-subtitle">Ensure your account password remains strong and confidential.</p>
+        </div>
+      </div>
+      <form class="account-modern-form" (ngSubmit)="changePassword.emit()">
+        <label>Current Password
+          <div class="input-with-icon">
+            <span class="input-icon">🔑</span>
+            <input
+              name="currentPassword"
+              [(ngModel)]="passwordDraft.currentPassword"
+              type="password"
+              required
+              autocomplete="current-password"
+              placeholder="Enter current password"
+            />
+          </div>
+        </label>
+        <label>New Password
+          <div class="input-with-icon">
+            <span class="input-icon">🛡️</span>
+            <input
+              name="newAccountPassword"
+              [(ngModel)]="passwordDraft.newPassword"
+              type="password"
+              required
+              minlength="8"
+              autocomplete="new-password"
+              placeholder="Minimum 8 characters"
+            />
+          </div>
+        </label>
+        <div class="password-guidance-card">
+          <div class="guidance-icon">ℹ️</div>
+          <div class="guidance-text">
+            <strong>Password Security:</strong> Passwords must be at least 8 characters long. After changing your password, your security token version will update automatically across all active devices.
+          </div>
+        </div>
+        <button class="button button-dark" type="submit" [disabled]="busy || !passwordDraft.currentPassword || !passwordDraft.newPassword || passwordDraft.newPassword.length < 8">
+          {{ busy ? 'Updating…' : 'Update Password ↗' }}
+        </button>
+      </form>
+    </section>
+  </div>
+
+  @if (user?.role === 'OWNER') {
+    <!-- Gym Branding & White-Label Customization -->
+    <section class="panel account-panel" style="margin-top: 16px;">
+      <div class="panel-heading">
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <p class="eyebrow" style="margin: 0;">BRAND IDENTITY &amp; WHITE-LABEL</p>
+            @if (hasBrandingAccess) {
+              <span class="tier-pill tier-starter" style="font-size: 9px; padding: 1.5px 7px; background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">
+                ✓ ACTIVE ON {{ tierDisplayName(user?.subscriptionTier).toUpperCase() }}
+              </span>
+            } @else {
+              <span class="tier-pill tier-starter" style="font-size: 9px; padding: 1.5px 7px;">
+                ⭐ REQUIRES STARTER+
+              </span>
+            }
+          </div>
+          <h2>Gym Branding &amp; Custom Logo</h2>
+          <p class="page-subtitle">White-label your SaaS application with your own gym logo and business name.</p>
+        </div>
+      </div>
+
+      @if (!hasBrandingAccess) {
+        <div class="locked-feature-card" style="margin-top: 12px; border: 1.5px dashed rgba(59, 130, 246, 0.4); border-radius: var(--r-md); padding: 20px; background: rgba(59, 130, 246, 0.05); text-align: center;">
+          <span style="font-size: 26px; display: block; margin-bottom: 6px;">🏢</span>
+          <strong style="color: #3b82f6; font-size: 14px; display: block;">Custom Branding is a Starter Tier Feature</strong>
+          <p style="font-size: 12px; color: var(--muted); margin: 6px auto 14px; max-width: 480px; line-height: 1.45;">
+            Upgrade to <strong>Starter</strong>, <strong>Pro</strong>, or <strong>Enterprise</strong> to replace the SaaS product logo with your custom gym logo and white-label your gym name across navigation, headers, and reports.
+          </p>
+          <button type="button" class="button button-dark" (click)="openUpgradeModal.emit('branding')">
+            ★ Upgrade to Starter Plan ↗
+          </button>
+        </div>
+      } @else {
+        <form class="account-modern-form" (ngSubmit)="saveBranding.emit()">
+          <div class="branding-studio-grid">
+            <!-- Column 1: Form Inputs & Guidelines -->
+            <div class="branding-form-col">
+              <label>Official Gym / Organization Name
+                <div class="input-with-icon">
+                  <span class="input-icon">🏢</span>
+                  <input
+                    name="brandingGymName"
+                    [(ngModel)]="brandingDraft.name"
+                    required
+                    maxlength="120"
+                    placeholder="e.g. Iron Forge Fitness"
+                  />
+                </div>
+                <small>This custom gym name appears across your navigation bar, digital receipts, and member cards.</small>
+              </label>
+
+              <div>
+                <span class="field-label-text" style="font-size: 11px; font-weight: 700; color: var(--ink); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.04em;">
+                  Gym Logo (Brand Mark)
+                </span>
+                <div class="branding-dropzone">
+                  <div class="branding-logo-box">
+                    @if (logoPreview) {
+                      <img [src]="logoPreview" alt="Gym Logo Preview" />
+                    } @else {
+                      <img src="/form-mark.svg" alt="Default Mark" style="opacity: 0.5;" />
+                    }
+                  </div>
+                  <div style="flex: 1; min-width: 180px;">
+                    <input
+                      #brandingLogoInput
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                      style="display: none;"
+                      (change)="logoSelected.emit($event)"
+                    />
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <button type="button" class="button button-outline" style="font-size: 12px; padding: 7px 14px; font-weight: 600;" (click)="brandingLogoInput.click()">
+                        📁 Choose Logo File
+                      </button>
+                      @if (logoPreview) {
+                        <button type="button" class="button button-quiet" style="font-size: 12px; color: var(--crimson); padding: 7px 10px;" (click)="removeBrandingLogo.emit()">
+                          Remove Logo
+                        </button>
+                      }
+                    </div>
+                    <small style="display: block; margin-top: 6px; color: var(--muted); font-size: 11px;">
+                      PNG, JPG, SVG, or WebP up to 2 MB.
+                    </small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Guidelines & Image Direction Box -->
+              <div class="branding-guidelines-box">
+                <span class="guide-title">
+                  💡 Logo Design &amp; Dimension Guidelines
+                </span>
+                <ul>
+                  <li><strong>Format</strong>: Transparent <code>PNG</code> or vector <code>SVG</code> is strongly recommended for the cleanest look.</li>
+                  <li><strong>Dimensions</strong>: Square (512×512 px) or Landscape up to 800×250 px.</li>
+                  <li><strong>Contrast</strong>: Because the sidebar navigation has a dark theme, logos with light/white icons or high contrast stand out best.</li>
+                </ul>
+              </div>
+
+              @if (brandingSuccessNotice) {
+                <div style="padding: 10px 14px; border-radius: var(--r-md); background: rgba(16, 185, 129, 0.12); color: #10b981; font-size: 12px; font-weight: 600;">
+                  ✓ {{ brandingSuccessNotice }}
+                </div>
+              }
+
+              <div style="margin-top: 4px;">
+                <button class="button button-dark" type="submit" [disabled]="brandingSaving || !brandingDraft.name.trim()">
+                  {{ brandingSaving ? 'Saving Branding…' : 'Save Gym Branding ↗' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Column 2: Live Brand Previews -->
+            <div class="branding-preview-col">
+              <!-- Live Preview: Sidebar Header -->
+              <div class="branding-preview-card">
+                <div class="preview-card-header">
+                  <span>Live Preview: Sidebar Navigation</span>
+                  <span class="badge-live">Real-Time</span>
+                </div>
+                <div class="mock-sidebar-view">
+                  <div class="mock-sidebar-brand">
+                    <div class="brand-badge">
+                      <img class="brand-mark" [src]="logoPreview || '/form-mark.svg'" alt="Logo Preview" />
+                    </div>
+                    <div class="brand-text">
+                      <span class="brand-name">{{ brandingDraft.name.trim() || 'Your Gym Name' }}</span>
+                      <span class="brand-sub">OFFICIAL CLUB</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Live Preview: Digital Receipt Header -->
+              <div class="branding-preview-card">
+                <div class="preview-card-header">
+                  <span>Live Preview: Customer Receipt</span>
+                  <span class="badge-live" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6;">Sample Illustration</span>
+                </div>
+                <div class="mock-receipt-view">
+                  <div class="mock-receipt-header">
+                    <div>
+                      <div class="mock-receipt-gym">{{ brandingDraft.name.trim() || 'Your Gym Name' }}</div>
+                      <div class="mock-receipt-meta">Membership Tax Invoice • Rec #8492</div>
+                    </div>
+                    <div class="mock-receipt-logo-wrap">
+                      <img [src]="logoPreview || '/form-mark.svg'" alt="Receipt Logo Preview" />
+                    </div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 10px; color: #475569;">
+                    <span>Sample Package: Annual Strength Pass</span>
+                    <strong style="color: #0f172a;">₹12,499.00</strong>
+                  </div>
+                  <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dotted #e2e8f0; font-size: 10px; color: #64748b;">
+                    ⓘ Sample only — shows how your club name and logo will appear on invoices sent to your members.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      }
+    </section>
+  }
+
+  @if (user?.role === 'MEMBER') {
+    @let myMem = memberships.length > 0 ? memberships[0] : null;
+    <div class="account-member-pass-card">
+      <div class="pass-header-row">
+        <div>
+          <p class="sub-eyebrow">YOUR GYM MEMBERSHIP PASS</p>
+          <h3>{{ myMem ? myMem.planName : 'No Active Membership' }}</h3>
+          <div class="pass-meta-row">
+            @if (myMem) {
+              <span class="status-pill" [class.status-active]="myMem.status === 'ACTIVE'" [class.status-cancelled]="myMem.status === 'CANCELLED'">
+                {{ myMem.status === 'ACTIVE' ? 'Active Membership' : myMem.status }}
+              </span>
+              @if (myMem.status === 'ACTIVE') {
+                <span class="days-left-badge">{{ termDaysRemainingLabel(myMem) }}</span>
+              }
+              <span class="branch-tag">📍 {{ myMem.branchName || user?.branchName || 'Club Facility' }}</span>
+            } @else {
+              <span class="status-pill status-cancelled">NO ACTIVE PASS</span>
+            }
+          </div>
+        </div>
+        @if (myMem) {
+          <div class="pass-action-buttons">
+            @if (canUpgradeMembership(myMem)) {
+              <button type="button" class="action-btn action-btn-upgrade-member" (click)="openMemberUpgradeModal.emit(myMem)">
+                <span class="btn-icon">⬆</span>
+                <span>Upgrade</span>
+              </button>
+            }
+            @if (canRenewMembership(myMem)) {
+              <button type="button" class="action-btn action-btn-renew" (click)="openRenewal.emit(myMem)">
+                <span class="btn-icon">↻</span>
+                <span>Renew</span>
+              </button>
+            }
+            @if (canFreezeMembership(myMem)) {
+              <button type="button" class="action-btn action-btn-quiet" (click)="openAdjustment.emit({ mode: 'freeze', membership: myMem })">
+                <span class="btn-icon">❄</span>
+                <span>Freeze</span>
+              </button>
+            }
+            <button type="button" class="action-btn action-btn-quiet" (click)="printMembershipReceipt.emit(myMem)">
+              <span class="btn-icon">🧾</span>
+              <span>Receipt</span>
+            </button>
+          </div>
+        }
+      </div>
+      @if (myMem) {
+        <div class="pass-details-grid">
+          <div class="pass-detail-cell">
+            <span class="detail-label">MEMBERSHIP TERM</span>
+            <strong>{{ dateLabel(myMem.startDate) }} &rarr; {{ dateLabel(myMem.endDate) }}</strong>
+          </div>
+          <div class="pass-detail-cell">
+            <span class="detail-label">AMOUNT PAID</span>
+            <strong>{{ money(myMem.amountPaid) }}</strong>
+          </div>
+          @if (myMem.personalTrainerName) {
+            <div class="pass-detail-cell">
+              <span class="detail-label">PERSONAL TRAINER</span>
+              <strong>⚡ {{ myMem.personalTrainerName }}</strong>
+              <span class="detail-sub">{{ myMem.ptSessionsUsed || 0 }} / {{ myMem.ptSessionsIncluded || 0 }} sessions used</span>
+            </div>
+          }
+          @if (user?.memberPin) {
+            <div class="pass-detail-cell">
+              <span class="detail-label">ATTENDANCE PIN</span>
+              <strong class="pin-code">{{ user?.memberPin }}</strong>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (user?.role === 'PERSONAL_TRAINER') {
+    <div class="account-trainer-card">
+      <p class="sub-eyebrow">PERSONAL TRAINER ACCREDITATION</p>
+      <h3>Trainer Portal & Facility Assignment</h3>
+      <div class="pass-details-grid">
+        <div class="pass-detail-cell">
+          <span class="detail-label">ASSIGNED FACILITY</span>
+          <strong>📍 {{ user?.branchName || 'Central Facility' }}</strong>
+        </div>
+        <div class="pass-detail-cell">
+          <span class="detail-label">ACTIVE CLIENTS</span>
+          <strong>{{ ptTrainees.length }} Trainees Enrolled</strong>
+        </div>
+        <div class="pass-detail-cell">
+          <span class="detail-label">QUICK ACTIONS</span>
+          <div style="display: flex; gap: 8px; margin-top: 4px;">
+            <button type="button" class="action-btn action-btn-quiet" (click)="navigate.emit('pt-dashboard')">⚡ My Sessions</button>
+            <button type="button" class="action-btn action-btn-quiet" (click)="navigate.emit('pt-earnings')">₹ My Earnings</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (user?.role === 'STAFF') {
+    <div class="account-staff-card">
+      <p class="sub-eyebrow">FRONT DESK & OPERATIONS</p>
+      <h3>Staff Privileges & Facility Assignment</h3>
+      <div class="pass-details-grid">
+        <div class="pass-detail-cell">
+          <span class="detail-label">ASSIGNED BRANCH</span>
+          <strong>📍 {{ user?.branchName || 'Central Branch' }}</strong>
+        </div>
+        <div class="pass-detail-cell">
+          <span class="detail-label">OPERATIONS PRIVILEGES</span>
+          <strong>Front Desk Active & Authorized</strong>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (user?.role === 'OWNER') {
+    <!-- Commercial SaaS Subscription & Entitlement Details -->
+    <div class="account-subscription-card" [class.is-premium]="isPremium">
+      <div class="sub-header-row">
+        <div>
+          <p class="sub-eyebrow">COMMERCIAL SAAS SUBSCRIPTION</p>
+          <h3>{{ user?.organizationName || 'GymFlow Network' }} Membership</h3>
+          <div class="sub-tier-display">
+            <span>Current Tier:</span>
+            <span class="tier-pill" [ngClass]="tierPillClass(user?.subscriptionTier)">
+              {{ tierBadgeLabel(user?.subscriptionTier) }}
+            </span>
+            @if (isPremium) {
+              <span class="premium-active-badge">✓ Active & Entitled</span>
+            }
+          </div>
+        </div>
+        <div class="sub-action-buttons">
+          @if (user?.subscriptionTier !== 'ENTERPRISE') {
+            <button
+              type="button"
+              class="button upgrade-cta-btn"
+              (click)="openUpgradeModal.emit('general')"
+            >
+              ★ Upgrade Plan ↗
+            </button>
+          }
+          @if (isPremium) {
+            <button
+              type="button"
+              class="button button-quiet"
+              style="color: var(--muted); font-size: 11px; border: 1px solid var(--border);"
+              (click)="openCancelModal.emit()"
+            >
+              Cancel Subscription
+            </button>
+          }
+          <button
+            type="button"
+            class="button button-outline"
+            style="font-size: 12px; font-weight: 700;"
+            (click)="openRedeemModal.emit()"
+          >
+            🔑 Redeem License Key
+          </button>
+        </div>
+      </div>
+
+      <div class="sub-features-row" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+        <div class="sub-feature-item">
+          <div class="feat-status-dot"></div>
+          <div>
+            <strong>Core Management (Standard)</strong>
+            <p>1 Branch · 50 Members · 2 Staff Logins. Packages, member enrollments, check-ins.</p>
+          </div>
+        </div>
+        <div class="sub-feature-item" [class.locked]="!hasBrandingAccess">
+          <div class="feat-status-dot"></div>
+          <div>
+            <strong>Custom Branding (Starter)</strong>
+            <p>{{ hasBrandingAccess ? 'Active: 1 Branch · 250 Members · 5 Staff. White-label logo & custom gym name.' : 'Locked: 1 Branch · 250 Members · 5 Staff. Custom Logo & Branding.' }}</p>
+          </div>
+        </div>
+        <div class="sub-feature-item" [class.locked]="!hasReceiptUploadAccess || !hasHistoryAccess">
+          <div class="feat-status-dot"></div>
+          <div>
+            <strong>Receipts & Auditing (Pro)</strong>
+            <p>{{ (hasReceiptUploadAccess && hasHistoryAccess) ? 'Active: 1 Branch · 1,000 Members · 15 Staff. Digital receipts & audit logs.' : 'Locked: 1 Branch · 1,000 Members · 15 Staff. Receipts & Audit trail.' }}</p>
+          </div>
+        </div>
+        <div class="sub-feature-item" [class.locked]="!hasPtAccess || !hasAnalyticsAccess">
+          <div class="feat-status-dot"></div>
+          <div>
+            <strong>Trainers & Multi-Branch (Enterprise)</strong>
+            <p>{{ (hasPtAccess && hasAnalyticsAccess) ? 'Active: Unlimited Branches · Unlimited Members · Unlimited Staff. PT & Unified BI.' : 'Locked: Unlimited Branches, Members & Staff. PT Management & BI.' }}</p>
+          </div>
+        </div>
+      </div>
+
+      @if (user?.subscriptionStatus === 'CANCELLED') {
+        <div class="cancellation-alert">
+          <span class="cancel-alert-icon">⚠️</span>
+          <div class="cancel-alert-copy">
+            <strong>Cancellation Scheduled:</strong> Your subscription has been scheduled for cancellation. All tier features remain active during your grace period. None of your gym data will be deleted.
+          </div>
+          <button type="button" class="button button-dark" style="font-size: 11px; padding: 4px 10px;" (click)="reactivateSubscription.emit()">
+            ↺ Reactivate Subscription
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  @if (user?.role === 'OWNER' && myUpgradeRequests.length > 0) {
+    <div class="panel" style="margin-top: 16px;">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">COMMERCIAL INVOICES & LICENSING</p>
+          <h2>License Upgrade Inquiries & Status</h2>
+          <p class="dialog-subtitle">Track verification and key issuance for your commercial requests</p>
+        </div>
+      </div>
+      <div class="platform-table-wrapper">
+        <table class="platform-table">
+          <thead>
+            <tr>
+              <th>Ref ID</th>
+              <th>Billing Plan</th>
+              <th>Payment Mode</th>
+              <th>Submitted On</th>
+              <th>Status</th>
+              <th>Activation Code / Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (req of myUpgradeRequests; track req.id) {
+              <tr>
+                <td><strong style="color: var(--primary); font-family: monospace;">REQ-{{ req.id }}</strong></td>
+                <td><strong>{{ req.billingPlanName }}</strong> ({{ req.durationDays }} Days)</td>
+                <td>{{ req.paymentMethod }}</td>
+                <td>{{ dateLabel(req.createdAt) }}</td>
+                <td>
+                  @if (req.status === 'PENDING') {
+                    <span class="badge badge-warning">⏳ IN REVIEW</span>
+                  } @else if (req.status === 'APPROVED_KEY_ISSUED') {
+                    <span class="badge badge-success" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">🔑 KEY ISSUED</span>
+                  } @else if (req.status === 'APPROVED_DIRECT_UPGRADE') {
+                    <span class="badge" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">⚡ DIRECT UPGRADED</span>
+                  } @else {
+                    <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">✕ DECLINED</span>
+                  }
+                </td>
+                <td>
+                  @if (req.issuedActivationCode) {
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <code style="font-family: monospace; font-weight: 700; color: #34d399;">{{ req.issuedActivationCode }}</code>
+                      <button
+                        type="button"
+                        class="button button-quiet"
+                        style="font-size: 11px; padding: 2px 6px;"
+                        (click)="redeemCode.emit(req.issuedActivationCode)"
+                      >
+                        Redeem →
+                      </button>
+                    </div>
+                  } @else if (req.status === 'REJECTED') {
+                    <span style="color: var(--muted); font-size: 11.5px;">{{ req.rejectionReason }}</span>
+                  } @else if (req.status === 'PENDING') {
+                    <span style="color: var(--muted); font-size: 11.5px;">Awaiting Super-Admin payment verification</span>
+                  } @else {
+                    <span style="color: var(--muted); font-size: 11.5px;">Applied directly in cloud</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Legal, Privacy & Compliance Hub -->
+  <div class="panel account-legal-panel" style="margin-top: 16px;">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">LEGAL, PRIVACY & COMPLIANCE</p>
+        <h2>Platform Governance & Policies</h2>
+        <p class="page-subtitle">Review legally binding agreements, data protection disclosures, and physical liability waivers.</p>
+      </div>
+    </div>
+    <div class="account-legal-grid">
+      <div class="account-legal-item">
+        <div class="legal-item-icon">📜</div>
+        <div class="legal-item-copy">
+          <h4>Terms of Use & SaaS Agreement</h4>
+          <p>Master subscription agreement, licensing parameters, limitation of liability, and branch delegation terms.</p>
+          <button type="button" class="button button-quiet" (click)="openLegal.emit('terms')">Review Terms →</button>
+        </div>
+      </div>
+      <div class="account-legal-item">
+        <div class="legal-item-icon">🔒</div>
+        <div class="legal-item-copy">
+          <h4>Privacy Policy & DPDP / GDPR</h4>
+          <p>Controller vs. Processor roles, sub-processor disclosures, BCrypt/JWT security, and data subject rights.</p>
+          <button type="button" class="button button-quiet" (click)="openLegal.emit('privacy')">Review Privacy Policy →</button>
+        </div>
+      </div>
+      <div class="account-legal-item">
+        <div class="legal-item-icon">⚠️</div>
+        <div class="legal-item-copy">
+          <h4>Health & Physical Liability Waiver</h4>
+          <p>Physical activity risks, voluntary assumption of bodily injury risk, PAR-Q medical clearance, and facility disclaimers.</p>
+          <button type="button" class="button button-quiet" (click)="openLegal.emit('disclaimer')">Review Health Waiver →</button>
+        </div>
+      </div>
+      <div class="account-legal-item">
+        <div class="legal-item-icon">🛡️</div>
+        <div class="legal-item-copy">
+          <h4>Acceptable Use Policy</h4>
+          <p>System cybersecurity standards, receipt upload compliance, anti-scraping rules, and enforcement actions.</p>
+          <button type="button" class="button button-quiet" (click)="openLegal.emit('acceptable-use')">Review AUP →</button>
+        </div>
+      </div>
+    </div>
+    <div class="account-legal-notice-box">
+      <span class="notice-icon">🛡️</span>
+      <p>
+        <strong>Data Subject Rights & Portability:</strong>
+        As a gym owner or authorized user, you can export membership and revenue records anytime via the Reports tab. For formal data erasure, DPO inquiries, or regulatory inquiries, contact <a href="mailto:privacy@rememberflow.com">privacy&#64;rememberflow.com</a>.
+      </p>
+    </div>
+  </div>
+
+  @if (user) {
+    <footer class="page-footer">
+      <span>{{ user.role }} ACCOUNT</span><span>SECURITY & PREFERENCES</span>
+    </footer>
+  }
+</section>
+

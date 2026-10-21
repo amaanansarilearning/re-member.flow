@@ -1,0 +1,17 @@
+<header class="topbar">
+  <div class="breadcrumbs">
+    <span>Re-member Flow</span><span class="crumb-slash">/</span
+    ><strong>{{ viewTitle }}</strong>
+  </div>
+  <div class="topbar-right">
+    @if (user?.role === 'STAFF') {
+      <span class="topbar-branch-badge"><i aria-hidden="true">📍</i> {{ user?.branchName || 'Assigned Branch' }}</span>
+    } @else if (user?.role === 'OWNER' && dashboardBranchId !== null) {
+      <span class="topbar-branch-badge"><i aria-hidden="true">📍</i> {{ dashboardLocationLabel }}</span>
+    }
+    <span class="today-label">{{ todayDateLabel }}</span>
+    <span class="live-indicator"><span class="pulse-dot" aria-hidden="true"></span> SYSTEM LIVE</span>
+    <button class="mobile-logout" (click)="logout.emit()">Sign out</button>
+  </div>
+</header>
+

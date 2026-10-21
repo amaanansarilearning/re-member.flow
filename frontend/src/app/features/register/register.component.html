@@ -1,0 +1,321 @@
+<section class="page-content register-page">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">A NEW FACE ON THE FLOOR</p>
+      <h1>Register a member</h1>
+      <p class="page-subtitle">Set up a membership and tailor the first offer.</p>
+    </div>
+    <button class="button button-quiet" (click)="navigate.emit('members')">
+      ← Back to members
+    </button>
+  </div>
+  <form
+    class="registration-layout"
+    (ngSubmit)="registerMember.emit()"
+    #registrationForm="ngForm"
+    novalidate
+  >
+    <section class="panel registration-form">
+      <div class="form-section-heading">
+        <span class="step-number">01</span>
+        <div>
+          <h2>Member details</h2>
+          <p>Who’s joining your club?</p>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label>
+          <span class="field-label-text">Full name <span class="req-star">*</span></span>
+          <input
+            id="field-memberFullName"
+            name="fullName"
+            [(ngModel)]="memberDraft.fullName"
+            [class.input-has-error]="hasFieldError('memberFullName')"
+            (input)="clearFieldError.emit('memberFullName')"
+            required
+            autocomplete="name"
+            placeholder="e.g. Jamie Morgan" />
+          @if (hasFieldError('memberFullName')) {
+            <span class="field-error-msg">⚠️ {{ getFieldError('memberFullName') }}</span>
+          }
+        </label>
+        <label>
+          <span class="field-label-text">Email address <span class="req-star">*</span></span>
+          <input
+            id="field-memberEmail"
+            name="memberEmail"
+            [(ngModel)]="memberDraft.email"
+            [class.input-has-error]="hasFieldError('memberEmail')"
+            (input)="clearFieldError.emit('memberEmail')"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder="jamie@example.com" />
+          @if (hasFieldError('memberEmail')) {
+            <span class="field-error-msg">⚠️ {{ getFieldError('memberEmail') }}</span>
+          }
+        </label>
+        <label>
+          <span class="field-label-text">Phone number <small class="opt-label">(Optional)</small></span>
+          <input
+            id="field-memberPhone"
+            name="memberPhone"
+            [(ngModel)]="memberDraft.phoneNumber"
+            [class.input-has-error]="hasFieldError('memberPhone')"
+            (input)="clearFieldError.emit('memberPhone')"
+            type="tel"
+            pattern="^\+?[0-9][0-9 ()-]{6,19}$"
+            autocomplete="tel"
+            placeholder="+91 98765 43210" />
+          @if (hasFieldError('memberPhone')) {
+            <span class="field-error-msg">⚠️ {{ getFieldError('memberPhone') }}</span>
+          }
+        </label>
+        <label>
+          <span class="field-label-text">Temporary password <span class="req-star">*</span></span>
+          <input
+            id="field-memberPassword"
+            name="memberPassword"
+            [(ngModel)]="memberDraft.password"
+            [class.input-has-error]="hasFieldError('memberPassword')"
+            (input)="clearFieldError.emit('memberPassword')"
+            type="password"
+            required
+            minlength="8"
+            autocomplete="new-password"
+            placeholder="At least 8 characters"
+          />
+          <small>They can use this to access their member account.</small>
+          @if (hasFieldError('memberPassword')) {
+            <span class="field-error-msg">⚠️ {{ getFieldError('memberPassword') }}</span>
+          }
+        </label>
+      </div>
+      <div class="form-section-heading second-step">
+        <span class="step-number">02</span>
+        <div>
+          <h2>Choose a package</h2>
+          <p>Membership begins on the date selected below.</p>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label>
+          <span class="field-label-text">Package <span class="req-star">*</span></span>
+          <select
+            id="field-memberPlan"
+            name="selectedPlan"
+            [(ngModel)]="memberDraft.planId"
+            [class.input-has-error]="hasFieldError('memberPlan')"
+            (change)="clearFieldError.emit('memberPlan')"
+            required>
+            <option value="" disabled>Select a package</option>
+            @for (plan of activePlans; track plan.id) {
+              <option [value]="plan.id">{{ plan.name }} · {{ money(plan.price) }}</option>
+            }
+          </select>
+          @if (hasFieldError('memberPlan')) {
+            <span class="field-error-msg">⚠️ {{ getFieldError('memberPlan') }}</span>
+          }
+        </label>
+        <label>
+          <span class="field-label-text">Personal trainer <small class="opt-label">(Optional)</small></span>
+          <select name="memberPt" [(ngModel)]="memberDraft.personalTrainerId">
+            <option value="">No trainer assigned</option>
+            @for (pt of personalTrainers; track pt.id) {
+              @if (pt.active) {
+                <option [value]="pt.id">{{ pt.fullName }} ({{ pt.specializations || 'Fitness' }}) · {{ money(pt.sessionFeePerHour) }}/hr</option>
+              }
+            }
+          </select>
+        </label>
+        @if (userRole === 'OWNER') {
+          <label>
+            <span class="field-label-text">Enroll at branch <span class="req-star">*</span></span>
+            <select
+              id="field-memberBranch"
+              name="memberBranch"
+              [(ngModel)]="memberDraft.branchId"
+              [class.input-has-error]="hasFieldError('memberBranch')"
+              (change)="clearFieldError.emit('memberBranch')"
+              required>
+              @for (branch of activeBranches; track branch.id) {
+                <option [value]="branch.id">{{ branch.name }}</option>
+              }
+            </select>
+            @if (hasFieldError('memberBranch')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('memberBranch') }}</span>
+            }
+          </label>
+        } @else {
+          <div class="branch-assignment">
+            <span>ASSIGNED BRANCH</span><strong>{{ userBranchName }}</strong>
+          </div>
+        }
+        <label>
+          <span class="field-label-text">Start date <span class="req-star">*</span></span>
+          <input
+            id="field-memberStartDate"
+            name="startDate"
+            [(ngModel)]="memberDraft.startDate"
+            [class.input-has-error]="hasFieldError('memberStartDate')"
+            (input)="clearFieldError.emit('memberStartDate')"
+            type="date"
+            required />
+          @if (hasFieldError('memberStartDate')) {
+            <span class="field-error-msg">⚠️ {{ getFieldError('memberStartDate') }}</span>
+          }
+        </label>
+        <label class="wide-field">
+          <span class="field-label-text">Personal offer <small class="opt-label">(Optional)</small></span>
+          <div class="discount-input">
+            <input
+              name="discount"
+              [(ngModel)]="memberDraft.discountPercent"
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+            /><span>% off</span><small>Apply a custom discount to this membership.</small>
+          </div>
+        </label>
+        <!-- Payment Method Selection -->
+        <label>
+          <span class="field-label-text">Payment Method <span class="req-star">*</span></span>
+          <select name="memberPaymentMethod" [(ngModel)]="memberDraft.paymentMethod" required>
+            <option value="CASH">Cash Payment</option>
+            <option value="UPI">UPI / QR Code</option>
+            <option value="CARD">Credit / Debit Card</option>
+            <option value="BANK_TRANSFER">Bank Transfer (IMPS / NEFT)</option>
+            <option value="CHEQUE">Cheque</option>
+            <option value="OTHER">Other Online / POS</option>
+          </select>
+        </label>
+
+        <!-- Transaction ID for Non-Cash Online Payments -->
+        @if (memberDraft.paymentMethod !== 'CASH') {
+          <label>
+            <span class="field-label-text">Transaction / Reference ID <span class="req-star">*</span></span>
+            <input
+              id="field-memberTxnId"
+              name="memberTransactionId"
+              [(ngModel)]="memberDraft.transactionId"
+              [class.input-has-error]="hasFieldError('memberTxnId')"
+              (input)="clearFieldError.emit('memberTxnId')"
+              type="text"
+              placeholder="e.g. UPI Ref / UTR / Auth Code / Txn #"
+              required
+            />
+            @if (hasFieldError('memberTxnId')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('memberTxnId') }}</span>
+            }
+          </label>
+        }
+
+        <!-- Receipt photo upload (Gated to PRO / ENTERPRISE) -->
+        <div class="wide-field">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span class="field-label-text" style="font-size: 11px; font-weight: 700; color: var(--ink);">Receipt photo <small class="opt-label">(Optional)</small></span>
+            <span class="pro-tag" style="margin-left: 0;">⚡ PRO FEATURE</span>
+          </div>
+          @if (hasReceiptUploadAccess) {
+            <div class="modern-dropzone" (click)="receiptPicker.click()">
+              <input
+                #receiptPicker
+                name="receiptPhoto"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                (change)="selectReceipt.emit($event)"
+              />
+              <span class="dropzone-icon">📷</span>
+              <span class="dropzone-text">Click or drag a receipt image to upload</span>
+              <span class="dropzone-hint">JPEG, PNG, or WebP up to 5 MB</span>
+            </div>
+            @if (receiptFile) {
+              <div class="receipt-preview-card">
+                <span class="receipt-file-info">📄 {{ receiptFile.name }}</span>
+                <button type="button" class="receipt-remove-btn" (click)="removeReceipt.emit(receiptPicker)">Remove</button>
+              </div>
+            }
+          } @else {
+            <div class="locked-feature-card" (click)="openUpgradeModal.emit('receipt')" style="cursor: pointer; border: 1.5px dashed rgba(245, 158, 11, 0.4); border-radius: var(--r-md); padding: 18px; text-align: center; background: rgba(245, 158, 11, 0.05); transition: all 0.2s;">
+              <span style="font-size: 24px; display: block; margin-bottom: 4px;">🔒</span>
+              <strong style="color: #f59e0b; font-size: 13px; display: block;">Receipt Photo Upload is a Pro Feature</strong>
+              <p style="font-size: 11.5px; color: var(--muted); margin: 4px 0 10px;">Upgrade your gym to Pro or Enterprise to attach and archive digital receipt images directly with memberships.</p>
+              <button type="button" class="button button-dark" style="font-size: 11px; padding: 5px 12px;" (click)="openUpgradeModal.emit('receipt'); $event.stopPropagation()">
+                ★ Upgrade to Pro ↗
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="legal-consent-card member-waiver-card" [class.input-has-error]="hasFieldError('memberWaiver')">
+        <label class="legal-checkbox-label">
+          <input
+            id="field-memberWaiver"
+            type="checkbox"
+            name="memberWaiverAcknowledged"
+            [(ngModel)]="memberDraft.waiverAcknowledged"
+            (change)="clearFieldError.emit('memberWaiver')"
+            required
+          />
+          <span class="legal-checkbox-text">
+            <strong>Member Health & Safety Waiver Acknowledged <span class="req-star">*</span>:</strong>
+            The member has completed physical activity readiness screening (PAR-Q) and agreed to club safety regulations, privacy terms, and the
+            <button type="button" class="legal-inline-btn" (click)="openLegal.emit('disclaimer'); $event.preventDefault()">Health & Physical Liability Waiver</button>.
+          </span>
+        </label>
+        @if (hasFieldError('memberWaiver')) {
+          <span class="field-error-msg" style="display: block; margin-top: 6px;">⚠️ {{ getFieldError('memberWaiver') }}</span>
+        }
+      </div>
+      @if (error) {
+        <p class="form-error" role="alert">{{ error }}</p>
+      }
+      <button
+        class="button button-dark button-wide submit-registration"
+        type="submit"
+        [disabled]="busy || !activePlans.length"
+      >
+        {{ busy ? 'Creating membership…' : 'Create membership' }} <span>↗</span>
+      </button>
+    </section>
+    <aside class="panel offer-preview">
+      <p class="eyebrow">MEMBERSHIP SUMMARY</p>
+      <div class="preview-name">{{ memberDraft.fullName || 'New member' }}</div>
+      <div class="preview-plan">{{ selectedPlan?.name || 'Choose a package' }}</div>
+      <div class="preview-line">
+        <span>List price</span><strong>{{ money(selectedPlan?.price ?? 0) }}</strong>
+      </div>
+      <div class="preview-line">
+        <span>Personal offer</span
+        ><strong class="discount-value">− {{ money(discountAmount) }}</strong>
+      </div>
+      @if (selectedPlan?.ptPackageType === 'COMBINED' || selectedPlan?.ptPackageType === 'PT_ONLY') {
+        <div class="preview-line" style="color: var(--accent); font-weight: 600;">
+          <span>PT Sessions</span><strong>⚡ {{ selectedPlan?.includedPtSessions ?? 0 }} sessions</strong>
+        </div>
+      }
+      @if (selectedPt) {
+        <div class="preview-line" style="color: var(--accent); font-weight: 600;">
+          <span>Assigned Trainer</span><strong>⚡ {{ selectedPt.fullName }}</strong>
+        </div>
+      }
+      <div class="preview-divider"></div>
+      <div class="preview-total">
+        <span>TOTAL DUE</span><strong>{{ money(finalPrice) }}</strong>
+      </div>
+      @if (selectedPlan) {
+        <p class="preview-duration">
+          {{ planDurationLabel(selectedPlan) }} · Ends {{ previewEndDate }}
+        </p>
+      }
+      <div class="preview-note">
+        <span>✳</span>
+        <p>
+          Offer is applied once to this member’s package. The list price stays unchanged.
+        </p>
+      </div>
+    </aside>
+  </form>
+</section>
+

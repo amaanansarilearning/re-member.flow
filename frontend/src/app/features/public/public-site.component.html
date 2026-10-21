@@ -1,0 +1,356 @@
+<main class="public-site">
+  <section class="public-hero" id="home-top">
+    <img
+      class="public-hero-image"
+      src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=2200&q=88"
+      alt="A bright, modern training floor with strength equipment"
+      fetchpriority="high"
+    />
+    <div class="public-hero-shade"></div>
+    <header class="public-nav">
+      <a class="public-brand" href="#home-top">
+        <img src="/form-mark.svg" alt="" />
+        <span>Re-member Flow</span>
+      </a>
+      <nav class="public-links" aria-label="Public navigation">
+        <a href="#platform">Platform</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#locations">Locations</a>
+        <a href="#about">About</a>
+        <button type="button" class="public-nav-legal" (click)="openLegal.emit('terms')">Terms & Privacy</button>
+      </nav>
+      <div class="public-actions">
+        <button class="public-signin" type="button" (click)="signIn.emit()">Sign in</button>
+        <button class="public-start" type="button" (click)="registerGym.emit()">Set up a club <span>↗</span></button>
+      </div>
+    </header>
+    <div class="public-hero-content">
+      <p class="public-kicker"><span></span> CLUB OPERATIONS, IN THE FLOW</p>
+      <h1>Re-member Flow</h1>
+      <p class="public-hero-copy">A clearer way to run memberships, teams, and every location under your roof.</p>
+      <div class="public-hero-actions">
+        <button class="public-primary" type="button" (click)="signIn.emit()">Enter your club <span>→</span></button>
+        <a class="public-secondary" href="#platform">Explore the platform <span>↓</span></a>
+      </div>
+    </div>
+    <div class="public-hero-caption"><span>01 / 03</span><span>BUILT FOR THE FLOOR AND THE FRONT DESK</span></div>
+  </section>
+
+  <section class="public-platform" id="platform">
+    <div class="public-section-head">
+      <p class="public-section-label">THE PLATFORM</p>
+      <h2>Less admin.<br /><em>More momentum.</em></h2>
+      <p>Keep the essential work of a modern gym connected, from a member’s first day to the next location.</p>
+    </div>
+    <div class="public-feature-list">
+      <article>
+        <span class="public-feature-number">01</span>
+        <div><h3>Memberships</h3><p>Enroll members, manage packages, track payments, and bring renewals into view.</p></div>
+        <span class="public-feature-mark">↗</span>
+      </article>
+      <article>
+        <span class="public-feature-number">02</span>
+        <div><h3>People</h3><p>Give your staff the access they need, with member records in one shared place.</p></div>
+        <span class="public-feature-mark">↗</span>
+      </article>
+      <article>
+        <span class="public-feature-number">03</span>
+        <div><h3>Locations</h3><p>See company-owned and franchise branches together, with staff and memberships assigned by branch.</p></div>
+        <span class="public-feature-mark">↗</span>
+      </article>
+    </div>
+  </section>
+
+  <!-- Public Pricing & Plan Comparison Section -->
+  <section class="public-pricing-section" id="pricing">
+    <div class="section-tag">COMMERCIAL PLANS &amp; TIERS</div>
+    <h2 class="section-heading">Pocket-Friendly Plans for Every Fitness Club</h2>
+    <p class="section-subheading">
+      Explore complete transparent pricing across every tier. Save over 30% with annual commitments, or stay flexible with monthly billing.
+    </p>
+
+    <div class="plan-comparison-container">
+      <div class="billing-cycle-toggle-wrapper">
+        <div class="toggle-pill-btn" role="group" aria-label="Billing cycle toggle">
+          <button
+            type="button"
+            [class.active]="pricingCycle === 'ANNUAL'"
+            (click)="togglePricingCycle.emit()"
+          >
+            Annual Billing
+          </button>
+          <button
+            type="button"
+            [class.active]="pricingCycle === 'MONTHLY'"
+            (click)="togglePricingCycle.emit()"
+          >
+            Monthly Billing
+          </button>
+        </div>
+        @if (pricingCycle === 'ANNUAL') {
+          <span class="save-badge">SAVE >30%</span>
+        }
+      </div>
+
+      <div class="comparison-table-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Features &amp; Capabilities</th>
+              <th>
+                <span class="tier-name">Standard</span>
+                <span class="tier-price">Free</span>
+                <span class="tier-period">Core floor essentials</span>
+                <button type="button" class="tier-select-btn" (click)="registerGym.emit()">
+                  Get Started Free
+                </button>
+              </th>
+              <th>
+                <span class="tier-name">Starter</span>
+                <span class="tier-price">{{ pricingCycle === 'ANNUAL' ? '₹833' : '₹1,199' }}</span>
+                <span class="tier-period">per month</span>
+                <button type="button" class="tier-select-btn" (click)="registerGym.emit()">
+                  Start Starter
+                </button>
+              </th>
+              <th class="highlight-col">
+                <span class="tier-name">Professional</span>
+                <span class="tier-price">{{ pricingCycle === 'ANNUAL' ? '₹2,000' : '₹2,999' }}</span>
+                <span class="tier-period">per month</span>
+                <button type="button" class="tier-select-btn btn-primary-tier" (click)="registerGym.emit()">
+                  Start Pro ↗
+                </button>
+              </th>
+              <th>
+                <span class="tier-name">Enterprise</span>
+                <span class="tier-price">{{ pricingCycle === 'ANNUAL' ? '₹3,333' : '₹4,499' }}</span>
+                <span class="tier-period">per month</span>
+                <button type="button" class="tier-select-btn" (click)="registerGym.emit()">
+                  Contact Enterprise
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="category-row"><td colspan="5">1. Facility &amp; Capacity Management</td></tr>
+            <tr>
+              <td>Branches / Club Locations<span class="feat-desc">Physical facilities managed</span></td>
+              <td>1 Branch</td>
+              <td>1 Branch</td>
+              <td class="highlight-col">Up to 3 Branches</td>
+              <td>Unlimited Locations</td>
+            </tr>
+            <tr>
+              <td>Branch Active / Inactive Status<span class="feat-desc">Temporarily pause club locations</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td class="highlight-col"><span class="check-icon">✓</span></td>
+              <td><span class="check-icon">✓</span></td>
+            </tr>
+            <tr>
+              <td>Maximum Active Members<span class="feat-desc">Concurrently enrolled gym members</span></td>
+              <td>Up to 100</td>
+              <td>Up to 300</td>
+              <td class="highlight-col">Up to 1,000</td>
+              <td>Unlimited</td>
+            </tr>
+            <tr>
+              <td>Operator &amp; Staff Accounts<span class="feat-desc">Staff accounts with login permissions</span></td>
+              <td>Up to 3</td>
+              <td>Up to 10</td>
+              <td class="highlight-col">Unlimited</td>
+              <td>Unlimited</td>
+            </tr>
+            <tr>
+              <td>Staff Details &amp; Password Management<span class="feat-desc">Edit operator credentials &amp; branches</span></td>
+              <td><span class="check-icon">✓</span></td>
+              <td><span class="check-icon">✓</span></td>
+              <td class="highlight-col"><span class="check-icon">✓</span></td>
+              <td><span class="check-icon">✓</span></td>
+            </tr>
+            <tr>
+              <td>Custom Branding &amp; Logo<span class="feat-desc">Club logo &amp; receipt customization</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td><span class="check-icon">✓</span> Name &amp; Logo</td>
+              <td class="highlight-col"><span class="check-icon">✓</span> Full White-Label</td>
+              <td><span class="check-icon">✓</span> Custom Domain &amp; Themes</td>
+            </tr>
+
+            <tr class="category-row"><td colspan="5">2. Membership &amp; Workflow Automation</td></tr>
+            <tr>
+              <td>Membership Packages<span class="feat-desc">Term lengths, pricing, and multi-tier plans</span></td>
+              <td>Basic 3 Plans</td>
+              <td>Unlimited Plans</td>
+              <td class="highlight-col">Unlimited Plans</td>
+              <td>Unlimited Plans</td>
+            </tr>
+            <tr>
+              <td>Member Check-In &amp; PIN Validation<span class="feat-desc">Real-time attendance &amp; access status</span></td>
+              <td><span class="check-icon">✓</span> Basic</td>
+              <td><span class="check-icon">✓</span> Real-Time Guard</td>
+              <td class="highlight-col"><span class="check-icon">✓</span> Real-Time Guard</td>
+              <td><span class="check-icon">✓</span> Real-Time Guard</td>
+            </tr>
+            <tr>
+              <td>Pro-Rata Mid-Cycle Package Upgrades<span class="feat-desc">Credit unused days toward higher plan</span></td>
+              <td><span class="check-icon">✓</span></td>
+              <td><span class="check-icon">✓</span></td>
+              <td class="highlight-col"><span class="check-icon">✓</span></td>
+              <td><span class="check-icon">✓</span></td>
+            </tr>
+            <tr>
+              <td>Membership Freeze &amp; Term Adjustment<span class="feat-desc">Pause memberships with automated end-date extension</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td><span class="check-icon">✓</span> Included</td>
+              <td class="highlight-col"><span class="check-icon">✓</span> Included</td>
+              <td><span class="check-icon">✓</span> Included</td>
+            </tr>
+            <tr>
+              <td>Advance Renewal Scheduling<span class="feat-desc">Continuous member renewal without gaps</span></td>
+              <td><span class="check-icon">✓</span></td>
+              <td><span class="check-icon">✓</span></td>
+              <td class="highlight-col"><span class="check-icon">✓</span></td>
+              <td><span class="check-icon">✓</span></td>
+            </tr>
+
+            <tr class="category-row"><td colspan="5">3. Personal Training (PT) &amp; Economics</td></tr>
+            <tr>
+              <td>Personal Trainer Profiles &amp; Specialties<span class="feat-desc">Manage trainer roster &amp; rates</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td class="highlight-col"><span class="check-icon">✓</span> Full Suite</td>
+              <td><span class="check-icon">✓</span> Full Suite</td>
+            </tr>
+            <tr>
+              <td>Trainer Commission Rate Snapshots<span class="feat-desc">Locked percentage &amp; hourly allocations</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td class="highlight-col"><span class="check-icon">✓</span> Auto Snapshots</td>
+              <td><span class="check-icon">✓</span> Auto Snapshots</td>
+            </tr>
+            <tr>
+              <td>Trainer Settlement &amp; Payout Batches<span class="feat-desc">Commission payout run generation</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td class="highlight-col"><span class="check-icon">✓</span> Batch Generation</td>
+              <td><span class="check-icon">✓</span> Multi-Branch Batches</td>
+            </tr>
+            <tr>
+              <td>PT Session Booking &amp; Attendance Tracking<span class="feat-desc">Real-time session tracker</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td class="highlight-col"><span class="check-icon">✓</span> Included</td>
+              <td><span class="check-icon">✓</span> Included</td>
+            </tr>
+
+            <tr class="category-row"><td colspan="5">4. Invoicing, Data &amp; Security</td></tr>
+            <tr>
+              <td>Digital Tax Invoices &amp; PDF Receipts<span class="feat-desc">Compliant receipts with GSTIN &amp; numbering</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td class="highlight-col"><span class="check-icon">✓</span> PDF Invoicing</td>
+              <td><span class="check-icon">✓</span> PDF Invoicing</td>
+            </tr>
+            <tr>
+              <td>Member CSV Export &amp; Backup<span class="feat-desc">Export member records to spreadsheet</span></td>
+              <td><span class="check-icon">✓</span></td>
+              <td><span class="check-icon">✓</span></td>
+              <td class="highlight-col"><span class="check-icon">✓</span></td>
+              <td><span class="check-icon">✓</span></td>
+            </tr>
+            <tr>
+              <td>Action History &amp; Audit Logs<span class="feat-desc">Complete immutable record of operations</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td><span class="cross-icon">—</span></td>
+              <td class="highlight-col"><span class="check-icon">✓</span> Complete Trail</td>
+              <td><span class="check-icon">✓</span> Complete Trail &amp; Export</td>
+            </tr>
+
+            <tr class="category-row"><td colspan="5">5. Support &amp; SLA Commitment</td></tr>
+            <tr>
+              <td>Dedicated Support Channels<span class="feat-desc">Assistance channels</span></td>
+              <td>Docs &amp; Community</td>
+              <td>Priority Email</td>
+              <td class="highlight-col">Live Chat &amp; WhatsApp</td>
+              <td>24/7 Dedicated Manager</td>
+            </tr>
+            <tr>
+              <td>Response Turnaround SLA<span class="feat-desc">Maximum first-response time</span></td>
+              <td>48 Hours</td>
+              <td>24 Hours</td>
+              <td class="highlight-col">4 Hours</td>
+              <td>1 Hour Guaranteed</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="public-about" id="about">
+    <div class="public-about-image-wrap">
+      <img
+        src="https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=1400&q=85"
+        alt="Training equipment arranged across a contemporary gym"
+        loading="lazy"
+      />
+      <span>THE CLUB IS ALWAYS MOVING.</span>
+    </div>
+    <div class="public-about-copy">
+      <p class="public-section-label">A BETTER VIEW OF THE BUSINESS</p>
+      <h2>Made for the people who make a gym feel like <em>their place.</em></h2>
+      <p>Re-member Flow brings member records, packages, team access, and branch activity into a calm, practical workspace. Clear information helps owners and staff spend less time chasing details.</p>
+      <a href="#locations">See how locations fit together <span>→</span></a>
+    </div>
+  </section>
+
+  <section class="public-locations" id="locations">
+    <div class="public-location-copy">
+      <p class="public-section-label">ONE ORGANIZATION, MORE THAN ONE FLOOR</p>
+      <h2>Keep every branch<br />in the <em>same picture.</em></h2>
+      <p>Organize company-owned and franchise locations under one gym organization. Owners can oversee each branch while staff work within their assigned location.</p>
+      <button class="public-light-button" type="button" (click)="signIn.emit()">Manage your locations <span>↗</span></button>
+    </div>
+    <div class="public-location-list" aria-label="Supported branch types">
+      <div><span>01</span><strong>Company-owned</strong><small>Location operations</small></div>
+      <div><span>02</span><strong>Franchise</strong><small>Branch-scoped access</small></div>
+      <div><span>03</span><strong>Shared overview</strong><small>Owner-led organization</small></div>
+    </div>
+  </section>
+
+  <section class="public-close">
+    <p class="public-section-label">READY WHEN YOU ARE</p>
+    <h2>Bring your club<br />into <em>better focus.</em></h2>
+    <button class="public-primary" type="button" (click)="signIn.emit()">Sign in to Re-member Flow <span>→</span></button>
+  </section>
+  <footer class="public-footer">
+    <div class="public-footer-top">
+      <a class="public-brand" href="#home-top"><img src="/form-mark.svg" alt="" /><span>Re-member Flow</span></a>
+      <p class="public-footer-tagline">Cloud gym management software engineered for clarity, members, staff oversight, and multi-location operations.</p>
+    </div>
+    <div class="public-footer-grid">
+      <div class="footer-col">
+        <h4>Platform</h4>
+        <a href="#platform">Platform Overview</a>
+        <a href="#locations">Multi-Location Branches</a>
+        <button type="button" class="footer-link-btn" (click)="openLegal.emit('acceptable-use')">Acceptable Use Policy</button>
+      </div>
+      <div class="footer-col">
+        <h4>Legal & Compliance</h4>
+        <button type="button" class="footer-link-btn" (click)="openLegal.emit('terms')">Terms of Use & SaaS Agreement</button>
+        <button type="button" class="footer-link-btn" (click)="openLegal.emit('privacy')">Privacy Policy (GDPR / DPDP)</button>
+        <button type="button" class="footer-link-btn" (click)="openLegal.emit('disclaimer')">Health & Physical Liability Waiver</button>
+      </div>
+      <div class="footer-col">
+        <h4>Access & Portal</h4>
+        <button type="button" class="footer-link-btn" (click)="signIn.emit()">Club Sign In ↗</button>
+        <button type="button" class="footer-link-btn" (click)="registerGym.emit()">Register Your Gym ↗</button>
+      </div>
+    </div>
+    <div class="public-footer-bottom">
+      <span>© 2026 Re-member Flow / GymFlow SaaS. All rights reserved.</span>
+      <span class="footer-security-pill">🔒 TLS 1.3 · BCrypt Hashing · Role-Isolated Multi-Tenant</span>
+    </div>
+  </footer>
+</main>
+

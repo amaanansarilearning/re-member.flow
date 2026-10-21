@@ -1,0 +1,149 @@
+        <section class="page-content">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">FINANCIAL SUMMARY</p>
+              <h1>My Earnings & Settlements</h1>
+              <p class="page-subtitle">Personal commission ledger from completed training sessions and payout disbursement statements.</p>
+            </div>
+          </div>
+
+          <!-- Earnings KPI Cards -->
+          <div class="team-kpi-strip">
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">GROSS BILLED REVENUE</span>
+              <strong class="team-kpi-value">{{ money(totalPtGrossRevenue) }}</strong>
+            </div>
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">MY TOTAL COMMISSIONS</span>
+              <strong class="team-kpi-value" style="color: var(--emerald);">{{ money(totalPtNetCommission) }}</strong>
+            </div>
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">PENDING SETTLEMENT</span>
+              <strong class="team-kpi-value" style="color: var(--amber);">{{ money(pendingPtEarningsTotal) }} <span class="team-kpi-sub">unpaid</span></strong>
+            </div>
+            <div class="team-kpi-card">
+              <span class="team-kpi-label">DISBURSED TO BANK</span>
+              <strong class="team-kpi-value" style="color: var(--accent);">{{ money(paidPtEarningsTotal) }} <span class="team-kpi-sub">settled</span></strong>
+            </div>
+          </div>
+
+          <!-- Session Earnings Table -->
+          <section class="panel full-panel" style="margin-bottom: 24px;">
+            <div class="panel-heading" style="flex-wrap: wrap; gap: 12px;">
+              <div>
+                <p class="eyebrow">SESSION COMMISSION LEDGER</p>
+                <h2>Completed Sessions Breakdown ({{ filteredPtEarnings.length }})</h2>
+              </div>
+              <div class="branch-filter-tabs">
+                <button type="button" class="branch-filter-pill" [class.active]="ptEarningFilter === 'ALL'" (click)="onFilterChange('ALL')">
+                  All Sessions ({{ ptEarnings.length }})
+                </button>
+                <button type="button" class="branch-filter-pill" [class.active]="ptEarningFilter === 'PENDING'" (click)="onFilterChange('PENDING')">
+                  ⏳ Pending Payout
+                </button>
+                <button type="button" class="branch-filter-pill" [class.active]="ptEarningFilter === 'SETTLED'" (click)="onFilterChange('SETTLED')">
+                  ✓ Settled Batches
+                </button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="member-list-table">
+                <thead>
+                  <tr>
+                    <th>SESSION DATE</th>
+                    <th>MEMBER CLIENT</th>
+                    <th>GROSS FEE</th>
+                    <th>MY COMMISSION EARNING</th>
+                    <th>COMMISSION %</th>
+                    <th>GYM SHARE</th>
+                    <th>SETTLEMENT STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (earning of filteredPtEarnings; track earning.id) {
+                    <tr>
+                      <td><strong>{{ dateLabel(earning.sessionDate) }}</strong></td>
+                      <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                          <div class="staff-avatar" style="width: 26px; height: 26px; font-size: 10px;">{{ initials(earning.memberName) }}</div>
+                          <strong>{{ earning.memberName }}</strong>
+                        </div>
+                      </td>
+                      <td>{{ money(earning.grossRevenue) }}</td>
+                      <td><strong style="color: var(--emerald); font-size: 13px;">{{ money(earning.ptCommission) }}</strong></td>
+                      <td><span class="tag">{{ earning.commissionRate }}%</span></td>
+                      <td>{{ money(earning.gymRetained) }}</td>
+                      <td>
+                        @if (earning.payoutId) {
+                          <span class="status-pill status-paid">✓ Batch #{{ earning.payoutId }}</span>
+                        } @else {
+                          <span class="status-pill status-pending">⏳ Pending Settlement</span>
+                        }
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="7">
+                        <div class="table-empty">No session earnings recorded matching the selected filter. Once you complete booked sessions, earnings appear here.</div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- My Payouts History Table -->
+          <section class="panel full-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">SETTLEMENT HISTORY</p>
+                <h2>Disbursement Statements ({{ ptPayouts.length }})</h2>
+                <p class="page-subtitle">Historical payout batches released by the gym owner.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="member-list-table">
+                <thead>
+                  <tr>
+                    <th>BATCH #</th>
+                    <th>PERIOD</th>
+                    <th>DISBURSED AMOUNT</th>
+                    <th>STATUS</th>
+                    <th>PAID ON</th>
+                    <th>NOTES / BANK REF</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (payout of ptPayouts; track payout.id) {
+                    <tr>
+                      <td><span class="branch-code-chip">#{{ payout.id }}</span></td>
+                      <td>{{ dateLabel(payout.periodFrom) }} → {{ dateLabel(payout.periodTo) }}</td>
+                      <td><strong style="color: var(--emerald); font-size: 13px;">{{ money(payout.totalEarnings) }}</strong></td>
+                      <td>
+                        <span class="status-pill" [class.status-paid]="payout.status === 'PAID'" [class.status-pending]="payout.status === 'PENDING'">
+                          {{ payout.status === 'PAID' ? '✓ Settled' : '⏳ Pending' }}
+                        </span>
+                      </td>
+                      <td>
+                        @if (payout.paidAt) {
+                          <div style="font-size: 11px; font-weight: 600; color: var(--ink);">{{ payout.paidAt | date:'mediumDate' }}</div>
+                          <div class="status-detail">Settled by {{ payout.paidByName }}</div>
+                        } @else {
+                          <span style="color: var(--amber); font-weight: 600; font-size: 11px;">Unpaid</span>
+                        }
+                      </td>
+                      <td>{{ payout.notes || '—' }}</td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="6">
+                        <div class="table-empty">No payout disbursements recorded yet.</div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>

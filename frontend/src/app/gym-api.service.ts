@@ -1,360 +1,68 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import {
+  ActionHistory,
+  ActivationCode,
+  Analytics,
+  AnalyticsPoint,
+  Branch,
+  BranchDashboard,
+  BranchPayload,
+  BranchType,
+  BulkMemberImportResult,
+  BulkMemberImportRow,
+  CancellationPayload,
+  CancellationReason,
+  Dashboard,
+  Freeze,
+  GymRegistrationPayload,
+  Membership,
+  MembershipAccess,
+  MembershipGroup,
+  MembershipPage,
+  MembershipPayload,
+  MembershipUpgradePayload,
+  MembershipUpgradeQuote,
+  PackageAnalytics,
+  PackagePerformance,
+  Plan,
+  PlanPayload,
+  PlatformMetrics,
+  PlatformOrganization,
+  ProfilePayload,
+  PtAnalytics,
+  PtAvailability,
+  PtAvailabilityPayload,
+  PtEarning,
+  PtPackageType,
+  PtPayout,
+  PtPayoutCreatePayload,
+  PtProfile,
+  PtRegistrationPayload,
+  PtSession,
+  PtSessionBookPayload,
+  PtSessionStatus,
+  PtSessionUpdatePayload,
+  PtUpdatePayload,
+  RenewalPayload,
+  RenewalReminder,
+  RenewingMember,
+  Report,
+  ResetRequestResponse,
+  Role,
+  SaasUpgradeQuote,
+  Session,
+  StaffPayload,
+  SubscriptionStatus,
+  TaxAnalytics,
+  TenantBackup,
+  UpgradeRequest,
+  UpgradeRequestPayload,
+  User
+} from './core/models';
 
-export type Role = 'OWNER' | 'STAFF' | 'MEMBER' | 'PERSONAL_TRAINER' | 'SUPER_ADMIN';
-export interface User {
-  id: number;
-  fullName: string;
-  email: string;
-  phoneNumber: string | null;
-  role: Role;
-  branchId: number | null;
-  branchName: string | null;
-  organizationId?: number | null;
-  organizationName?: string | null;
-  organizationLogo?: string | null;
-  subscriptionTier?: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
-  subscriptionStatus?: 'ACTIVE' | 'TRIAL' | 'EXPIRED' | 'CANCELLED' | 'SUSPENDED';
-  subscriptionExpiresAt?: string | null;
-  enabledFeatures?: string[];
-  memberPin?: string | null;
-}
-export interface GymRegistrationPayload {
-  fullName: string;
-  email: string;
-  phoneNumber?: string;
-  password: string;
-  organizationName: string;
-  organizationCode: string;
-  branchName?: string;
-  branchAddress?: string;
-  subscriptionTier?: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
-}
-export interface SubscriptionStatus {
-  organizationId: number;
-  organizationName: string;
-  organizationCode: string;
-  organizationLogo?: string | null;
-  subscriptionTier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
-  subscriptionStatus: 'ACTIVE' | 'TRIAL' | 'EXPIRED' | 'CANCELLED' | 'SUSPENDED';
-  expiresAt: string | null;
-  brandingEnabled?: boolean;
-  receiptUploadEnabled?: boolean;
-  historyEnabled: boolean;
-  ptEnabled: boolean;
-  analyticsEnabled?: boolean;
-  enabledFeatures: string[];
-  maxBranches?: number;
-  maxStaff?: number;
-  maxMembers?: number;
-}
-export interface ActivationCode {
-  id: number;
-  code: string;
-  tier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
-  durationDays: number | null;
-  status: 'AVAILABLE' | 'REDEEMED' | 'REVOKED' | 'EXPIRED';
-  maxRedemptions: number;
-  redemptionCount: number;
-  notes: string | null;
-  redeemedByOrgId: number | null;
-  redeemedByOrgName: string | null;
-  redeemedByEmail: string | null;
-  redeemedAt: string | null;
-  codeExpiresAt: string | null;
-  createdAt: string;
-  createdBy: string | null;
-}
-export interface UpgradeRequest {
-  id: number;
-  organizationId: number;
-  organizationName: string;
-  organizationCode: string;
-  requesterEmail: string;
-  requesterName: string | null;
-  requesterPhone: string | null;
-  targetTier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
-  durationDays: number;
-  billingPlanName: string;
-  paymentMethod: string;
-  gstNumber: string | null;
-  billingAddress: string | null;
-  notes: string | null;
-  status: 'PENDING' | 'APPROVED_KEY_ISSUED' | 'APPROVED_DIRECT_UPGRADE' | 'REJECTED';
-  issuedActivationCode: string | null;
-  reviewedBy: string | null;
-  reviewedAt: string | null;
-  rejectionReason: string | null;
-  createdAt: string;
-  estimatedTopUp?: number | null;
-}
-export interface UpgradeRequestPayload {
-  billingPlan: string;
-  durationDays: number;
-  paymentMethod: string;
-  gstNumber?: string;
-  billingAddress?: string;
-  notes?: string;
-  targetTier?: string;
-  estimatedTopUp?: number;
-}
-export interface SaasUpgradeQuote {
-  currentTier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
-  targetTier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
-  currentMonthlyPrice: number;
-  targetMonthlyPrice: number;
-  remainingDays: number;
-  estimatedTopUp: number;
-  effectiveDate: string;
-}
-export interface PlatformMetrics {
-  totalGyms: number;
-  activePremiumGyms: number;
-  standardGyms: number;
-  totalMembersAcrossGyms: number;
-  totalBranches: number;
-  availableCodes: number;
-}
-export interface PlatformOrganization {
-  id: number;
-  name: string;
-  code: string;
-  logoData?: string | null;
-  subscriptionTier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
-  subscriptionStatus: 'ACTIVE' | 'TRIAL' | 'EXPIRED' | 'CANCELLED' | 'SUSPENDED';
-  subscriptionExpiresAt: string | null;
-  createdAt: string;
-  ownerEmail: string | null;
-  ownerName: string | null;
-  branchCount: number;
-  memberCount: number;
-}
-export interface Session { token: string; user: User; }
-export type BranchType = 'COMPANY_OWNED' | 'FRANCHISE';
-export interface Branch { id: number; name: string; code: string; type: BranchType; address: string | null; phoneNumber: string | null; active: boolean; memberCount: number; }
-export interface BranchPayload { name: string; code: string; type: BranchType; address: string; phoneNumber: string; active: boolean; }
-export type PtPackageType = 'NONE' | 'PT_ONLY' | 'COMBINED';
-export interface Plan { id: number; name: string; description: string; price: number; durationMonths: number | null; durationDays: number | null; branchId: number | null; branchName: string | null; active: boolean; usageCount: number; ptPackageType?: PtPackageType; includedPtSessions?: number | null; ptFeeIncluded?: number | null; }
-export interface Freeze { id: number; startDate: string; endDate: string; reason: string; createdBy: string; createdAt: string; cancelledAt: string | null; endedEarlyAt: string | null; }
-export interface Membership { id: number; memberName: string; email: string; phoneNumber: string | null; planId: number; planName: string; branchId: number | null; branchName: string | null; startDate: string; endDate: string; listPrice: number; discountPercent: number; amountPaid: number; status: 'ACTIVE' | 'CANCELLED' | 'UPGRADED'; upgradedFromId?: number | null; renewalStartDate: string | null; createdAt: string; lastActivityAt: string; cancelledAt: string | null; planDurationMonths: number | null; planDurationDays: number | null; frozen: boolean; freezes: Freeze[]; personalTrainerId?: number | null; personalTrainerName?: string | null; ptSessionsIncluded?: number | null; ptSessionsUsed?: number; memberPin?: string | null; paymentMethod?: string; transactionId?: string | null; }
-export interface MembershipGroup { memberId: number; memberName: string; email: string; phoneNumber: string | null; terms: Membership[]; }
-export interface MembershipPage { members: MembershipGroup[]; page: number; size: number; totalMembers: number; totalPages: number; }
-export interface MembershipAccess { allowed: boolean; status: string; checkedOn: string; message: string; }
-export interface BranchDashboard { branchId: number; branchName: string; branchCode: string; branchType: BranchType; revenueThisMonth: number; revenueLastMonth: number; activeMembers: number; totalMembers: number; expiringWithinSevenDays: number; expiringMembers: Membership[]; }
-export interface Dashboard { revenueThisMonth: number; revenueLastMonth: number; activeMembers: number; totalMembers: number; expiringWithinSevenDays: number; expiringMembers: Membership[]; branches: BranchDashboard[]; }
-export interface PlanPayload { name: string; description: string; price: number; durationMonths: number | null; durationDays: number | null; branchId: number | null; active: boolean; ptPackageType?: PtPackageType; includedPtSessions?: number | null; ptFeeIncluded?: number | null; }
-export interface MembershipUpgradeQuote {
-  totalDays: number;
-  remainingDays: number;
-  oldDailyRate: number;
-  newDailyRate: number;
-  creditAmount: number;
-  newPlanProrataCost: number;
-  topUpDue: number;
-  currentPlanName: string;
-  currentPlanPrice: number;
-  newPlanName: string;
-  newPlanPrice: number;
-  hasPt: boolean;
-}
-
-export interface MembershipUpgradePayload {
-  newPlanId: number;
-  personalTrainerId?: number | null;
-  topUpPaid: number;
-  paymentMethod?: string;
-  transactionId?: string | null;
-}
-
-export interface MembershipPayload { fullName: string; email: string; phoneNumber: string; password: string; planId: number; branchId: number | null; personalTrainerId?: number | null; discountPercent: number; startDate: string; receiptImageData?: string | null; paymentMethod?: string; transactionId?: string | null; }
-export interface RenewalPayload { planId: number; branchId: number | null; personalTrainerId?: number | null; discountPercent: number; startDate: string; paymentMethod?: string; transactionId?: string | null; }
-export interface StaffPayload { fullName: string; email: string; phoneNumber: string; password: string; branchId: number; }
-export interface ProfilePayload { fullName: string; email: string; phoneNumber: string; }
-export interface ResetRequestResponse { message: string; developmentCode: string | null; }
-export interface ActionHistory { id: number; actorId: number; actorName: string; actorEmail: string; action: string; entityType: string; entityId: number; reason: string | null; beforeData: string | null; afterData: string | null; occurredAt: string; }
-export interface RenewalReminder { id: number; membershipId: number; memberName: string; recipientEmail: string; daysBefore: number; status: string; attempts: number; lastAttemptAt: string | null; nextAttemptAt: string; sentAt: string | null; lastError: string | null; }
-export interface PackagePerformance { packageId: number; packageName: string; memberships: number; revenue: number; }
-export interface Report { from: string; to: string; memberships: number; cancellations: number; revenue: number; packages: PackagePerformance[]; }
-export interface AnalyticsPoint { month: string; memberships: number; newMembers: number; renewals: number; revenue: number; newRevenue: number; renewalRevenue: number; discountsGiven: number; recordedPriceVariance: number; }
-export interface PackageAnalytics { packageId: number; packageName: string; memberships: number; newMembers: number; renewals: number; revenue: number; salesSharePercent: number; averageSale: number; discountsGiven: number; recordedPriceVariance: number; averageDiscountPercent: number; }
-export interface RenewingMember { memberId: number; memberName: string; memberEmail: string; terms: number; renewals: number; renewalYears: number; firstRenewalYear: number | null; lastRenewalYear: number | null; renewedInEveryObservedCalendarYear: boolean; lifetimeRevenue: number; latestRenewalInPeriod: string; }
-export interface TaxAnalytics { grossRecordedSales: number; estimatedTaxableSales: number; estimatedGstIncluded: number; estimatedCgst: number; estimatedSgst: number; estimatedIgst: number; recordedSalesExcludingEstimatedGst: number; estimatedOutputGst: number; cgstRate: number; sgstRate: number; igstRate: number; estimated: boolean; }
-export interface Analytics { from: string; to: string; totalMembershipsSold: number; newMembers: number; membershipRenewals: number; renewingMembers: number; activeMemberships: number; activeMembers: number; expiredOrCancelledMemberships: number; membersLeft: number; openingMembers: number; retentionRate: number; churnRate: number; membershipGrowthPercent: number | null; newMemberSalesGrowthPercent: number | null; totalRevenue: number; newMembershipRevenue: number; renewalRevenue: number; averageSale: number; averageRenewalSale: number; totalListPrice: number; discountsGiven: number; recordedPriceVariance: number; renewalRevenueSharePercent: number; revenueGrowthPercent: number | null; tax: TaxAnalytics; trend: AnalyticsPoint[]; packagePerformance: PackageAnalytics[]; renewingMemberDetails: RenewingMember[]; revenueIsRecordedMembershipAmounts: boolean; }
-export type CancellationReason = 'NO_LONGER_INTERESTED' | 'RELOCATED' | 'MEDICAL' | 'FINANCIAL' | 'SERVICE_ISSUE' | 'OTHER';
-export interface CancellationPayload { reason: CancellationReason; remarks: string; cancellationDate: string; otherExplanation: string; }
-
-// ─── PT Interfaces ────────────────────────────────────────────────────────
-export interface PtProfile {
-  id: number;
-  userId: number;
-  fullName: string;
-  email: string;
-  phoneNumber: string | null;
-  branchId: number | null;
-  branchName: string | null;
-  specializations: string | null;
-  bio: string | null;
-  sessionFeePerHour: number;
-  commissionPercent: number;
-  active: boolean;
-  activeMembers: number;
-  createdAt: string;
-}
-
-export interface PtRegistrationPayload {
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  password: string;
-  branchId: number | null;
-  specializations: string;
-  bio: string;
-  sessionFeePerHour: number;
-  commissionPercent: number;
-}
-
-export interface PtUpdatePayload {
-  branchId: number | null;
-  specializations: string;
-  bio: string;
-  sessionFeePerHour: number;
-  commissionPercent: number;
-}
-
-export interface PtAvailability {
-  id: number;
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
-  effectiveFrom: string | null;
-  effectiveTo: string | null;
-}
-
-export interface PtAvailabilityPayload {
-  dayOfWeek: string;
-  startTime: string;
-  endTime: string;
-  effectiveFrom?: string | null;
-  effectiveTo?: string | null;
-}
-
-export type PtSessionStatus = 'TENTATIVE' | 'BOOKED' | 'COMPLETED' | 'CANCELLED' | 'MISSED';
-
-export interface PtSession {
-  id: number;
-  ptId: number;
-  ptName: string;
-  membershipId: number;
-  memberId: number;
-  memberName: string;
-  scheduledDate: string;
-  startTime: string;
-  endTime: string;
-  status: PtSessionStatus;
-  notes: string | null;
-  cancelReason: string | null;
-  completedAt: string | null;
-  sessionFeeSnapshot: number;
-  commissionRateSnapshot: number;
-  createdAt: string;
-  verificationMethod?: string | null;
-}
-
-export interface PtSessionBookPayload {
-  membershipId: number;
-  scheduledDate: string;
-  startTime: string;
-  endTime: string;
-  notes?: string;
-}
-
-export interface PtSessionUpdatePayload {
-  scheduledDate: string;
-  startTime: string;
-  endTime: string;
-  notes?: string;
-}
-
-export interface PtEarning {
-  id: number;
-  sessionId: number;
-  sessionDate: string;
-  memberName: string;
-  grossRevenue: number;
-  ptCommission: number;
-  gymRetained: number;
-  commissionRate: number;
-  payoutId: number | null;
-  createdAt: string;
-}
-
-export interface PtPayout {
-  id: number;
-  ptId: number;
-  ptName: string;
-  periodFrom: string;
-  periodTo: string;
-  totalEarnings: number;
-  status: 'PENDING' | 'PAID';
-  paidAt: string | null;
-  paidByName: string | null;
-  notes: string | null;
-  createdAt: string;
-}
-
-export interface PtPayoutCreatePayload {
-  periodFrom: string;
-  periodTo: string;
-  notes?: string;
-}
-
-export interface PtAnalytics {
-  activePts: number;
-  totalPts: number;
-  totalPtGrossRevenue: number;
-  totalPtCommission: number;
-  totalGymRetained: number;
-  pendingPayouts: number;
-  sessionsCompleted: number;
-  sessionsCancelled: number;
-  sessionsMissed: number;
-  activeTrainees: number;
-  contractedPtRevenue: number;
-  allocatedSessions: number;
-  remainingSessions: number;
-}
-
-export interface BulkMemberImportRow {
-  fullName: string;
-  email: string;
-  phoneNumber?: string;
-  packageName?: string;
-  branchCode?: string;
-  startDate?: string;
-  paymentMethod?: string;
-}
-
-export interface BulkMemberImportResult {
-  totalRequested: number;
-  importedCount: number;
-  errors: string[];
-}
-
-export interface TenantBackup {
-  organizationId: number;
-  organizationName: string;
-  organizationCode: string;
-  subscriptionTier: string;
-  subscriptionStatus: string;
-  exportedAt: string;
-  exportedBy: string;
-  branches: Branch[];
-  packages: Plan[];
-  memberships: Membership[];
-  staff: User[];
-  auditLogs: ActionHistory[];
-}
+export * from './core/models';
 
 @Injectable({ providedIn: 'root' })
 export class GymApiService {

@@ -1,0 +1,51 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section class="renewal-dialog" role="dialog" aria-modal="true" aria-labelledby="cancellation-title" (click)="$event.stopPropagation()">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">MEMBERSHIP EXIT</p>
+        <h2 id="cancellation-title">Record cancellation</h2>
+        <p class="dialog-subtitle">{{ member.memberName }} · {{ member.planName }}</p>
+      </div>
+      <button type="button" class="icon-button" aria-label="Close cancellation form" (click)="close.emit()">×</button>
+    </div>
+    <form class="renewal-form" (ngSubmit)="confirm.emit()" #cancellationForm="ngForm">
+      <label>Cancellation reason
+        <select name="cancellationReason" [(ngModel)]="draft.reason" required>
+          <option value="NO_LONGER_INTERESTED">No longer interested</option>
+          <option value="RELOCATED">Relocated</option>
+          <option value="MEDICAL">Medical reasons</option>
+          <option value="FINANCIAL">Financial reasons</option>
+          <option value="SERVICE_ISSUE">Service issue</option>
+          <option value="OTHER">Other</option>
+        </select>
+      </label>
+      @if (draft.reason === 'OTHER') {
+        <label>Explain the other reason
+          <textarea name="otherExplanation" [(ngModel)]="draft.otherExplanation" required minlength="10" maxlength="1000" rows="3"></textarea>
+        </label>
+      }
+      <label>Detailed remarks
+        <textarea name="cancellationRemarks" [(ngModel)]="draft.remarks" required minlength="10" maxlength="2000" rows="4" placeholder="Record the member's explanation and any relevant details."></textarea>
+      </label>
+      <label>Cancellation date
+        <input name="cancellationDate" [(ngModel)]="draft.cancellationDate" type="date" [max]="today" required>
+      </label>
+      <p class="renewal-time-note">
+        @if (mode === 'renewal') {
+          The scheduled renewal is cancelled; the current membership term remains unchanged.
+        } @else {
+          Cancellation takes effect immediately.
+        }
+        The signed-in owner or assigned-branch staff member is recorded as the actor; this workflow does not require separate approval.
+      </p>
+      @if (error) {
+        <p class="form-error" role="alert">{{ error }}</p>
+      }
+      <div class="form-actions">
+        <button type="button" class="button button-quiet" (click)="close.emit()">Keep membership</button>
+        <button type="submit" class="button button-dark" [disabled]="busy || cancellationForm.invalid">Record cancellation</button>
+      </div>
+    </form>
+  </section>
+</div>
+

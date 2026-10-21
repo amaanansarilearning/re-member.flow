@@ -1,0 +1,99 @@
+<div class="renewal-backdrop legal-backdrop" (click)="close.emit()">
+  <section
+    class="legal-modal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="legal-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="legal-modal-header">
+      <div class="legal-header-titles">
+        <span class="legal-badge">{{ activeDoc.badge }}</span>
+        <h2 id="legal-modal-title">{{ activeDoc.title }}</h2>
+        <p class="legal-subtitle">{{ activeDoc.subtitle }}</p>
+        <span class="legal-updated">Last Updated: {{ activeDoc.lastUpdated }}</span>
+      </div>
+      <div class="legal-header-actions">
+        <button type="button" class="button button-quiet legal-print-btn" (click)="print.emit()" title="Print or save as PDF">
+          🖨️ Print / PDF
+        </button>
+        <button type="button" class="legal-close-btn" (click)="close.emit()" aria-label="Close dialog">
+          ✕
+        </button>
+      </div>
+    </header>
+
+    <nav class="legal-tabs-nav" aria-label="Legal policy tabs">
+      <button
+        type="button"
+        [class.active]="currentTab === 'terms'"
+        (click)="tabChange.emit('terms')"
+      >
+        📜 Terms of Use
+      </button>
+      <button
+        type="button"
+        [class.active]="currentTab === 'privacy'"
+        (click)="tabChange.emit('privacy')"
+      >
+        🔒 Privacy Policy
+      </button>
+      <button
+        type="button"
+        [class.active]="currentTab === 'disclaimer'"
+        (click)="tabChange.emit('disclaimer')"
+      >
+        ⚠️ Health & Safety Waiver
+      </button>
+      <button
+        type="button"
+        [class.active]="currentTab === 'acceptable-use'"
+        (click)="tabChange.emit('acceptable-use')"
+      >
+        🛡️ Acceptable Use
+      </button>
+    </nav>
+
+    <div class="legal-search-bar">
+      <span class="search-icon" aria-hidden="true">🔍</span>
+      <input
+        type="search"
+        placeholder="Search within this document (e.g. liability, refund, trainer, privacy, deletion)..."
+        [ngModel]="searchQuery"
+        (ngModelChange)="searchQueryChange.emit($event)"
+        aria-label="Search within legal document"
+      />
+      @if (searchQuery) {
+        <button type="button" class="search-clear-btn" (click)="searchQueryChange.emit('')">✕</button>
+      }
+    </div>
+
+    <div class="legal-modal-body">
+      @if (filteredSections.length === 0) {
+        <div class="legal-empty-search">
+          <p>No sections match "<strong>{{ searchQuery }}</strong>".</p>
+          <button type="button" class="button button-quiet" (click)="searchQueryChange.emit('')">Clear Search</button>
+        </div>
+      } @else {
+        @for (section of filteredSections; track section.id) {
+          <article class="legal-section-block" [id]="'legal-' + section.id">
+            <h3>{{ section.title }}</h3>
+            @for (paragraph of section.content; track $index) {
+              <p>{{ paragraph }}</p>
+            }
+          </article>
+        }
+      }
+    </div>
+
+    <footer class="legal-modal-footer">
+      <div class="legal-footer-info">
+        <span>🛡️ Legally Binding Agreement · Official Re-member Flow Terms</span>
+      </div>
+      <button type="button" class="button button-dark" (click)="close.emit()">
+        Close Document
+      </button>
+    </footer>
+  </section>
+</div>
+

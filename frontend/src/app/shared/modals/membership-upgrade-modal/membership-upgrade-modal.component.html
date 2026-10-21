@@ -1,0 +1,184 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="renewal-dialog upgrade-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="member-upgrade-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">MID-CYCLE PACKAGE UPGRADE</p>
+        <h2 id="member-upgrade-title">Upgrade {{ member.memberName }}</h2>
+      </div>
+      <button
+        class="icon-button"
+        title="Close upgrade modal"
+        aria-label="Close upgrade modal"
+        type="button"
+        (click)="close.emit()"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="renewal-current upgrade-current-info">
+      <div>
+        <span>CURRENT PACKAGE</span>
+        <strong>{{ member.planName }} ({{ money(member.listPrice) }})</strong>
+      </div>
+      <div>
+        <span>CYCLE EXPIRATION</span>
+        <strong>{{ dateLabel(member.endDate) }}</strong>
+      </div>
+      <div>
+        <span>REMAINING</span>
+        <strong>{{ termDaysRemainingLabel(member) }}</strong>
+      </div>
+    </div>
+
+    <form class="renewal-form" (ngSubmit)="confirm.emit()" #memberUpgradeForm="ngForm">
+      <label>
+        <span class="field-label-text">Upgrade To Package <span class="req-star">*</span></span>
+        <select
+          name="upgradePlan"
+          [ngModel]="targetPlanId"
+          (ngModelChange)="targetPlanChange.emit($event)"
+          [class.input-has-error]="hasFieldError('upgradePlan')"
+          required
+        >
+          <option [ngValue]="null">Select a package to upgrade to...</option>
+          @for (plan of activePlans; track plan.id) {
+            @if (plan.id !== member.planId) {
+              <option [value]="plan.id">
+                {{ plan.name }} · {{ money(plan.price) }} / {{ planDurationLabel(plan) }}
+                @if (plan.includedPtSessions) {
+                  · ⚡ {{ plan.includedPtSessions }} PT Sessions
+                }
+              </option>
+            }
+          }
+        </select>
+        @if (hasFieldError('upgradePlan')) {
+          <span class="field-error-msg">⚠️ {{ getFieldError('upgradePlan') }}</span>
+        }
+      </label>
+
+      <!-- Live Pro-Rata Cost Breakdown Card -->
+      @if (quoteLoading) {
+        <div class="upgrade-quote-loading">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Calculating pro-rata upgrade quote...</span>
+        </div>
+      } @else if (quote) {
+        <div class="upgrade-quote-card">
+          <div class="quote-header">
+            <span class="quote-badge">⚡ PRO-RATA BREAKDOWN</span>
+            <span class="quote-days">{{ quote.remainingDays }} days remaining in current cycle</span>
+          </div>
+          <div class="upgrade-quote-table">
+            <div class="quote-row">
+              <span>Current Package Credit:</span>
+              <span class="credit-val">-{{ money(quote.creditAmount) }}</span>
+            </div>
+            <div class="quote-row">
+              <span>New Package Cost (Pro-Rata):</span>
+              <span>{{ money(quote.newPlanProrataCost) }}</span>
+            </div>
+            <div class="quote-row quote-topup-row">
+              <strong>Top-Up Due:</strong>
+              <strong class="topup-amount">{{ money(quote.topUpDue) }}</strong>
+            </div>
+          </div>
+          <p class="quote-note">
+            Your member's billing cycle end date remains <strong>{{ dateLabel(member.endDate) }}</strong>. No extra duration is added; only the package tier is upgraded.
+          </p>
+        </div>
+      } @else if (quoteError) {
+        <div class="upgrade-quote-error" role="alert">
+          ⚠️ {{ quoteError }}
+        </div>
+      }
+
+      <!-- Trainer Selection if PT is included in target plan -->
+      @if (selectedUpgradePlan?.includedPtSessions) {
+        <label><span class="field-label-text">Assigned Personal Trainer <span class="label-note">RECOMMENDED</span></span>
+          <select name="upgradePt" [(ngModel)]="draft.personalTrainerId">
+            <option [ngValue]="null">Select a Trainer / Keep current</option>
+            @for (pt of personalTrainers; track pt.id) {
+              @if (pt.active) {
+                <option [value]="pt.id">{{ pt.fullName }} ({{ pt.specializations || 'Trainer' }})</option>
+              }
+            }
+          </select>
+        </label>
+      }
+
+      <!-- Payment Method Selection -->
+      <label><span class="field-label-text">Payment Method <span class="req-star">*</span></span>
+        <select name="upgradePaymentMethod" [(ngModel)]="draft.paymentMethod" required>
+          <option value="CASH">Cash Payment</option>
+          <option value="UPI">UPI / QR Code</option>
+          <option value="CARD">Credit / Debit Card</option>
+          <option value="BANK_TRANSFER">Bank Transfer (IMPS / NEFT)</option>
+          <option value="CHEQUE">Cheque</option>
+          <option value="OTHER">Other Online / POS</option>
+        </select>
+      </label>
+
+      <!-- Transaction ID for Non-Cash Online Payments -->
+      @if (draft.paymentMethod !== 'CASH') {
+        <label>
+          <span class="field-label-text">Transaction / Reference ID <span class="req-star">*</span></span>
+          <input
+            name="upgradeTransactionId"
+            type="text"
+            placeholder="e.g. UPI-123456789 or BANK-REF-99"
+            [(ngModel)]="draft.transactionId"
+            [class.input-has-error]="hasFieldError('upgradeTransactionId')"
+            (input)="clearField.emit('upgradeTransactionId')"
+            required
+          />
+          @if (hasFieldError('upgradeTransactionId')) {
+            <span class="field-error-msg">⚠️ {{ getFieldError('upgradeTransactionId') }}</span>
+          }
+        </label>
+      }
+
+      <!-- Amount Collected Field -->
+      <label>
+        <span class="field-label-text">Top-Up Amount Collected <span class="req-star">*</span></span>
+        <input
+          name="upgradeTopUpPaid"
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="draft.topUpPaid"
+          required
+        />
+      </label>
+
+      <div class="form-actions member-upgrade-actions">
+        <button
+          type="button"
+          class="button button-quiet"
+          (click)="close.emit()"
+          [disabled]="busy"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="button button-dark"
+          [disabled]="busy || quoteLoading || !quote"
+        >
+          @if (busy) {
+            <span class="spinner" aria-hidden="true"></span> Processing Upgrade...
+          } @else {
+            Confirm Upgrade ({{ money(draft.topUpPaid) }}) ↗
+          }
+        </button>
+      </div>
+    </form>
+  </section>
+</div>

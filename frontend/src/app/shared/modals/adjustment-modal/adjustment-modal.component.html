@@ -1,0 +1,51 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section class="renewal-dialog adjustment-dialog" role="dialog" aria-modal="true"
+    aria-labelledby="adjustment-title" (click)="$event.stopPropagation()">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">MEMBERSHIP CONTROL</p>
+        <h2 id="adjustment-title">{{ mode === 'freeze' ? 'Schedule a freeze' : mode === 'cancel-freeze' ? 'Cancel scheduled freeze' : mode === 'end-freeze' ? 'End freeze early' : mode === 'transfer' ? 'Transfer branch' : 'Edit membership record' }}</h2>
+      </div>
+      <button class="icon-button" type="button" aria-label="Close" (click)="close.emit()">×</button>
+    </div>
+    <form class="adjustment-form" (ngSubmit)="submit.emit()" #adjustmentForm="ngForm">
+      <p class="renewal-time-note">{{ member.memberName }} · {{ member.planName }}. All changes are recorded with the reason below.</p>
+      @if (mode === 'freeze') {
+        <label>Freeze begins<input name="freezeStart" type="date" [(ngModel)]="draft.startDate" [min]="today" required></label>
+        <label>Freeze ends (inclusive)<input name="freezeEnd" type="date" [(ngModel)]="draft.endDate" [min]="draft.startDate" required></label>
+        <p class="report-note">Dates are inclusive. Paid-through extends by the number of frozen days. You can cancel it before it starts or end it early while active.</p>
+      } @else if (mode === 'cancel-freeze' || mode === 'end-freeze') {
+        <p class="freeze-change-note">
+          @if (mode === 'cancel-freeze') {
+            This scheduled freeze is {{ dateLabel(freezeTarget?.startDate) }} – {{ dateLabel(freezeTarget?.endDate) }}. Cancelling it removes those unused days from the membership extension.
+          } @else {
+            This freeze will end today. Remaining days from today through {{ dateLabel(freezeTarget?.endDate) }} will be removed from the membership extension and access will resume.
+          }
+        </p>
+      } @else if (mode === 'transfer') {
+        @if (hasTransferTarget(member)) {
+          <label>Move to branch<select name="transferBranch" [(ngModel)]="draft.branchId" required><option value="" disabled>Select another active branch</option>@for (branch of activeBranches; track branch.id) { @if (branch.id !== member.branchId) { <option [value]="branch.id">{{ branch.name }}</option> } }</select></label>
+          <p class="report-note">Original membership dates, package snapshot, and payment amounts are preserved.</p>
+        } @else {
+          <p class="report-note">There is no other active branch available for this membership.</p>
+        }
+      } @else {
+        <label>Package<select name="correctPlan" [(ngModel)]="draft.planId" required>@for (plan of plans; track plan.id) { <option [value]="plan.id">{{ plan.name }}{{ plan.active ? '' : ' (archived)' }}</option> }</select></label>
+        <label>Start date<input name="correctStart" type="date" [(ngModel)]="draft.startDate" required></label>
+        <label>End date<input name="correctEnd" type="date" [(ngModel)]="draft.endDate" required></label>
+        <label>List price<input name="correctListPrice" type="number" min="0.01" step="0.01" [(ngModel)]="draft.listPrice" required></label>
+        <label>Discount (%)<input name="correctDiscount" type="number" min="0" max="100" step="0.01" [(ngModel)]="draft.discountPercent" required></label>
+        <label>Amount paid<input name="correctPaid" type="number" min="0" step="0.01" [(ngModel)]="draft.amountPaid" required></label>
+      }
+      <label>Required reason<textarea name="adjustmentReason" [(ngModel)]="draft.reason" maxlength="500" required></textarea></label>
+      @if (error) { <p class="form-error" role="alert">{{ error }}</p> }
+      <div class="form-actions">
+        <button class="button button-quiet" type="button" (click)="close.emit()">Cancel</button>
+        <button class="button button-dark" type="submit" [disabled]="busy || adjustmentForm.invalid || (mode === 'transfer' && !hasTransferTarget(member))">
+          {{ busy ? 'Saving…' : mode === 'freeze' ? 'Schedule freeze' : mode === 'cancel-freeze' ? 'Cancel scheduled freeze' : mode === 'end-freeze' ? 'End freeze today' : mode === 'transfer' ? 'Transfer membership' : 'Save correction' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+

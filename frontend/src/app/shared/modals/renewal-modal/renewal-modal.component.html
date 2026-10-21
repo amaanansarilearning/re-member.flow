@@ -1,0 +1,142 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="renewal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="renewal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">MEMBERSHIP RENEWAL</p>
+        <h2 id="renewal-title">Schedule next term</h2>
+      </div>
+      <button
+        class="icon-button"
+        title="Close renewal"
+        aria-label="Close renewal"
+        (click)="close.emit()"
+      >
+        ×
+      </button>
+    </div>
+    <div class="renewal-current">
+      <div>
+        <span>MEMBER</span><strong>{{ member.memberName }}</strong>
+      </div>
+      <div>
+        <span>PAID THROUGH</span><strong>{{ dateLabel(member.endDate) }}</strong>
+      </div>
+    </div>
+    <form class="renewal-form" (ngSubmit)="confirm.emit()" #renewalForm="ngForm">
+      <label
+        >Next package<select name="renewalPlan" [(ngModel)]="draft.planId" (ngModelChange)="onPlanChange($event)" required>
+          @for (plan of activePlans; track plan.id) {
+            <option [value]="plan.id">
+              {{ plan.name }} · {{ money(plan.price) }} / {{ planDurationLabel(plan) }}
+            </option>
+          }
+        </select></label
+      >
+      @if (userRole === 'OWNER') {
+        <label
+          >Renewal branch<select name="renewalBranch" [(ngModel)]="draft.branchId" required>
+            @for (branch of activeBranches; track branch.id) {
+              <option [value]="branch.id">{{ branch.name }}</option>
+            }
+          </select></label
+        >
+      } @else {
+        <p class="renewal-time-note">Renewing at {{ targetBranchName }}.</p>
+      }
+      <label
+        >Renewal starts<input
+          name="renewalStartDate"
+          [(ngModel)]="draft.startDate"
+          type="date"
+          [min]="minimumStartDate"
+          required
+        /><small
+          >Earliest available date: {{ dateLabel(minimumStartDate) }}.
+          The current term remains valid through its end date.</small
+        ></label
+      >
+      @if (userRole === 'OWNER' || userRole === 'STAFF') {
+        <label
+          >Renewal offer
+          <div class="discount-input">
+            <input
+              name="renewalDiscount"
+              [(ngModel)]="draft.discountPercent"
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+            /><span>% off</span>
+          </div></label
+        >
+      }
+      <label><span class="field-label-text">Assigned trainer <span class="label-note">OPTIONAL</span></span>
+        <select name="renewalPt" [(ngModel)]="draft.personalTrainerId">
+          <option value="">Keep current trainer / None</option>
+          @for (pt of personalTrainers; track pt.id) {
+            @if (pt.active) {
+              <option [value]="pt.id">{{ pt.fullName }} · {{ money(pt.sessionFeePerHour) }}/hr</option>
+            }
+          }
+        </select>
+      </label>
+
+      <!-- Payment Method Selection -->
+      <label>Payment Method
+        <select name="renewalPaymentMethod" [(ngModel)]="draft.paymentMethod" required>
+          <option value="CASH">Cash Payment</option>
+          <option value="UPI">UPI / QR Code</option>
+          <option value="CARD">Credit / Debit Card</option>
+          <option value="BANK_TRANSFER">Bank Transfer (IMPS / NEFT)</option>
+          <option value="CHEQUE">Cheque</option>
+          <option value="OTHER">Other Online / POS</option>
+        </select>
+      </label>
+
+      <!-- Transaction ID for Non-Cash Online Payments -->
+      @if (draft.paymentMethod !== 'CASH') {
+        <label><span class="field-label-text">Transaction / Reference ID <span class="label-note">REQUIRED FOR ONLINE</span></span>
+          <input
+            name="renewalTransactionId"
+            [(ngModel)]="draft.transactionId"
+            type="text"
+            placeholder="e.g. UPI Ref / UTR / Auth Code / Txn #"
+            required
+          />
+        </label>
+      }
+      <p class="renewal-time-note">
+        Memberships are date-based: the new term begins at the start of the selected date.
+        Time of day is not tracked.
+      </p>
+      <div class="renewal-summary">
+        <div>
+          <span>CHARGED</span><strong>{{ money(totalAmount) }}</strong>
+        </div>
+        <div>
+          <span>NEW TERM ENDS</span><strong>{{ dateLabel(endDate) }}</strong>
+        </div>
+      </div>
+      @if (error) {
+        <p class="form-error" role="alert">{{ error }}</p>
+      }
+      <div class="form-actions">
+        <button class="button button-quiet" type="button" (click)="close.emit()">
+          Cancel</button
+        ><button
+          class="button button-dark"
+          type="submit"
+          [disabled]="busy || renewalForm.invalid || !selectedPlan"
+        >
+          {{ busy ? 'Scheduling…' : 'Confirm renewal' }} <span>↗</span>
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
