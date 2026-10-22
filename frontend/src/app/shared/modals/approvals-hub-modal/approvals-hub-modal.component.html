@@ -1,0 +1,275 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="renewal-dialog approvals-hub-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="hub-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <!-- Hub Header -->
+    <div class="hub-header">
+      <div>
+        <p class="eyebrow" style="color: #6366f1; margin-bottom: 4px;">FRONT DESK OPERATIONS · WORKFLOW QUEUE</p>
+        <h2 id="hub-modal-title" style="margin: 0; font-size: 1.35rem; font-weight: 800; color: var(--text);">
+          Workflow Approvals Hub
+        </h2>
+        <p style="margin: 4px 0 0; font-size: 0.85rem; color: var(--text-muted);">
+          @if (pendingCount() > 0) {
+            <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; margin-right: 4px;"></span>
+            <strong>{{ pendingCount() }} action{{ pendingCount() === 1 ? '' : 's' }} required:</strong> {{ renewalPendingCount() }} renewal{{ renewalPendingCount() === 1 ? '' : 's' }}, {{ upgradePendingCount() }} package upgrade{{ upgradePendingCount() === 1 ? '' : 's' }}.
+          } @else {
+            ✓ All member requests have been reviewed and processed.
+          }
+        </p>
+      </div>
+      <button
+        class="icon-button"
+        title="Close Approvals Hub"
+        aria-label="Close Approvals Hub"
+        type="button"
+        (click)="close.emit()"
+      >
+        ×
+      </button>
+    </div>
+
+    <!-- Hub Toolbar: Search & Filters -->
+    <div class="hub-toolbar">
+      <div class="hub-search-box">
+        <span aria-hidden="true">🔍</span>
+        <input
+          type="text"
+          placeholder="Search member, email, branch, or ref ID…"
+          [ngModel]="searchQuery()"
+          (ngModelChange)="onSearchChange($event)"
+          aria-label="Search approval requests"
+        />
+        @if (searchQuery()) {
+          <button type="button" style="border: none; background: transparent; cursor: pointer; color: var(--text-muted); padding: 0 4px;" (click)="onSearchChange('')">✕</button>
+        }
+      </div>
+
+      <!-- Type Filter Pills -->
+      <div class="hub-filter-pills" role="tablist" aria-label="Filter by type">
+        <button
+          type="button"
+          class="hub-pill-btn"
+          [class.active]="typeFilter() === 'ALL'"
+          (click)="setTypeFilter('ALL')"
+        >
+          All ({{ allItems().length }})
+        </button>
+        <button
+          type="button"
+          class="hub-pill-btn"
+          [class.active-amber]="typeFilter() === 'RENEWAL'"
+          (click)="setTypeFilter('RENEWAL')"
+        >
+          Renewals @if (renewalPendingCount() > 0) { ({{ renewalPendingCount() }}) }
+        </button>
+        <button
+          type="button"
+          class="hub-pill-btn"
+          [class.active-purple]="typeFilter() === 'UPGRADE'"
+          (click)="setTypeFilter('UPGRADE')"
+        >
+          Upgrades @if (upgradePendingCount() > 0) { ({{ upgradePendingCount() }}) }
+        </button>
+      </div>
+
+      <!-- Status Filter Pills -->
+      <div class="hub-filter-pills" role="tablist" aria-label="Filter by status">
+        <button
+          type="button"
+          class="hub-pill-btn"
+          [class.active]="statusFilter() === 'PENDING'"
+          (click)="setStatusFilter('PENDING')"
+        >
+          Pending ({{ pendingCount() }})
+        </button>
+        <button
+          type="button"
+          class="hub-pill-btn"
+          [class.active]="statusFilter() === 'APPROVED'"
+          (click)="setStatusFilter('APPROVED')"
+        >
+          Approved
+        </button>
+        <button
+          type="button"
+          class="hub-pill-btn"
+          [class.active]="statusFilter() === 'REJECTED'"
+          (click)="setStatusFilter('REJECTED')"
+        >
+          Declined
+        </button>
+        <button
+          type="button"
+          class="hub-pill-btn"
+          [class.active]="statusFilter() === 'ALL'"
+          (click)="setStatusFilter('ALL')"
+        >
+          All Status
+        </button>
+      </div>
+    </div>
+
+    <!-- Hub Content Area -->
+    <div class="hub-content">
+      @if (filteredItems().length === 0) {
+        <div style="padding: 48px 24px; text-align: center; color: var(--text-muted);">
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">📂</div>
+          <strong style="display: block; font-size: 1.05rem; color: var(--text);">No requests found</strong>
+          <p style="margin: 4px 0 0; font-size: 0.88rem;">
+            @if (searchQuery()) {
+              No requests match your search query "{{ searchQuery() }}". Try clearing the search.
+            } @else if (statusFilter() === 'PENDING') {
+              Great job! All pending member renewal and package upgrade requests are processed.
+            } @else {
+              No requests in this category.
+            }
+          </p>
+        </div>
+      } @else {
+        @for (item of paginatedItems(); track (item.kind + '-' + item.id)) {
+          <div
+            class="hub-item-card"
+            [class.pending-renewal]="item.status === 'PENDING' && item.kind === 'RENEWAL'"
+            [class.pending-upgrade]="item.status === 'PENDING' && item.kind === 'UPGRADE'"
+            [class.approved-card]="item.status === 'APPROVED'"
+            [class.rejected-card]="item.status === 'REJECTED'"
+          >
+            <!-- Member Identity -->
+            <div class="hub-item-member">
+              <span
+                class="overview-avatar"
+                [style.background]="item.kind === 'UPGRADE' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(245, 158, 11, 0.15)'"
+                [style.color]="item.kind === 'UPGRADE' ? '#9333ea' : '#d97706'"
+                style="font-weight: 700; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem;"
+              >
+                {{ initials(item.memberName) }}
+              </span>
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <strong style="font-size: 0.98rem; color: var(--text);">{{ item.memberName }}</strong>
+                  @if (item.kind === 'UPGRADE') {
+                    <span style="background: rgba(168, 85, 247, 0.15); color: #9333ea; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 999px;">UPGRADE</span>
+                  } @else {
+                    <span style="background: rgba(245, 158, 11, 0.15); color: #d97706; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 999px;">RENEWAL</span>
+                  }
+                </div>
+                <small style="color: var(--text-muted); display: block;">{{ item.memberEmail }} @if (item.memberPhone) { · {{ item.memberPhone }} }</small>
+                <small style="color: var(--text-muted); font-size: 0.75rem;">📍 {{ item.branchName }} · {{ dateLabel(item.createdAt) }}</small>
+              </div>
+            </div>
+
+            <!-- Request / Financial Details -->
+            <div class="hub-item-details">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                @if (item.kind === 'UPGRADE' && item.fromPlanName) {
+                  <span style="background: var(--surface-muted); color: var(--text-muted); padding: 2px 6px; border-radius: 4px; font-size: 0.78rem;">{{ item.fromPlanName }}</span>
+                  <span style="color: var(--text-muted);">→</span>
+                  <span style="background: rgba(168, 85, 247, 0.12); color: #9333ea; font-weight: 700; padding: 2px 8px; border-radius: 4px; font-size: 0.82rem;">{{ item.planName }}</span>
+                  <strong style="color: #9333ea; font-size: 1rem; margin-left: 4px;">Top-Up: {{ money(item.amount) }}</strong>
+                } @else {
+                  <span style="background: rgba(99, 102, 241, 0.12); color: #6366f1; font-weight: 700; padding: 2px 8px; border-radius: 4px; font-size: 0.82rem;">{{ item.planName }}</span>
+                  <strong style="color: var(--text); font-size: 1.05rem; margin-left: 4px;">{{ money(item.amount) }}</strong>
+                }
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--text-muted);">
+                <span>💳 {{ item.paymentMethod }}</span>
+                @if (item.transactionId) {
+                  <span>· Ref: <code style="background: var(--surface-muted); padding: 1px 6px; border-radius: 4px; font-size: 0.78rem;">{{ item.transactionId }}</code></span>
+                  <button type="button" style="border: none; background: transparent; cursor: pointer; color: var(--primary); font-size: 0.8rem; padding: 0;" (click)="onCopy(item.transactionId, 'Copied reference ' + item.transactionId)" title="Copy transaction ID">📋</button>
+                }
+              </div>
+
+              @if (item.notes) {
+                <small style="color: var(--text-muted); font-style: italic;">Note: "{{ item.notes }}"</small>
+              }
+            </div>
+
+            <!-- Review / Status Actions -->
+            <div class="hub-item-actions">
+              @if (item.status === 'PENDING') {
+                <button
+                  type="button"
+                  class="button button-lime"
+                  [style.background]="item.kind === 'UPGRADE' ? '#9333ea' : null"
+                  [style.borderColor]="item.kind === 'UPGRADE' ? '#9333ea' : null"
+                  [style.color]="item.kind === 'UPGRADE' ? '#fff' : null"
+                  style="padding: 7px 15px; font-weight: 700; font-size: 0.86rem;"
+                  (click)="onReview(item)"
+                >
+                  Review & Approve →
+                </button>
+                <button
+                  type="button"
+                  class="button button-quiet"
+                  style="padding: 7px 12px; font-size: 0.86rem; color: var(--danger); border-color: rgba(244, 63, 94, 0.3);"
+                  (click)="onDecline(item)"
+                >
+                  Decline
+                </button>
+              } @else if (item.status === 'APPROVED') {
+                <div style="text-align: right;">
+                  <span style="background: rgba(16, 185, 129, 0.12); color: #10b981; font-weight: 700; font-size: 0.8rem; padding: 3px 8px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px;">
+                    ✓ Approved
+                  </span>
+                  @if (item.reviewedByName) {
+                    <small style="display: block; color: var(--text-muted); font-size: 0.74rem; margin-top: 2px;">
+                      By {{ item.reviewedByName }} · {{ dateLabel(item.reviewedAt) }}
+                    </small>
+                  }
+                </div>
+              } @else if (item.status === 'REJECTED') {
+                <div style="text-align: right;">
+                  <span style="background: rgba(239, 68, 68, 0.12); color: #ef4444; font-weight: 700; font-size: 0.8rem; padding: 3px 8px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px;">
+                    ✕ Declined
+                  </span>
+                  @if (item.rejectionReason) {
+                    <small style="display: block; color: var(--text-muted); font-size: 0.74rem; margin-top: 2px; max-width: 180px;">
+                      Reason: "{{ item.rejectionReason }}"
+                    </small>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Hub Pagination Footer -->
+    @if (filteredItems().length > 0) {
+      <div class="hub-pagination">
+        <span>
+          Showing {{ (currentPage() - 1) * pageSize + 1 }}–{{ (currentPage() * pageSize > filteredItems().length) ? filteredItems().length : (currentPage() * pageSize) }} of {{ filteredItems().length }} requests
+        </span>
+        <div class="hub-page-buttons">
+          <button
+            type="button"
+            class="hub-page-btn"
+            [disabled]="currentPage() === 1"
+            (click)="goToPage(currentPage() - 1)"
+          >
+            ← Previous
+          </button>
+          <span style="padding: 0 8px; font-weight: 600;">
+            Page {{ currentPage() }} of {{ totalPages() }}
+          </span>
+          <button
+            type="button"
+            class="hub-page-btn"
+            [disabled]="currentPage() === totalPages()"
+            (click)="goToPage(currentPage() + 1)"
+          >
+            Next →
+          </button>
+        </div>
+      </div>
+    }
+  </section>
+</div>
+

@@ -9,9 +9,9 @@
   >
     <div class="panel-heading">
       <div>
-        <p class="eyebrow">SAAS PLATFORM OPERATIONS</p>
-        <h2 id="reject-modal-title">Reject Upgrade Request REQ-{{ requestId }}</h2>
-        <p class="dialog-subtitle">Specify reason for audit trail and customer notification</p>
+        <p class="eyebrow">{{ eyebrow }}</p>
+        <h2 id="reject-modal-title">{{ title || ('Reject Upgrade Request REQ-' + requestId) }}</h2>
+        <p class="dialog-subtitle">{{ subtitle }}</p>
       </div>
       <button
         type="button"

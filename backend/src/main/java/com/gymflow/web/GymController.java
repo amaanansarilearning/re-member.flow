@@ -5,6 +5,8 @@ import com.gymflow.service.GymService;
 import com.gymflow.service.MembershipOperationsService;
 import com.gymflow.service.ActionHistoryService;
 import com.gymflow.service.RenewalReminderService;
+import com.gymflow.service.RenewalWorkflowService;
+import com.gymflow.domain.RenewalRequestStatus;
 import com.gymflow.service.ReportService;
 import com.gymflow.service.AnalyticsService;
 import static com.gymflow.web.ApiDtos.*;
@@ -15,6 +17,8 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import com.gymflow.domain.MemberUpgradeRequestStatus;
+import com.gymflow.service.MemberUpgradeWorkflowService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,11 +45,15 @@ public class GymController {
     private final AnalyticsService analytics;
     private final CookieCsrfTokenRepository csrfTokens;
     private final com.gymflow.service.SubscriptionService subscriptionService;
+    private final RenewalWorkflowService renewalWorkflow;
+    private final MemberUpgradeWorkflowService memberUpgradeWorkflow;
 
     public GymController(GymService gymService, MembershipOperationsService membershipOperations,
             ActionHistoryService actionHistory, RenewalReminderService renewalReminders, ReportService reports,
             AnalyticsService analytics, CookieCsrfTokenRepository csrfTokens,
-            com.gymflow.service.SubscriptionService subscriptionService) {
+            com.gymflow.service.SubscriptionService subscriptionService,
+            RenewalWorkflowService renewalWorkflow,
+            MemberUpgradeWorkflowService memberUpgradeWorkflow) {
         this.gymService = gymService;
         this.membershipOperations = membershipOperations;
         this.actionHistory = actionHistory;
@@ -54,6 +62,8 @@ public class GymController {
         this.analytics = analytics;
         this.csrfTokens = csrfTokens;
         this.subscriptionService = subscriptionService;
+        this.renewalWorkflow = renewalWorkflow;
+        this.memberUpgradeWorkflow = memberUpgradeWorkflow;
     }
 
     @GetMapping("/plans")
@@ -162,10 +172,39 @@ public class GymController {
 
     @PostMapping("/memberships/{id}/renew")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'MEMBER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")
     public MembershipDto renew(Principal principal, @PathVariable long id,
             @Valid @RequestBody MembershipRenewalRequest request) {
         return gymService.renew(principal.getName(), currentRole(), id, request);
+    }
+
+    @PostMapping("/memberships/{id}/renewal-requests")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('MEMBER', 'OWNER', 'STAFF')")
+    public RenewalRequestDto submitRenewalRequest(Principal principal, @PathVariable long id,
+            @Valid @RequestBody MemberRenewalSubmissionRequest request) {
+        return renewalWorkflow.submitRenewalRequest(principal.getName(), currentRole(), id, request);
+    }
+
+    @GetMapping("/membership-renewal-requests")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'MEMBER')")
+    public List<RenewalRequestDto> listRenewalRequests(Principal principal,
+            @RequestParam(required = false) RenewalRequestStatus status) {
+        return renewalWorkflow.listRenewalRequests(principal.getName(), currentRole(), status);
+    }
+
+    @PostMapping("/membership-renewal-requests/{requestId}/approve")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")
+    public RenewalRequestDto approveRenewalRequest(Principal principal, @PathVariable long requestId,
+            @Valid @RequestBody(required = false) RenewalApprovalRequest request) {
+        return renewalWorkflow.approveRenewalRequest(principal.getName(), currentRole(), requestId, request);
+    }
+
+    @PostMapping("/membership-renewal-requests/{requestId}/reject")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")
+    public RenewalRequestDto rejectRenewalRequest(Principal principal, @PathVariable long requestId,
+            @Valid @RequestBody(required = false) RenewalRejectionRequest request) {
+        return renewalWorkflow.rejectRenewalRequest(principal.getName(), currentRole(), requestId, request);
     }
 
     @GetMapping("/memberships/{id}/upgrade-quote")
@@ -178,11 +217,41 @@ public class GymController {
 
     @PostMapping("/memberships/{id}/upgrade")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'MEMBER')")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")
     public MembershipDto upgrade(Principal principal, @PathVariable long id,
             @Valid @RequestBody MembershipUpgradeRequest request) {
         return gymService.upgradeMembership(principal.getName(), currentRole(), id, request);
     }
+
+    @PostMapping("/memberships/{id}/upgrade-requests")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('MEMBER', 'OWNER', 'STAFF')")
+    public MemberPackageUpgradeRequestDto submitUpgradeRequest(Principal principal, @PathVariable long id,
+            @Valid @RequestBody MemberUpgradeSubmissionRequest request) {
+        return memberUpgradeWorkflow.submitUpgradeRequest(principal.getName(), currentRole(), id, request);
+    }
+
+    @GetMapping("/membership-upgrade-requests")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF', 'MEMBER')")
+    public List<MemberPackageUpgradeRequestDto> listUpgradeRequests(Principal principal,
+            @RequestParam(required = false) MemberUpgradeRequestStatus status) {
+        return memberUpgradeWorkflow.listUpgradeRequests(principal.getName(), currentRole(), status);
+    }
+
+    @PostMapping("/membership-upgrade-requests/{requestId}/approve")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")
+    public MemberPackageUpgradeRequestDto approveUpgradeRequest(Principal principal, @PathVariable long requestId,
+            @Valid @RequestBody(required = false) MemberPackageUpgradeApprovalRequest request) {
+        return memberUpgradeWorkflow.approveUpgradeRequest(principal.getName(), currentRole(), requestId, request);
+    }
+
+    @PostMapping("/membership-upgrade-requests/{requestId}/reject")
+    @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")
+    public MemberPackageUpgradeRequestDto rejectUpgradeRequest(Principal principal, @PathVariable long requestId,
+            @Valid @RequestBody(required = false) MemberPackageUpgradeRejectionRequest request) {
+        return memberUpgradeWorkflow.rejectUpgradeRequest(principal.getName(), currentRole(), requestId, request);
+    }
+
 
     @GetMapping("/memberships/expiring")
     @PreAuthorize("hasAnyRole('OWNER', 'STAFF')")

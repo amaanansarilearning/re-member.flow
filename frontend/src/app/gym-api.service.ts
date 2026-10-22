@@ -46,6 +46,14 @@ import {
   PtSessionUpdatePayload,
   PtUpdatePayload,
   RenewalPayload,
+  RenewalRequest,
+  RenewalSubmissionPayload,
+  RenewalApprovalPayload,
+  RenewalRejectionPayload,
+  MemberPackageUpgradeRequest,
+  MemberUpgradeSubmissionPayload,
+  MemberPackageUpgradeApprovalPayload,
+  MemberPackageUpgradeRejectionPayload,
   RenewalReminder,
   RenewingMember,
   Report,
@@ -162,6 +170,28 @@ export class GymApiService {
   }
 
   renewMembership(id: number, payload: RenewalPayload): Observable<Membership> { return this.http.post<Membership>(`${this.baseUrl}/memberships/${id}/renew`, payload); }
+  submitRenewalRequest(id: number, payload: RenewalSubmissionPayload): Observable<RenewalRequest> { return this.http.post<RenewalRequest>(`${this.baseUrl}/memberships/${id}/renewal-requests`, payload); }
+  renewalRequests(status?: string): Observable<RenewalRequest[]> {
+    let params = new HttpParams();
+    if (status) params = params.set('status', status);
+    return this.http.get<RenewalRequest[]>(`${this.baseUrl}/membership-renewal-requests`, { params });
+  }
+  approveRenewalRequest(id: number, payload: RenewalApprovalPayload): Observable<RenewalRequest> { return this.http.post<RenewalRequest>(`${this.baseUrl}/membership-renewal-requests/${id}/approve`, payload); }
+  rejectRenewalRequest(id: number, payload: RenewalRejectionPayload): Observable<RenewalRequest> { return this.http.post<RenewalRequest>(`${this.baseUrl}/membership-renewal-requests/${id}/reject`, payload); }
+  submitMemberUpgradeRequest(id: number, payload: MemberUpgradeSubmissionPayload): Observable<MemberPackageUpgradeRequest> {
+    return this.http.post<MemberPackageUpgradeRequest>(`${this.baseUrl}/memberships/${id}/upgrade-requests`, payload);
+  }
+  memberUpgradeRequests(status?: string): Observable<MemberPackageUpgradeRequest[]> {
+    let params = new HttpParams();
+    if (status) params = params.set('status', status);
+    return this.http.get<MemberPackageUpgradeRequest[]>(`${this.baseUrl}/membership-upgrade-requests`, { params });
+  }
+  approveMemberUpgradeRequest(id: number, payload?: MemberPackageUpgradeApprovalPayload): Observable<MemberPackageUpgradeRequest> {
+    return this.http.post<MemberPackageUpgradeRequest>(`${this.baseUrl}/membership-upgrade-requests/${id}/approve`, payload || {});
+  }
+  rejectMemberUpgradeRequest(id: number, payload?: MemberPackageUpgradeRejectionPayload): Observable<MemberPackageUpgradeRequest> {
+    return this.http.post<MemberPackageUpgradeRequest>(`${this.baseUrl}/membership-upgrade-requests/${id}/reject`, payload || {});
+  }
   cancelMembership(id: number, payload: CancellationPayload): Observable<void> { return this.http.post<void>(`${this.baseUrl}/memberships/${id}/cancel`, payload); }
   cancelRenewal(id: number, payload: CancellationPayload): Observable<void> { return this.http.post<void>(`${this.baseUrl}/memberships/${id}/cancel-renewal`, payload); }
   freezeMembership(id: number, payload: { startDate: string; endDate: string; reason: string }): Observable<Membership> { return this.http.post<Membership>(`${this.baseUrl}/memberships/${id}/freeze`, payload); }

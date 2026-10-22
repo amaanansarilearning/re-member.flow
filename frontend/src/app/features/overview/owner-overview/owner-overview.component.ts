@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Branch, Dashboard, MemberFilter, Membership, Plan, PtAnalytics, PtProfile, User, View } from '../../../core/models';
+import { Branch, Dashboard, MemberFilter, Membership, Plan, PtAnalytics, PtProfile, MemberPackageUpgradeRequest, RenewalRequest, User, View } from '../../../core/models';
 import { dateLabel, initials, money } from '../../../core/utils/formatters';
 
 @Component({
@@ -26,6 +26,8 @@ export class OwnerOverviewComponent {
   @Input() accessResults: Record<number, any> = {};
   @Input() quickAccessMember: Membership | null = null;
   @Input() quickAccessQuery = '';
+  @Input() pendingRenewalRequests: RenewalRequest[] = [];
+  @Input() pendingMemberUpgradeRequests: MemberPackageUpgradeRequest[] = [];
   @Input() refreshedLabel = '';
   @Input() todayLabel = '';
   @Input() revenueTrendLabel = '';
@@ -46,6 +48,11 @@ export class OwnerOverviewComponent {
   @Output() focusQuickAccess = new EventEmitter<void>();
   @Output() checkMembershipAccess = new EventEmitter<Membership>();
   @Output() openRenewal = new EventEmitter<Membership>();
+  @Output() openRenewalApproval = new EventEmitter<RenewalRequest>();
+  @Output() openRenewalReject = new EventEmitter<RenewalRequest>();
+  @Output() openMemberUpgradeApproval = new EventEmitter<MemberPackageUpgradeRequest>();
+  @Output() openMemberUpgradeReject = new EventEmitter<MemberPackageUpgradeRequest>();
+  @Output() openApprovalsHub = new EventEmitter<void>();
   @Output() navigate = new EventEmitter<View>();
   @Output() copyToClipboard = new EventEmitter<{ text: string; label: string }>();
   @Output() setMemberFilter = new EventEmitter<MemberFilter>();

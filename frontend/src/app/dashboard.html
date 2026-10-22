@@ -43,6 +43,7 @@
       [hasHistoryAccess]="hasHistoryAccess()"
       [membershipTotal]="membershipTotal()"
       [pendingUpgradeRequestsCount]="pendingUpgradeRequestsCount()"
+      [pendingRenewalRequestsCount]="pendingRenewalRequestsCount() + pendingMemberUpgradeRequestsCount()"
       (navigate)="navigate($event)"
       (logout)="logout()"
       (openUpgradeModal)="openUpgradeModal($event)"
@@ -83,6 +84,8 @@
           [activePlans]="activePlans()"
           [personalTrainers]="personalTrainers()"
           [ptAnalyticsData]="ptAnalyticsData()"
+          [pendingRenewalRequests]="pendingRenewalRequests()"
+          [pendingMemberUpgradeRequests]="pendingMemberUpgradeRequests()"
           [accessResults]="accessResults()"
           [quickAccessMember]="quickAccessMember()"
           [quickAccessQuery]="quickAccessQuery"
@@ -104,6 +107,11 @@
           (focusQuickAccess)="focusQuickAccess()"
           (checkMembershipAccess)="checkMembershipAccess($event)"
           (openRenewal)="openRenewal($event)"
+          (openRenewalApproval)="openRenewalApproval($event)"
+          (openRenewalReject)="openRenewalReject($event)"
+          (openMemberUpgradeApproval)="openMemberUpgradeApproval($event)"
+          (openMemberUpgradeReject)="openMemberUpgradeReject($event)"
+          (openApprovalsHub)="openApprovalsHub()"
           (navigate)="navigate($event)"
           (copyToClipboard)="copyToClipboard($event.text, $event.label)"
           (setMemberFilter)="memberFilter.set($event)"
@@ -119,6 +127,8 @@
           [refreshedLabel]="refreshedLabel()"
           [activePlans]="activePlans()"
           [personalTrainers]="personalTrainers()"
+          [pendingRenewalRequests]="pendingRenewalRequests()"
+          [pendingMemberUpgradeRequests]="pendingMemberUpgradeRequests()"
           [dashboardMetrics]="dashboardMetrics()"
           [dashboardMembers]="dashboardMembers()"
           [staffExpiringMembersList]="staffExpiringMembersList()"
@@ -146,6 +156,11 @@
           (clearQuickAccess)="clearQuickAccess()"
           (checkMembershipAccess)="checkMembershipAccess($event)"
           (openRenewal)="openRenewal($event)"
+          (openRenewalApproval)="openRenewalApproval($event)"
+          (openRenewalReject)="openRenewalReject($event)"
+          (openMemberUpgradeApproval)="openMemberUpgradeApproval($event)"
+          (openMemberUpgradeReject)="openMemberUpgradeReject($event)"
+          (openApprovalsHub)="openApprovalsHub()"
           (openMemberUpgradeModal)="openMemberUpgradeModal($event)"
           (copyToClipboard)="copyToClipboard($event.text, $event.label)"
           (quickAccessQueryChange)="quickAccessQuery = $event"
@@ -341,6 +356,8 @@
           [memberships]="memberships()"
           [ptTrainees]="ptTrainees()"
           [myUpgradeRequests]="myUpgradeRequests()"
+          [renewalRequests]="renewalRequests()"
+          [memberUpgradeRequests]="memberUpgradeRequests()"
           [busy]="busy()"
           [isPremium]="isPremium()"
           [hasBrandingAccess]="hasBrandingAccess()"
@@ -575,6 +592,33 @@
           (confirm)="confirmRenewal()"
         ></app-renewal-modal>
       }
+      @if (renewalReviewTarget(); as reviewRequest) {
+        <app-renewal-approval-modal
+          [request]="reviewRequest"
+          [discountPercent]="renewalApprovalDiscount()"
+          [paymentMethod]="renewalApprovalPaymentMethod()"
+          [transactionId]="renewalApprovalTransactionId()"
+          [totalAmount]="renewalApprovalTotal()"
+          [error]="error()"
+          [busy]="busy()"
+          (close)="closeRenewalApproval()"
+          (confirm)="confirmApproveRenewal()"
+          (reject)="openRenewalReject(reviewRequest)"
+          (discountChange)="renewalApprovalDiscount.set($event)"
+          (paymentMethodChange)="renewalApprovalPaymentMethod.set($event)"
+          (transactionIdChange)="renewalApprovalTransactionId.set($event)"
+        ></app-renewal-approval-modal>
+      }
+      @if (renewalRejectTarget(); as rTarget) {
+        <app-reject-request-modal
+          [requestId]="rTarget.id"
+          [reason]="renewalRejectReason()"
+          [loading]="renewalRejectLoading()"
+          (close)="closeRenewalReject()"
+          (reasonChange)="renewalRejectReason.set($event)"
+          (confirm)="confirmRejectRenewal()"
+        ></app-reject-request-modal>
+      }
       @if (adjustmentTarget(); as adjustmentMember) {
         <app-adjustment-modal
           [member]="adjustmentMember"
@@ -773,6 +817,51 @@
           (confirm)="confirmMembershipUpgrade()"
           (clearField)="clearFieldError($event)"
         ></app-membership-upgrade-modal>
+      }
+      @if (memberUpgradeReviewTarget(); as upgradeReview) {
+        <app-member-upgrade-approval-modal
+          [request]="upgradeReview"
+          [paymentMethod]="memberUpgradeApprovalPaymentMethod()"
+          [transactionId]="memberUpgradeApprovalTransactionId()"
+          [notes]="memberUpgradeApprovalNotes()"
+          [error]="error()"
+          [busy]="busy()"
+          (close)="closeMemberUpgradeApproval()"
+          (confirm)="confirmApproveMemberUpgrade()"
+          (reject)="openMemberUpgradeReject(upgradeReview)"
+          (paymentMethodChange)="memberUpgradeApprovalPaymentMethod.set($event)"
+          (transactionIdChange)="memberUpgradeApprovalTransactionId.set($event)"
+          (notesChange)="memberUpgradeApprovalNotes.set($event)"
+        ></app-member-upgrade-approval-modal>
+      }
+      @if (memberUpgradeRejectTarget(); as uRejectTarget) {
+        <app-reject-request-modal
+          [requestId]="uRejectTarget.id"
+          title="Decline Upgrade Request #{{ uRejectTarget.id }}"
+          eyebrow="PACKAGE UPGRADE WORKFLOW"
+          subtitle="Specify reason for member notification and audit trail"
+          [reason]="memberUpgradeRejectReason()"
+          [loading]="memberUpgradeRejectLoading()"
+          (close)="closeMemberUpgradeReject()"
+          (reasonChange)="memberUpgradeRejectReason.set($event)"
+          (confirm)="confirmRejectMemberUpgrade()"
+        ></app-reject-request-modal>
+      }
+
+
+
+      @if (approvalsHubOpen()) {
+        <app-approvals-hub-modal
+          [renewalRequests]="renewalRequests()"
+          [memberUpgradeRequests]="memberUpgradeRequests()"
+          [userRole]="user()!.role"
+          (close)="closeApprovalsHub()"
+          (openRenewalApproval)="openRenewalApproval($event)"
+          (openRenewalReject)="openRenewalReject($event)"
+          (openMemberUpgradeApproval)="openMemberUpgradeApproval($event)"
+          (openMemberUpgradeReject)="openMemberUpgradeReject($event)"
+          (copyToClipboard)="copyToClipboard($event.text, $event.label)"
+        ></app-approvals-hub-modal>
       }
 
 @if (!cookieConsentDismissed()) {

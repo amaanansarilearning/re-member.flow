@@ -46,10 +46,16 @@
     @if (user?.role === 'OWNER') {
       <button type="button" [class.active]="view === 'overview'" [attr.aria-current]="view === 'overview' ? 'page' : null" (click)="navigate.emit('overview')" title="Club Overview">
         <span class="nav-icon">⬡</span> Overview
+        @if (pendingRenewalRequestsCount > 0) {
+          <span class="nav-count" style="background: #f59e0b; color: #000; font-weight: 800;">{{ pendingRenewalRequestsCount }}</span>
+        }
       </button>
     } @else if (user?.role === 'STAFF') {
       <button type="button" [class.active]="view === 'overview'" [attr.aria-current]="view === 'overview' ? 'page' : null" (click)="navigate.emit('overview')" title="Front Desk Hub">
         <span class="nav-icon">⬡</span> Front Desk
+        @if (pendingRenewalRequestsCount > 0) {
+          <span class="nav-count" style="background: #f59e0b; color: #000; font-weight: 800;">{{ pendingRenewalRequestsCount }}</span>
+        }
       </button>
     }
     @if (user?.role === 'MEMBER') {

@@ -141,3 +141,104 @@ export interface BulkMemberImportResult {
   errors: string[];
 }
 
+
+export type RenewalRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface RenewalRequest {
+  id: number;
+  membershipId: number;
+  memberId: number;
+  memberName: string;
+  memberEmail: string;
+  memberPhone?: string | null;
+  planId: number;
+  planName: string;
+  planPrice: number;
+  branchId: number;
+  branchName: string;
+  personalTrainerId?: number | null;
+  personalTrainerName?: string | null;
+  requestedStartDate: string;
+  paymentMethod: string;
+  transactionId?: string | null;
+  notes?: string | null;
+  amount: number;
+  discountPercent: number;
+  status: RenewalRequestStatus;
+  reviewedByName?: string | null;
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
+  resultingMembershipId?: number | null;
+  createdAt: string;
+}
+
+export interface RenewalSubmissionPayload {
+  planId: number;
+  personalTrainerId?: number | null;
+  startDate: string;
+  paymentMethod: string;
+  transactionId?: string | null;
+  notes?: string | null;
+}
+
+export interface RenewalApprovalPayload {
+  discountPercent?: number;
+  paymentMethod?: string;
+  transactionId?: string | null;
+  notes?: string | null;
+}
+
+export interface RenewalRejectionPayload {
+  reason: string;
+}
+
+
+export type MemberUpgradeRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface MemberPackageUpgradeRequest {
+  id: number;
+  membershipId: number;
+  memberId: number;
+  memberName: string;
+  memberEmail: string;
+  memberPhone?: string | null;
+  currentPlanId?: number | null;
+  currentPlanName?: string | null;
+  newPlanId: number;
+  newPlanName: string;
+  newPlanPrice: number;
+  branchId: number;
+  branchName: string;
+  personalTrainerId?: number | null;
+  personalTrainerName?: string | null;
+  topUpAmount: number;
+  paymentMethod: string;
+  transactionId?: string | null;
+  notes?: string | null;
+  status: MemberUpgradeRequestStatus;
+  reviewedByName?: string | null;
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
+  resultingMembershipId?: number | null;
+  createdAt: string;
+}
+
+export interface MemberUpgradeSubmissionPayload {
+  newPlanId: number;
+  personalTrainerId?: number | null;
+  paymentMethod: string;
+  transactionId?: string | null;
+  notes?: string | null;
+}
+
+export interface MemberPackageUpgradeApprovalPayload {
+  paymentMethod?: string;
+  transactionId?: string | null;
+  notes?: string | null;
+}
+
+export interface MemberPackageUpgradeRejectionPayload {
+  reason: string;
+}
+
+

@@ -2,7 +2,7 @@ import { Component, computed, effect, signal, HostListener } from '@angular/core
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
-import { GymApiService, MembershipUpgradeQuote, MembershipUpgradePayload, SaasUpgradeQuote, ActionHistory, Analytics, Branch, BranchPayload, BranchType, CancellationReason, Dashboard, Freeze, Membership, MembershipAccess, MembershipGroup, Plan, RenewalReminder, User, PtProfile, PtSession, PtEarning, PtPayout, PtAnalytics, PtPackageType, ActivationCode, PlatformMetrics, PlatformOrganization, UpgradeRequest, UpgradeRequestPayload, TenantBackup, BulkMemberImportRow, BulkMemberImportResult } from './gym-api.service';
+import { GymApiService, MembershipUpgradeQuote, MembershipUpgradePayload, SaasUpgradeQuote, ActionHistory, Analytics, Branch, BranchPayload, BranchType, CancellationReason, Dashboard, Freeze, Membership, MembershipAccess, MembershipGroup, Plan, RenewalReminder, User, PtProfile, PtSession, PtEarning, PtPayout, PtAnalytics, PtPackageType, ActivationCode, PlatformMetrics, PlatformOrganization, UpgradeRequest, UpgradeRequestPayload, TenantBackup, BulkMemberImportRow, BulkMemberImportResult, RenewalRequest, MemberPackageUpgradeRequest } from './gym-api.service';
 import { CsrfTokenService } from './csrf-token.service';
 import { ALL_LEGAL_DOCUMENTS, LegalDocument, getLegalDocument } from './legal-content';
 import { LegalDocumentId } from './core/models';
@@ -40,7 +40,10 @@ import {
   PtSessionsModalComponent,
   PtSessionCompleteModalComponent,
   PtBookSessionModalComponent,
-  UpgradeModalComponent
+  UpgradeModalComponent,
+  RenewalApprovalModalComponent,
+  MemberUpgradeApprovalModalComponent,
+  ApprovalsHubModalComponent
 } from './shared/modals';
 
 type View = 'overview' | 'members' | 'packages' | 'register' | 'team' | 'account' | 'branches' | 'reports' | 'history' | 'pt-management' | 'pt-dashboard' | 'pt-earnings' | 'platform-admin';
@@ -91,7 +94,10 @@ function hasExpiredSession(): boolean {
     PtSessionsModalComponent,
     PtSessionCompleteModalComponent,
     PtBookSessionModalComponent,
-    UpgradeModalComponent
+    UpgradeModalComponent,
+    RenewalApprovalModalComponent,
+    MemberUpgradeApprovalModalComponent,
+    ApprovalsHubModalComponent
   ],
   templateUrl: './dashboard.html',
   styles: [':host { display: block; min-height: 100vh; }']
@@ -147,6 +153,37 @@ export class App {
   readonly adjustmentMode = signal<AdjustmentMode | null>(null);
   readonly planFilter = signal<PlanFilter>('active');
   readonly dashboardBranchId = signal<number | null>(null);
+
+  // Renewal Workflow Approval Signals
+  readonly renewalRequests = signal<RenewalRequest[]>([]);
+  readonly pendingRenewalRequests = computed(() => this.renewalRequests().filter((r) => r.status === 'PENDING'));
+  readonly pendingRenewalRequestsCount = computed(() => this.pendingRenewalRequests().length);
+  readonly renewalReviewTarget = signal<RenewalRequest | null>(null);
+  readonly renewalApprovalDiscount = signal<number>(0);
+  readonly renewalApprovalPaymentMethod = signal<string>('UPI');
+  readonly renewalApprovalTransactionId = signal<string>('');
+  readonly renewalApprovalNotes = signal<string>('');
+  readonly renewalApprovalTotal = computed(() => {
+    const req = this.renewalReviewTarget();
+    if (!req) return 0;
+    const discount = Math.max(0, Math.min(100, this.renewalApprovalDiscount() || 0));
+    return Math.round(req.planPrice * (1 - discount / 100) * 100) / 100;
+  });
+  readonly renewalRejectTarget = signal<RenewalRequest | null>(null);
+  readonly renewalRejectReason = signal<string>('');
+  readonly renewalRejectLoading = signal<boolean>(false);
+  // Member Package Upgrade Workflow Approval Signals
+  readonly memberUpgradeRequests = signal<MemberPackageUpgradeRequest[]>([]);
+  readonly pendingMemberUpgradeRequests = computed(() => this.memberUpgradeRequests().filter((r) => r.status === 'PENDING'));
+  readonly pendingMemberUpgradeRequestsCount = computed(() => this.pendingMemberUpgradeRequests().length);
+  readonly memberUpgradeReviewTarget = signal<MemberPackageUpgradeRequest | null>(null);
+  readonly memberUpgradeApprovalPaymentMethod = signal<string>('UPI');
+  readonly memberUpgradeApprovalTransactionId = signal<string>('');
+  readonly memberUpgradeApprovalNotes = signal<string>('');
+  readonly memberUpgradeRejectTarget = signal<MemberPackageUpgradeRequest | null>(null);
+  readonly memberUpgradeRejectReason = signal<string>('');
+  readonly memberUpgradeRejectLoading = signal<boolean>(false);
+  readonly approvalsHubOpen = signal<boolean>(false);
   readonly editingPlan = signal(false);
   readonly editingBranch = signal(false);
   readonly memberFilter = signal<MemberFilter>('all');
@@ -540,7 +577,7 @@ export class App {
   planDraft = { id: 0, name: '', description: '', price: 49, durationMode: 'months' as 'months' | 'days', durationMonths: 1, durationDays: 30, branchId: '', active: true, ptPackageType: 'NONE' as PtPackageType, includedPtSessions: 0, ptFeeIncluded: 0 };
   branchDraft = { id: 0, name: '', code: '', type: 'COMPANY_OWNED' as BranchType, address: '', phoneNumber: '', active: true };
   readonly renewalTarget = signal<Membership | null>(null);
-  renewalDraft = { planId: '', branchId: '', personalTrainerId: '', discountPercent: 0, startDate: '', paymentMethod: 'CASH', transactionId: '' };
+  renewalDraft = { planId: '', branchId: '', personalTrainerId: '', discountPercent: 0, startDate: '', paymentMethod: 'CASH', transactionId: '', notes: '' };
   staffDraft = { fullName: '', email: '', phoneNumber: '', password: '', branchId: '' };
   memberDraft = { fullName: '', email: '', phoneNumber: '', password: '', planId: '', branchId: '', personalTrainerId: '', discountPercent: 0, startDate: this.todayDate(), waiverAcknowledged: false, paymentMethod: 'CASH', transactionId: '' };
   ptDraft = { id: 0, fullName: '', email: '', phoneNumber: '', password: '', branchId: '', specializations: '', bio: '', sessionFeePerHour: 500, commissionPercent: 70 };
@@ -586,7 +623,8 @@ export class App {
     topUpPaid: 0,
     paymentMethod: 'CASH',
     transactionId: '',
-    personalTrainerId: null as number | null
+    personalTrainerId: null as number | null,
+    notes: ''
   };
 
   // ─── Staff Edit State ────────────────────────────────────────────────────────
@@ -2494,7 +2532,8 @@ export class App {
       discountPercent: member.discountPercent,
       startDate: this.renewalMinimumStartDate(member),
       paymentMethod: this.user()?.role === 'MEMBER' ? 'UPI' : 'CASH',
-      transactionId: ''
+      transactionId: '',
+      notes: ''
     };
     this.renewalTarget.set(member);
   }
@@ -2512,24 +2551,188 @@ export class App {
     this.busy.set(true);
     this.error.set('');
     try {
-      await firstValueFrom(this.api.renewMembership(member.id, {
-        planId: plan.id,
-        branchId: this.renewalDraft.branchId ? Number(this.renewalDraft.branchId) : null,
-        personalTrainerId: this.renewalDraft.personalTrainerId ? Number(this.renewalDraft.personalTrainerId) : null,
-        discountPercent: this.user()?.role === 'MEMBER' ? 0 : Number(this.renewalDraft.discountPercent),
-        startDate: this.renewalDraft.startDate,
-        paymentMethod: this.renewalDraft.paymentMethod,
-        transactionId: this.renewalDraft.paymentMethod === 'CASH' ? null : this.renewalDraft.transactionId.trim()
-      }));
-      this.closeRenewal();
-      this.notice.set(`${member.memberName}'s renewal starts ${this.dateLabel(this.renewalDraft.startDate)}.`);
-      await this.refreshMembershipViews();
+      if (this.user()?.role === 'MEMBER') {
+        await firstValueFrom(this.api.submitRenewalRequest(member.id, {
+          planId: plan.id,
+          personalTrainerId: this.renewalDraft.personalTrainerId ? Number(this.renewalDraft.personalTrainerId) : null,
+          startDate: this.renewalDraft.startDate,
+          paymentMethod: this.renewalDraft.paymentMethod,
+          transactionId: this.renewalDraft.transactionId?.trim() || null,
+          notes: this.renewalDraft.notes?.trim() || null
+        }));
+        this.closeRenewal();
+        this.notice.set('Your renewal request has been submitted for front-desk verification and approval.');
+        await this.loadRenewalRequests();
+      } else {
+        await firstValueFrom(this.api.renewMembership(member.id, {
+          planId: plan.id,
+          branchId: this.renewalDraft.branchId ? Number(this.renewalDraft.branchId) : null,
+          personalTrainerId: this.renewalDraft.personalTrainerId ? Number(this.renewalDraft.personalTrainerId) : null,
+          discountPercent: Number(this.renewalDraft.discountPercent),
+          startDate: this.renewalDraft.startDate,
+          paymentMethod: this.renewalDraft.paymentMethod,
+          transactionId: this.renewalDraft.paymentMethod === 'CASH' ? null : this.renewalDraft.transactionId.trim()
+        }));
+        this.closeRenewal();
+        this.notice.set(`${member.memberName}'s renewal starts ${this.dateLabel(this.renewalDraft.startDate)}.`);
+        await this.refreshMembershipViews();
+      }
     } catch (error) {
-      this.error.set(this.api.message(error, 'Could not renew this membership.'));
+      this.error.set(this.api.message(error, 'Could not process this renewal.'));
     } finally {
       this.busy.set(false);
     }
   }
+
+  async loadRenewalRequests(): Promise<void> {
+    try {
+      const requests = await firstValueFrom(this.api.renewalRequests());
+      this.renewalRequests.set(requests);
+    } catch {
+      // background fetch fail is non-blocking
+    }
+  }
+
+  openRenewalApproval(req: RenewalRequest): void {
+    this.renewalReviewTarget.set(req);
+    this.renewalApprovalDiscount.set(req.discountPercent || 0);
+    this.renewalApprovalPaymentMethod.set(req.paymentMethod || 'UPI');
+    this.renewalApprovalTransactionId.set(req.transactionId || '');
+    this.renewalApprovalNotes.set(req.notes || '');
+    this.error.set('');
+  }
+
+  closeRenewalApproval(): void {
+    this.renewalReviewTarget.set(null);
+  }
+
+  async confirmApproveRenewal(): Promise<void> {
+    const req = this.renewalReviewTarget();
+    if (!req) return;
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      await firstValueFrom(this.api.approveRenewalRequest(req.id, {
+        discountPercent: this.renewalApprovalDiscount(),
+        paymentMethod: this.renewalApprovalPaymentMethod(),
+        transactionId: this.renewalApprovalTransactionId()?.trim() || null,
+        notes: this.renewalApprovalNotes()?.trim() || null
+      }));
+      this.closeRenewalApproval();
+      this.notice.set(`Approved renewal for ${req.memberName}. New term scheduled.`);
+      await this.refreshMembershipViews();
+    } catch (err) {
+      this.error.set(this.api.message(err, 'Could not approve renewal request.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  openRenewalReject(req: RenewalRequest): void {
+    this.renewalRejectTarget.set(req);
+    this.renewalRejectReason.set('');
+  }
+
+  closeRenewalReject(): void {
+    this.renewalRejectTarget.set(null);
+    this.renewalRejectReason.set('');
+  }
+
+  async confirmRejectRenewal(): Promise<void> {
+    const req = this.renewalRejectTarget();
+    if (!req) return;
+    this.renewalRejectLoading.set(true);
+    try {
+      await firstValueFrom(this.api.rejectRenewalRequest(req.id, {
+        reason: this.renewalRejectReason()?.trim() || 'Declined by gym front desk staff'
+      }));
+      this.closeRenewalReject();
+      this.notice.set(`Declined renewal request for ${req.memberName}.`);
+      await this.refreshMembershipViews();
+    } catch (err) {
+      this.error.set(this.api.message(err, 'Could not decline renewal request.'));
+    } finally {
+      this.renewalRejectLoading.set(false);
+    }
+  }
+  async loadMemberUpgradeRequests(): Promise<void> {
+    try {
+      const requests = await firstValueFrom(this.api.memberUpgradeRequests());
+      this.memberUpgradeRequests.set(requests);
+    } catch {
+      // background fetch fail is non-blocking
+    }
+  }
+
+  openMemberUpgradeApproval(req: MemberPackageUpgradeRequest): void {
+    this.memberUpgradeReviewTarget.set(req);
+    this.memberUpgradeApprovalPaymentMethod.set(req.paymentMethod || 'UPI');
+    this.memberUpgradeApprovalTransactionId.set(req.transactionId || '');
+    this.memberUpgradeApprovalNotes.set(req.notes || '');
+    this.error.set('');
+  }
+
+  closeMemberUpgradeApproval(): void {
+    this.memberUpgradeReviewTarget.set(null);
+  }
+  openApprovalsHub(): void {
+    this.approvalsHubOpen.set(true);
+  }
+
+  closeApprovalsHub(): void {
+    this.approvalsHubOpen.set(false);
+  }
+
+
+  async confirmApproveMemberUpgrade(): Promise<void> {
+    const req = this.memberUpgradeReviewTarget();
+    if (!req) return;
+    this.busy.set(true);
+    this.error.set('');
+    try {
+      await firstValueFrom(this.api.approveMemberUpgradeRequest(req.id, {
+        paymentMethod: this.memberUpgradeApprovalPaymentMethod(),
+        transactionId: this.memberUpgradeApprovalTransactionId()?.trim() || null,
+        notes: this.memberUpgradeApprovalNotes()?.trim() || null
+      }));
+      this.closeMemberUpgradeApproval();
+      this.notice.set(`Approved package upgrade for ${req.memberName} to ${req.newPlanName}.`);
+      await this.refreshMembershipViews();
+    } catch (err) {
+      this.error.set(this.api.message(err, 'Could not approve package upgrade request.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  openMemberUpgradeReject(req: MemberPackageUpgradeRequest): void {
+    this.memberUpgradeRejectTarget.set(req);
+    this.memberUpgradeRejectReason.set('');
+  }
+
+  closeMemberUpgradeReject(): void {
+    this.memberUpgradeRejectTarget.set(null);
+    this.memberUpgradeRejectReason.set('');
+  }
+
+  async confirmRejectMemberUpgrade(): Promise<void> {
+    const req = this.memberUpgradeRejectTarget();
+    if (!req) return;
+    this.memberUpgradeRejectLoading.set(true);
+    try {
+      await firstValueFrom(this.api.rejectMemberUpgradeRequest(req.id, {
+        reason: this.memberUpgradeRejectReason()?.trim() || 'Declined by gym front desk staff'
+      }));
+      this.closeMemberUpgradeReject();
+      this.notice.set(`Declined package upgrade request for ${req.memberName}.`);
+      await this.refreshMembershipViews();
+    } catch (err) {
+      this.error.set(this.api.message(err, 'Could not decline package upgrade request.'));
+    } finally {
+      this.memberUpgradeRejectLoading.set(false);
+    }
+  }
+
 
   async createStaff(): Promise<void> {
     this.clearAllFieldErrors();
@@ -2824,6 +3027,10 @@ export class App {
     if (member.renewalStartDate || (member.status === 'ACTIVE' && this.isUpcoming(member.startDate))) {
       return false;
     }
+    const hasPending = this.renewalRequests().some((r) => r.membershipId === member.id && r.status === 'PENDING');
+    if (hasPending) {
+      return false;
+    }
     const today = this.todayDate();
     const otherActiveTerms = this.memberships().filter((other) =>
       other.id !== member.id && other.email.toLowerCase() === member.email.toLowerCase()
@@ -3013,6 +3220,8 @@ export class App {
       if (staffRecent && staffRecent.length > 0) this.staffRecentMembersList.set(staffRecent);
       if (loadPt) void this.loadPtManagementData();
       if (owner) void this.loadMyUpgradeRequests();
+      void this.loadRenewalRequests();
+      void this.loadMemberUpgradeRequests();
       if (this.dashboardBranchId() !== null
         && !branches.some((branch) => branch.id === this.dashboardBranchId())) {
         this.dashboardBranchId.set(null);
@@ -3035,7 +3244,9 @@ export class App {
       try {
         const [recent, expiring] = await Promise.all([
           firstValueFrom(this.api.recentMemberships(null)).catch(() => [] as Membership[]),
-          firstValueFrom(this.api.expiringMemberships(7)).catch(() => [] as Membership[])
+          firstValueFrom(this.api.expiringMemberships(7)).catch(() => [] as Membership[]),
+          this.loadRenewalRequests(),
+          this.loadMemberUpgradeRequests()
         ]);
         this.staffRecentMembersList.set(recent);
         this.staffExpiringMembersList.set(expiring);
@@ -3051,7 +3262,9 @@ export class App {
       const [dashboard, recent, ptAnalytics] = await Promise.all([
         firstValueFrom(this.api.dashboard()),
         firstValueFrom(this.api.recentMemberships(branchId)),
-        firstValueFrom(this.api.ptAnalytics(this.addDays(this.todayDate(), -30), this.todayDate())).catch(() => null)
+        firstValueFrom(this.api.ptAnalytics(this.addDays(this.todayDate(), -30), this.todayDate())).catch(() => null),
+        this.loadRenewalRequests(),
+        this.loadMemberUpgradeRequests()
       ]);
       this.dashboard.set(dashboard);
       if (this.dashboardBranchId() === branchId) this.overviewRecentMemberships.set(recent);
@@ -3116,6 +3329,8 @@ export class App {
   private async refreshMembershipViews(page = this.membershipPageIndex()): Promise<void> {
     await Promise.all([
       this.loadMembershipPage(page),
+      this.loadRenewalRequests(),
+      this.loadMemberUpgradeRequests(),
       this.user()?.role === 'OWNER' ? this.loadOverviewData() : Promise.resolve()
     ]);
   }
@@ -3980,6 +4195,7 @@ export class App {
     this.upgradeDraft.paymentMethod = this.user()?.role === 'MEMBER' ? 'UPI' : 'CASH';
     this.upgradeDraft.transactionId = '';
     this.upgradeDraft.personalTrainerId = membership.personalTrainerId ?? null;
+    this.upgradeDraft.notes = '';
     this.clearAllFieldErrors();
   }
 

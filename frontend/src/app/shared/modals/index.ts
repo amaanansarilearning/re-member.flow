@@ -11,3 +11,8 @@ export * from './pt-sessions-modal/pt-sessions-modal.component';
 export * from './pt-session-complete-modal/pt-session-complete-modal.component';
 export * from './pt-book-session-modal/pt-book-session-modal.component';
 export * from './upgrade-modal/upgrade-modal.component';
+export * from './renewal-approval-modal/renewal-approval-modal.component';
+export * from './member-upgrade-approval-modal/member-upgrade-approval-modal.component';
+export * from './approvals-hub-modal/approvals-hub-modal.component';
+
+

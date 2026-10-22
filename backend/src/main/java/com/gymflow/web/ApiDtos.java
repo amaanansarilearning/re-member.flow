@@ -354,6 +354,94 @@ public final class ApiDtos {
                         @Size(max = 120) String transactionId) {
         }
 
+        public record MemberRenewalSubmissionRequest(@NotNull Long planId,
+                        Long personalTrainerId,
+                        LocalDate startDate,
+                        @NotBlank @Size(max = 40) String paymentMethod,
+                        @Size(max = 120) String transactionId,
+                        @Size(max = 500) String notes) {
+        }
+
+        public record RenewalApprovalRequest(@DecimalMin("0") @DecimalMax("100") BigDecimal discountPercent,
+                        @Size(max = 40) String paymentMethod,
+                        @Size(max = 120) String transactionId,
+                        @Size(max = 500) String notes) {
+        }
+
+        public record RenewalRejectionRequest(@Size(max = 255) String reason) {
+        }
+
+        public record RenewalRequestDto(Long id,
+                        Long membershipId,
+                        Long memberId,
+                        String memberName,
+                        String memberEmail,
+                        String memberPhone,
+                        Long planId,
+                        String planName,
+                        BigDecimal planPrice,
+                        Long branchId,
+                        String branchName,
+                        Long personalTrainerId,
+                        String personalTrainerName,
+                        LocalDate requestedStartDate,
+                        String paymentMethod,
+                        String transactionId,
+                        String notes,
+                        BigDecimal amount,
+                        BigDecimal discountPercent,
+                        String status,
+                        String reviewedByName,
+                        Instant reviewedAt,
+                        String rejectionReason,
+                        Long resultingMembershipId,
+                        Instant createdAt) {
+        }
+
+
+        public record MemberUpgradeSubmissionRequest(@NotNull Long newPlanId,
+                        Long personalTrainerId,
+                        @NotBlank @Size(max = 40) String paymentMethod,
+                        @Size(max = 120) String transactionId,
+                        @Size(max = 500) String notes) {
+        }
+
+        public record MemberPackageUpgradeApprovalRequest(
+                        @Size(max = 40) String paymentMethod,
+                        @Size(max = 120) String transactionId,
+                        @Size(max = 500) String notes) {
+        }
+
+        public record MemberPackageUpgradeRejectionRequest(@Size(max = 255) String reason) {
+        }
+
+        public record MemberPackageUpgradeRequestDto(Long id,
+                        Long membershipId,
+                        Long memberId,
+                        String memberName,
+                        String memberEmail,
+                        String memberPhone,
+                        Long currentPlanId,
+                        String currentPlanName,
+                        Long newPlanId,
+                        String newPlanName,
+                        BigDecimal newPlanPrice,
+                        Long branchId,
+                        String branchName,
+                        Long personalTrainerId,
+                        String personalTrainerName,
+                        BigDecimal topUpAmount,
+                        String paymentMethod,
+                        String transactionId,
+                        String notes,
+                        String status,
+                        String reviewedByName,
+                        Instant reviewedAt,
+                        String rejectionReason,
+                        Long resultingMembershipId,
+                        Instant createdAt) {
+        }
+
         public record StaffRegistrationRequest(@NotBlank @Size(max = 100) String fullName,
                         @NotBlank @Email String email,
                         @Size(max = 30) @Pattern(regexp = "^$|^\\+?[0-9][0-9 ()-]{6,19}$") String phoneNumber,

@@ -11,6 +11,9 @@ import { FormsModule } from '@angular/forms';
 })
 export class RejectRequestModalComponent {
   @Input({ required: true }) requestId!: number;
+  @Input() title = '';
+  @Input() eyebrow = 'WORKFLOW OPERATIONS';
+  @Input() subtitle = 'Specify reason for audit trail and member notification';
   @Input() reason = '';
   @Input() loading = false;
 

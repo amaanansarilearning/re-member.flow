@@ -10,6 +10,7 @@ export interface UpgradeMembershipDraft {
   paymentMethod: string;
   transactionId: string;
   personalTrainerId: number | null;
+  notes?: string;
 }
 
 @Component({
@@ -31,6 +32,7 @@ export class MembershipUpgradeModalComponent {
   @Input({ required: true }) draft!: UpgradeMembershipDraft;
   @Input() busy = false;
   @Input() fieldErrors: Record<string, string> = {};
+  @Input() userRole = 'STAFF';
 
   @Output() close = new EventEmitter<void>();
   @Output() targetPlanChange = new EventEmitter<number | null>();

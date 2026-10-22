@@ -334,7 +334,12 @@
                 <span>Upgrade</span>
               </button>
             }
-            @if (canRenewMembership(myMem)) {
+            @if (pendingRenewal; as pendingReq) {
+              <div class="action-btn" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; cursor: default;" title="Your renewal request has been submitted and is pending staff approval">
+                <span class="btn-icon">⏳</span>
+                <span>Renewal Pending</span>
+              </div>
+            } @else if (canRenewMembership(myMem)) {
               <button type="button" class="action-btn action-btn-renew" (click)="openRenewal.emit(myMem)">
                 <span class="btn-icon">↻</span>
                 <span>Renew</span>
@@ -353,6 +358,63 @@
           </div>
         }
       </div>
+      @if (pendingRenewal; as pendingReq) {
+        <div style="margin: 16px 0 8px; padding: 12px 16px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 0.75rem; font-weight: 700; color: #fbbf24; text-transform: uppercase; letter-spacing: 0.05em;">⏳ Renewal Request Submitted</span>
+            <span style="font-size: 0.75rem; color: #94a3b8;">{{ dateLabel(pendingReq.createdAt) }}</span>
+          </div>
+          <div style="font-size: 0.88rem; color: #e2e8f0;">
+            Next Package: <strong>{{ pendingReq.planName }}</strong> · Requested Start: <strong>{{ dateLabel(pendingReq.requestedStartDate) }}</strong> · Payment: <strong>{{ pendingReq.paymentMethod }}</strong>
+            @if (pendingReq.transactionId) {
+              <span style="color: #94a3b8;"> (Ref: {{ pendingReq.transactionId }})</span>
+            }
+          </div>
+          <p style="margin: 6px 0 0; font-size: 0.78rem; color: #94a3b8;">
+            Front-desk staff will verify payment and activate your renewed membership pass shortly.
+          </p>
+        </div>
+      }
+      @if (!pendingRenewal && rejectedRenewal; as rejReq) {
+        <div style="margin: 16px 0 8px; padding: 12px 16px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 0.75rem; font-weight: 700; color: #f87171; text-transform: uppercase;">⚠️ Renewal Request Declined</span>
+            <span style="font-size: 0.75rem; color: #94a3b8;">{{ dateLabel(rejReq.reviewedAt || rejReq.createdAt) }}</span>
+          </div>
+          <p style="margin: 2px 0 0; font-size: 0.84rem; color: #fca5a5;">
+            Reason: {{ rejReq.rejectionReason || 'Please verify payment details with the front desk.' }}
+          </p>
+        </div>
+      }
+      @if (pendingMemberUpgrade; as pendingUpReq) {
+        <div style="margin: 16px 0 8px; padding: 12px 16px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 0.75rem; font-weight: 700; color: #c084fc; text-transform: uppercase; letter-spacing: 0.05em;">⏳ Package Upgrade Request Submitted</span>
+            <span style="font-size: 0.75rem; color: #94a3b8;">{{ dateLabel(pendingUpReq.createdAt) }}</span>
+          </div>
+          <div style="font-size: 0.88rem; color: #e2e8f0;">
+            Target Package: <strong>{{ pendingUpReq.newPlanName }}</strong> · Prorated Top-Up: <strong>{{ money(pendingUpReq.topUpAmount) }}</strong> · Payment: <strong>{{ pendingUpReq.paymentMethod }}</strong>
+            @if (pendingUpReq.transactionId) {
+              <span style="color: #94a3b8;"> (Ref: {{ pendingUpReq.transactionId }})</span>
+            }
+          </div>
+          <p style="margin: 6px 0 0; font-size: 0.78rem; color: #94a3b8;">
+            Front-desk staff will verify your payment reference and activate your upgraded package.
+          </p>
+        </div>
+      }
+      @if (!pendingMemberUpgrade && rejectedMemberUpgrade; as rejUpReq) {
+        <div style="margin: 16px 0 8px; padding: 12px 16px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-size: 0.75rem; font-weight: 700; color: #f87171; text-transform: uppercase;">⚠️ Upgrade Request Declined</span>
+            <span style="font-size: 0.75rem; color: #94a3b8;">{{ dateLabel(rejUpReq.reviewedAt || rejUpReq.createdAt) }}</span>
+          </div>
+          <p style="margin: 2px 0 0; font-size: 0.84rem; color: #fca5a5;">
+            Reason: {{ rejUpReq.rejectionReason || 'Please verify payment details with the front desk.' }}
+          </p>
+        </div>
+      }
+
       @if (myMem) {
         <div class="pass-details-grid">
           <div class="pass-detail-cell">

@@ -1,0 +1,120 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="renewal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="upgrade-approval-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow" style="color: #a855f7;">WORKFLOW APPROVAL</p>
+        <h2 id="upgrade-approval-title">Review Package Upgrade</h2>
+      </div>
+      <button class="icon-button" title="Close" aria-label="Close" (click)="close.emit()">×</button>
+    </div>
+
+    <!-- Member and Request Overview -->
+    <div class="renewal-current" style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(147, 51, 234, 0.03) 100%);">
+      <div>
+        <span>MEMBER</span><strong>{{ request.memberName }}</strong>
+      </div>
+      <div>
+        <span>UPGRADE PLAN</span><strong style="color: #9333ea;">{{ request.newPlanName }}</strong>
+      </div>
+    </div>
+
+    <div style="padding: 16px 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.84rem;">
+      <div style="background: var(--surface-muted); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);">
+        <span style="display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Current Package</span>
+        <strong style="color: var(--text);">{{ request.currentPlanName }}</strong>
+      </div>
+      <div style="background: rgba(168, 85, 247, 0.08); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.2);">
+        <span style="display: block; font-size: 0.72rem; color: #a855f7; text-transform: uppercase; font-weight: 700;">Top-Up Amount Due</span>
+        <strong style="color: #9333ea; font-size: 1.05rem;">{{ money(request.topUpAmount) }}</strong>
+      </div>
+      <div style="background: var(--surface-muted); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);">
+        <span style="display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Payment Method (Member)</span>
+        <strong style="color: var(--text);">{{ request.paymentMethod }}</strong>
+      </div>
+      <div style="background: var(--surface-muted); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);">
+        <span style="display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Transaction / Ref ID</span>
+        <strong style="color: var(--text);">{{ request.transactionId || 'None provided' }}</strong>
+      </div>
+      @if (request.personalTrainerName) {
+        <div style="background: var(--surface-muted); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); grid-column: span 2;">
+          <span style="display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Assigned Trainer</span>
+          <strong style="color: var(--text);">🏋️ {{ request.personalTrainerName }}</strong>
+        </div>
+      }
+    </div>
+
+    @if (request.notes) {
+      <div style="margin: 12px 20px 0; padding: 10px 12px; background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 8px; font-size: 0.82rem;">
+        <span style="display: block; font-size: 0.72rem; color: #9333ea; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Member Note</span>
+        <p style="margin: 0; color: var(--text);">{{ request.notes }}</p>
+      </div>
+    }
+
+    <form class="renewal-form" (ngSubmit)="confirm.emit()" #upgradeApprovalForm="ngForm" style="padding-top: 14px;">
+      <label>Verified Payment Method
+        <select name="approvalPaymentMethod" [ngModel]="paymentMethod" (ngModelChange)="paymentMethodChange.emit($event)" required>
+          <option value="UPI">UPI / QR Code</option>
+          <option value="CASH">Cash Payment</option>
+          <option value="CARD">Credit / Debit Card</option>
+          <option value="BANK_TRANSFER">Bank Transfer (IMPS / NEFT)</option>
+          <option value="CHEQUE">Cheque</option>
+          <option value="OTHER">Other Online / POS</option>
+        </select>
+      </label>
+
+      <label><span class="field-label-text">Verified Transaction / Receipt Reference</span>
+        <input
+          name="approvalTxnId"
+          [ngModel]="transactionId"
+          (ngModelChange)="transactionIdChange.emit($event)"
+          type="text"
+          placeholder="e.g. UTR / Receipt # / Auth Code"
+        />
+      </label>
+
+      <label><span class="field-label-text">Staff Verification Notes (Optional)</span>
+        <input
+          name="approvalNotes"
+          [ngModel]="notes"
+          (ngModelChange)="notesChange.emit($event)"
+          type="text"
+          placeholder="e.g. Verified via Bank App / Cash in drawer"
+        />
+      </label>
+
+      <div class="renewal-summary" style="background: rgba(168, 85, 247, 0.05); border-color: rgba(168, 85, 247, 0.2);">
+        <div>
+          <span>TOP-UP COLLECTED</span><strong style="color: #9333ea;">{{ money(request.topUpAmount) }}</strong>
+        </div>
+        <div>
+          <span>STATUS</span><strong style="color: #a855f7;">PENDING FRONT DESK VERIFICATION</strong>
+        </div>
+      </div>
+
+      @if (error) {
+        <p class="form-error" role="alert" style="margin: 12px 0 0;">{{ error }}</p>
+      }
+
+      <div class="form-actions" style="display: flex; justify-content: space-between; gap: 8px;">
+        <button class="button button-quiet" type="button" (click)="reject.emit()" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3);">
+          ✕ Decline
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button class="button button-quiet" type="button" (click)="close.emit()">
+            Cancel
+          </button>
+          <button class="button button-dark" type="submit" [disabled]="busy" style="background: #9333ea; border-color: #9333ea; color: #fff;">
+            {{ busy ? 'Activating…' : '✓ Approve & Activate Upgrade' }} <span>↗</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </section>
+</div>
+

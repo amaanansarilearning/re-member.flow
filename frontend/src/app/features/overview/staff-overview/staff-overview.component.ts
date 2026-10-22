@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MemberFilter, Membership, MembershipGroup, Plan, PtProfile, User, View } from '../../../core/models';
+import { MemberFilter, Membership, MembershipGroup, Plan, PtProfile, MemberPackageUpgradeRequest, RenewalRequest, User, View } from '../../../core/models';
 import { dateLabel, initials, money } from '../../../core/utils/formatters';
 
 @Component({
@@ -29,6 +29,8 @@ export class StaffOverviewComponent {
   @Input() accessResults: Record<number, any> = {};
   @Input() quickAccessMember: Membership | null = null;
   @Input() quickAccessQuery = '';
+  @Input() pendingRenewalRequests: RenewalRequest[] = [];
+  @Input() pendingMemberUpgradeRequests: MemberPackageUpgradeRequest[] = [];
 
   @Input({ required: true }) canRenewMembership!: (m: Membership) => boolean;
   @Input({ required: true }) canUpgradeMembership!: (m: Membership) => boolean;
@@ -47,6 +49,11 @@ export class StaffOverviewComponent {
   @Output() clearQuickAccess = new EventEmitter<void>();
   @Output() checkMembershipAccess = new EventEmitter<Membership>();
   @Output() openRenewal = new EventEmitter<Membership>();
+  @Output() openRenewalApproval = new EventEmitter<RenewalRequest>();
+  @Output() openRenewalReject = new EventEmitter<RenewalRequest>();
+  @Output() openMemberUpgradeApproval = new EventEmitter<MemberPackageUpgradeRequest>();
+  @Output() openMemberUpgradeReject = new EventEmitter<MemberPackageUpgradeRequest>();
+  @Output() openApprovalsHub = new EventEmitter<void>();
   @Output() openMemberUpgradeModal = new EventEmitter<Membership>();
   @Output() copyToClipboard = new EventEmitter<{ text: string; label: string }>();
   @Output() quickAccessQueryChange = new EventEmitter<string>();

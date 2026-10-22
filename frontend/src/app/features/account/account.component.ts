@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Membership, UpgradeRequest, User } from '../../core/models';
+import { Membership, MemberPackageUpgradeRequest, RenewalRequest, UpgradeRequest, User } from '../../core/models';
 import { initials } from '../../core/utils/formatters';
 import { UpgradeFeatureKey } from '../branches/branches.component';
 
@@ -53,6 +53,8 @@ export class AccountComponent {
   @Input({ required: true }) memberships: Membership[] = [];
   @Input({ required: true }) ptTrainees: Membership[] = [];
   @Input({ required: true }) myUpgradeRequests: UpgradeRequest[] = [];
+  @Input() renewalRequests: RenewalRequest[] = [];
+  @Input() memberUpgradeRequests: MemberPackageUpgradeRequest[] = [];
   @Input() busy: boolean = false;
   @Input({ required: true }) isPremium: boolean = false;
   @Input({ required: true }) hasBrandingAccess: boolean = false;
@@ -88,4 +90,21 @@ export class AccountComponent {
   @Output() openLegal = new EventEmitter<'terms' | 'privacy' | 'disclaimer' | 'acceptable-use'>();
 
   initials = initials;
+
+  get pendingRenewal(): RenewalRequest | undefined {
+    return this.renewalRequests.find(r => r.status === 'PENDING');
+  }
+
+  get rejectedRenewal(): RenewalRequest | undefined {
+    return this.renewalRequests.find(r => r.status === 'REJECTED');
+  }
+
+  get pendingMemberUpgrade(): MemberPackageUpgradeRequest | undefined {
+    return this.memberUpgradeRequests.find(r => r.status === 'PENDING');
+  }
+
+  get rejectedMemberUpgrade(): MemberPackageUpgradeRequest | undefined {
+    return this.memberUpgradeRequests.find(r => r.status === 'REJECTED');
+  }
+
 }

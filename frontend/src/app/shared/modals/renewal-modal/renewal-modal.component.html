@@ -8,8 +8,8 @@
   >
     <div class="panel-heading">
       <div>
-        <p class="eyebrow">MEMBERSHIP RENEWAL</p>
-        <h2 id="renewal-title">Schedule next term</h2>
+        <p class="eyebrow">{{ userRole === 'MEMBER' ? 'MEMBER PORTAL · RENEWAL REQUEST' : 'MEMBERSHIP RENEWAL' }}</p>
+        <h2 id="renewal-title">{{ userRole === 'MEMBER' ? 'Request Package Renewal' : 'Schedule next term' }}</h2>
       </div>
       <button
         class="icon-button"
@@ -28,6 +28,12 @@
         <span>PAID THROUGH</span><strong>{{ dateLabel(member.endDate) }}</strong>
       </div>
     </div>
+    @if (userRole === 'MEMBER') {
+      <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 0.82rem; line-height: 1.45; color: #cbd5e1;">
+        <strong style="color: #a5b4fc; display: block; margin-bottom: 2px;">ℹ️ Staff Verification Workflow</strong>
+        Your renewal request will be sent to front-desk staff for payment verification and approval. Once verified, your membership will become active automatically.
+      </div>
+    }
     <form class="renewal-form" (ngSubmit)="confirm.emit()" #renewalForm="ngForm">
       <label
         >Next package<select name="renewalPlan" [(ngModel)]="draft.planId" (ngModelChange)="onPlanChange($event)" required>
@@ -111,6 +117,14 @@
           />
         </label>
       }
+      <label><span class="field-label-text">Notes / Reference <span class="label-note">OPTIONAL</span></span>
+        <input
+          name="renewalNotes"
+          [(ngModel)]="draft.notes"
+          type="text"
+          placeholder="e.g. Paid via UPI / reference remarks"
+        />
+      </label>
       <p class="renewal-time-note">
         Memberships are date-based: the new term begins at the start of the selected date.
         Time of day is not tracked.
@@ -134,7 +148,7 @@
           type="submit"
           [disabled]="busy || renewalForm.invalid || !selectedPlan"
         >
-          {{ busy ? 'Scheduling…' : 'Confirm renewal' }} <span>↗</span>
+          {{ userRole === 'MEMBER' ? (busy ? 'Submitting request…' : 'Submit Renewal Request') : (busy ? 'Scheduling…' : 'Confirm renewal') }} <span>↗</span>
         </button>
       </div>
     </form>

@@ -12,6 +12,7 @@ export interface RenewalDraft {
   startDate: string;
   paymentMethod: string;
   transactionId: string;
+  notes?: string;
 }
 
 @Component({

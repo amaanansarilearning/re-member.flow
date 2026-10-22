@@ -8,8 +8,8 @@
   >
     <div class="panel-heading">
       <div>
-        <p class="eyebrow">MID-CYCLE PACKAGE UPGRADE</p>
-        <h2 id="member-upgrade-title">Upgrade {{ member.memberName }}</h2>
+        <p class="eyebrow">{{ userRole === 'MEMBER' ? 'REQUEST PACKAGE UPGRADE' : 'MID-CYCLE PACKAGE UPGRADE' }}</p>
+        <h2 id="member-upgrade-title">{{ userRole === 'MEMBER' ? 'Request Package Upgrade' : ('Upgrade ' + member.memberName) }}</h2>
       </div>
       <button
         class="icon-button"
@@ -21,6 +21,12 @@
         ×
       </button>
     </div>
+
+    @if (userRole === 'MEMBER') {
+      <div style="margin: 0 20px 12px; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: var(--r-md); padding: 12px 16px; font-size: 0.86rem; color: var(--text);">
+        <strong>Front Desk Verification:</strong> Your package upgrade request will be reviewed by gym staff. Once your payment reference is verified, your new package tier will be activated immediately!
+      </div>
+    }
 
     <div class="renewal-current upgrade-current-info">
       <div>
@@ -145,17 +151,36 @@
         </label>
       }
 
-      <!-- Amount Collected Field -->
+      <!-- Top-Up Amount Display / Input -->
+      @if (userRole === 'MEMBER') {
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgba(168, 85, 247, 0.06); border-radius: var(--r-md); border: 1px solid rgba(168, 85, 247, 0.2); margin-bottom: 12px;">
+          <span style="font-size: 0.9rem; font-weight: 600; color: var(--text);">Top-Up Amount Due:</span>
+          <strong style="font-size: 1.15rem; color: #9333ea;">{{ money(quote?.topUpDue || draft.topUpPaid) }}</strong>
+        </div>
+      } @else {
+        <label>
+          <span class="field-label-text">Top-Up Amount Collected <span class="req-star">*</span></span>
+          <input
+            name="upgradeTopUpPaid"
+            type="number"
+            min="0"
+            step="0.01"
+            [(ngModel)]="draft.topUpPaid"
+            required
+          />
+        </label>
+      }
+
+      <!-- Optional Notes -->
       <label>
-        <span class="field-label-text">Top-Up Amount Collected <span class="req-star">*</span></span>
-        <input
-          name="upgradeTopUpPaid"
-          type="number"
-          min="0"
-          step="0.01"
-          [(ngModel)]="draft.topUpPaid"
-          required
-        />
+        <span class="field-label-text">Additional Notes (Optional)</span>
+        <textarea
+          name="upgradeNotes"
+          rows="2"
+          placeholder="e.g. Paid via UPI, transfer reference screenshot available"
+          [(ngModel)]="draft.notes"
+          style="width: 100%; border-radius: var(--r-md); border: 1px solid var(--border); padding: 8px 12px; background: var(--surface); color: var(--text); resize: vertical; font-family: inherit;"
+        ></textarea>
       </label>
 
       <div class="form-actions member-upgrade-actions">
@@ -171,11 +196,13 @@
           type="submit"
           class="button button-dark"
           [disabled]="busy || quoteLoading || !quote"
+          [style.background]="userRole === 'MEMBER' ? '#9333ea' : null"
+          [style.borderColor]="userRole === 'MEMBER' ? '#9333ea' : null"
         >
           @if (busy) {
-            <span class="spinner" aria-hidden="true"></span> Processing Upgrade...
+            <span class="spinner" aria-hidden="true"></span> {{ userRole === 'MEMBER' ? 'Submitting Request...' : 'Processing Upgrade...' }}
           } @else {
-            Confirm Upgrade ({{ money(draft.topUpPaid) }}) ↗
+            {{ userRole === 'MEMBER' ? 'Submit Upgrade Request (' + money(quote?.topUpDue || draft.topUpPaid) + ') ↗' : 'Confirm Upgrade (' + money(draft.topUpPaid) + ') ↗' }}
           }
         </button>
       </div>

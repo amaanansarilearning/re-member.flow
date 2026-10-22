@@ -23,6 +23,7 @@ export class SidebarComponent {
   @Input() hasHistoryAccess = false;
   @Input() membershipTotal = 0;
   @Input() pendingUpgradeRequestsCount = 0;
+  @Input() pendingRenewalRequestsCount = 0;
 
   @Output() navigate = new EventEmitter<View>();
   @Output() logout = new EventEmitter<void>();

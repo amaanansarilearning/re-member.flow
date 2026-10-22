@@ -1,0 +1,118 @@
+<div class="renewal-backdrop" (click)="close.emit()">
+  <section
+    class="renewal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="approval-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">WORKFLOW APPROVAL</p>
+        <h2 id="approval-title">Review Member Renewal</h2>
+      </div>
+      <button class="icon-button" title="Close" aria-label="Close" (click)="close.emit()">×</button>
+    </div>
+
+    <!-- Member and Request Overview -->
+    <div class="renewal-current">
+      <div>
+        <span>MEMBER</span><strong>{{ request.memberName }}</strong>
+      </div>
+      <div>
+        <span>REQUESTED PACKAGE</span><strong>{{ request.planName }}</strong>
+      </div>
+    </div>
+
+    <div style="padding: 16px 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.84rem;">
+      <div style="background: rgba(255,255,255,0.03); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);">
+        <span style="display: block; font-size: 0.72rem; color: var(--muted); text-transform: uppercase;">Payment Method</span>
+        <strong style="color: var(--ink);">{{ request.paymentMethod }}</strong>
+      </div>
+      <div style="background: rgba(255,255,255,0.03); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);">
+        <span style="display: block; font-size: 0.72rem; color: var(--muted); text-transform: uppercase;">Transaction / Ref ID</span>
+        <strong style="color: var(--ink);">{{ request.transactionId || 'None provided' }}</strong>
+      </div>
+      <div style="background: rgba(255,255,255,0.03); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);">
+        <span style="display: block; font-size: 0.72rem; color: var(--muted); text-transform: uppercase;">Requested Start</span>
+        <strong style="color: var(--ink);">{{ dateLabel(request.requestedStartDate) }}</strong>
+      </div>
+      <div style="background: rgba(255,255,255,0.03); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);">
+        <span style="display: block; font-size: 0.72rem; color: var(--muted); text-transform: uppercase;">Package Price</span>
+        <strong style="color: var(--ink);">{{ money(request.planPrice) }}</strong>
+      </div>
+    </div>
+
+    @if (request.notes) {
+      <div style="margin: 12px 20px 0; padding: 10px 12px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px; font-size: 0.82rem;">
+        <span style="display: block; font-size: 0.72rem; color: #a5b4fc; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Member Note</span>
+        <p style="margin: 0; color: #cbd5e1;">{{ request.notes }}</p>
+      </div>
+    }
+
+    <form class="renewal-form" (ngSubmit)="confirm.emit()" #approvalForm="ngForm" style="padding-top: 14px;">
+      <label>Staff Discount (%)
+        <div class="discount-input">
+          <input
+            name="approvalDiscount"
+            [(ngModel)]="discountPercent"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            (ngModelChange)="discountChange.emit($event)"
+          /><span>% off</span>
+        </div>
+      </label>
+
+      <label>Payment Method Confirmed
+        <select name="approvalPaymentMethod" [(ngModel)]="paymentMethod" (ngModelChange)="paymentMethodChange.emit($event)" required>
+          <option value="UPI">UPI / QR Code</option>
+          <option value="CASH">Cash Payment</option>
+          <option value="CARD">Credit / Debit Card</option>
+          <option value="BANK_TRANSFER">Bank Transfer (IMPS / NEFT)</option>
+          <option value="CHEQUE">Cheque</option>
+          <option value="OTHER">Other Online / POS</option>
+        </select>
+      </label>
+
+      <label><span class="field-label-text">Verified Transaction / Receipt Reference</span>
+        <input
+          name="approvalTxnId"
+          [(ngModel)]="transactionId"
+          (ngModelChange)="transactionIdChange.emit($event)"
+          type="text"
+          placeholder="e.g. UTR / Receipt # / Auth Code"
+        />
+      </label>
+
+      <div class="renewal-summary">
+        <div>
+          <span>NET CHARGE</span><strong>{{ money(totalAmount) }}</strong>
+        </div>
+        <div>
+          <span>STATUS</span><strong style="color: var(--amber);">PENDING VERIFICATION</strong>
+        </div>
+      </div>
+
+      @if (error) {
+        <p class="form-error" role="alert">{{ error }}</p>
+      }
+
+      <div class="form-actions" style="display: flex; justify-content: space-between; gap: 8px;">
+        <button class="button button-quiet" type="button" (click)="reject.emit()" style="color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
+          ✕ Decline
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button class="button button-quiet" type="button" (click)="close.emit()">
+            Cancel
+          </button>
+          <button class="button button-dark" type="submit" [disabled]="busy">
+            {{ busy ? 'Activating…' : '✓ Approve & Activate' }} <span>↗</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </section>
+</div>
+
