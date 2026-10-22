@@ -93,7 +93,7 @@ function hasExpiredSession(): boolean {
     UpgradeModalComponent
   ],
   templateUrl: './dashboard.html',
-  styleUrl: './app.scss'
+  styles: [':host { display: block; min-height: 100vh; }']
 })
 export class App {
   readonly Math = Math;
