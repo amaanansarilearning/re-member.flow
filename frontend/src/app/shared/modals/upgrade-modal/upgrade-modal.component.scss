@@ -1,3 +1,7 @@
+:host {
+  display: contents;
+}
+
 .upgrade-modal-dialog {
   width: min(94vw, 720px);
   max-height: min(90vh, 90dvh, 840px);
