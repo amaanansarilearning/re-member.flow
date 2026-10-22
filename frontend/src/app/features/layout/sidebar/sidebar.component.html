@@ -2,6 +2,7 @@
   <div class="sidebar-brand-card">
     <a class="brand" href="#overview" (click)="$event.preventDefault(); navigate.emit('overview')" [title]="(hasBrandingAccess && user?.organizationName) ? user!.organizationName : 'Re-member Flow'">
       <div class="brand-badge">
+        <div class="brand-badge-ring"></div>
         <img class="brand-mark" [src]="(hasBrandingAccess && user?.organizationLogo) ? user!.organizationLogo : '/form-mark.svg'" alt="Gym Logo" />
       </div>
       <div class="brand-text">
