@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { LegalDocumentId } from '../../core/models';
 
 @Component({
   selector: 'app-public-site',
@@ -14,6 +15,5 @@ export class PublicSiteComponent {
   @Output() signIn = new EventEmitter<void>();
   @Output() registerGym = new EventEmitter<void>();
   @Output() togglePricingCycle = new EventEmitter<void>();
-  @Output() openLegal = new EventEmitter<'terms' | 'privacy' | 'disclaimer' | 'acceptable-use'>();
+  @Output() openLegal = new EventEmitter<LegalDocumentId>();
 }
-

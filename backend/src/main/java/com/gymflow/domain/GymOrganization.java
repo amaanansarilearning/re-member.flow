@@ -41,6 +41,24 @@ public class GymOrganization {
     @Column
     private Instant subscriptionExpiresAt;
 
+    @Column(name = "country_code", nullable = false, length = 2)
+    private String countryCode = "IN";
+
+    @Column(name = "legal_jurisdiction", nullable = false, length = 50)
+    private String legalJurisdiction = "INDIA_DPDP";
+
+    @Column(name = "grievance_officer_email", length = 120)
+    private String grievanceOfficerEmail;
+
+    @Column(name = "dpo_email", length = 120)
+    private String dpoEmail;
+
+    @Column(name = "accepted_legal_version", length = 30)
+    private String acceptedLegalVersion;
+
+    @Column(name = "accepted_legal_at")
+    private Instant acceptedLegalAt;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -52,10 +70,15 @@ public class GymOrganization {
     }
 
     public GymOrganization(String name, String code, SubscriptionTier subscriptionTier) {
+        this(name, code, subscriptionTier, "IN");
+    }
+
+    public GymOrganization(String name, String code, SubscriptionTier subscriptionTier, String countryCode) {
         this.name = name.trim();
         this.code = code.trim().toUpperCase();
         this.subscriptionTier = subscriptionTier == null ? SubscriptionTier.STANDARD : subscriptionTier;
         this.subscriptionStatus = SubscriptionStatus.ACTIVE;
+        configureJurisdiction(countryCode);
     }
 
     public Long getId() {
@@ -197,5 +220,65 @@ public class GymOrganization {
             this.subscriptionStatus = status;
         }
         this.subscriptionExpiresAt = expiresAt;
+    }
+
+    public static String resolveJurisdiction(String countryCode) {
+        if (countryCode == null || countryCode.isBlank()) {
+            return "INDIA_DPDP";
+        }
+        return switch (countryCode.trim().toUpperCase()) {
+            case "IN" -> "INDIA_DPDP";
+            case "GB" -> "UK_GDPR";
+            case "US" -> "US_CCPA";
+            case "CA" -> "CANADA_PIPEDA";
+            case "AU" -> "AUSTRALIA_PRIVACY_ACT";
+            case "AE", "SA" -> "UAE_PDPL";
+            case "DE", "FR", "IT", "ES", "NL", "IE", "SE", "PL", "BE", "AT", "DK", "FI", "PT", "GR", "CZ", "RO", "HU", "EU" -> "EU_GDPR";
+            default -> "GLOBAL_STANDARD";
+        };
+    }
+
+    public void configureJurisdiction(String countryCode) {
+        this.countryCode = (countryCode == null || countryCode.isBlank()) ? "IN" : countryCode.trim().toUpperCase();
+        this.legalJurisdiction = resolveJurisdiction(this.countryCode);
+        if ("INDIA_DPDP".equals(this.legalJurisdiction)) {
+            this.grievanceOfficerEmail = "grievance@rememberflow.com";
+            this.dpoEmail = null;
+        } else if ("EU_GDPR".equals(this.legalJurisdiction) || "UK_GDPR".equals(this.legalJurisdiction)) {
+            this.dpoEmail = "dpo@rememberflow.com";
+            this.grievanceOfficerEmail = null;
+        } else {
+            this.dpoEmail = "privacy@rememberflow.com";
+            this.grievanceOfficerEmail = null;
+        }
+    }
+
+    public void recordLegalAcceptance(String version) {
+        this.acceptedLegalVersion = version;
+        this.acceptedLegalAt = Instant.now();
+    }
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public String getLegalJurisdiction() {
+        return legalJurisdiction;
+    }
+
+    public String getGrievanceOfficerEmail() {
+        return grievanceOfficerEmail;
+    }
+
+    public String getDpoEmail() {
+        return dpoEmail;
+    }
+
+    public String getAcceptedLegalVersion() {
+        return acceptedLegalVersion;
+    }
+
+    public Instant getAcceptedLegalAt() {
+        return acceptedLegalAt;
     }
 }

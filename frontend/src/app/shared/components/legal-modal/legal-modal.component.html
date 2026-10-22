@@ -11,7 +11,22 @@
         <span class="legal-badge">{{ activeDoc.badge }}</span>
         <h2 id="legal-modal-title">{{ activeDoc.title }}</h2>
         <p class="legal-subtitle">{{ activeDoc.subtitle }}</p>
-        <span class="legal-updated">Last Updated: {{ activeDoc.lastUpdated }}</span>
+        <div class="legal-meta-row">
+          <span class="legal-updated">Last Updated: {{ activeDoc.lastUpdated }}</span>
+          <div class="legal-region-selector">
+            <label for="legal-region-select">Jurisdiction:</label>
+            <select
+              id="legal-region-select"
+              [ngModel]="selectedCountryCode"
+              (ngModelChange)="countryChange.emit($event)"
+              aria-label="Select Legal Jurisdiction and Country Compliance"
+            >
+              @for (c of complianceCountries; track c.code) {
+                <option [value]="c.code">{{ c.flag }} {{ c.name }} ({{ c.jurisdictionLabel }})</option>
+              }
+            </select>
+          </div>
+        </div>
       </div>
       <div class="legal-header-actions">
         <button type="button" class="button button-quiet legal-print-btn" (click)="print.emit()" title="Print or save as PDF">
@@ -36,7 +51,14 @@
         [class.active]="currentTab === 'privacy'"
         (click)="tabChange.emit('privacy')"
       >
-        🔒 Privacy Policy
+        🔒 Privacy Notice
+      </button>
+      <button
+        type="button"
+        [class.active]="currentTab === 'dpa'"
+        (click)="tabChange.emit('dpa')"
+      >
+        🤝 Data Processing Addendum (DPA)
       </button>
       <button
         type="button"
@@ -58,7 +80,7 @@
       <span class="search-icon" aria-hidden="true">🔍</span>
       <input
         type="search"
-        placeholder="Search within this document (e.g. liability, refund, trainer, privacy, deletion)..."
+        placeholder="Search within this document (e.g. liability, refund, trainer, DPDP, processor, deletion)..."
         [ngModel]="searchQuery"
         (ngModelChange)="searchQueryChange.emit($event)"
         aria-label="Search within legal document"
@@ -88,7 +110,7 @@
 
     <footer class="legal-modal-footer">
       <div class="legal-footer-info">
-        <span>🛡️ Legally Binding Agreement · Official Re-member Flow Terms</span>
+        <span>🛡️ Legally Binding Agreement · Active Jurisdiction: <strong>{{ activeDoc.jurisdictionLabel || 'India DPDP Act 2023' }}</strong></span>
       </div>
       <button type="button" class="button button-dark" (click)="close.emit()">
         Close Document
@@ -96,4 +118,3 @@
     </footer>
   </section>
 </div>
-

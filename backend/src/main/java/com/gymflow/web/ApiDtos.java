@@ -34,7 +34,19 @@ public final class ApiDtos {
                         String organizationLogo,
                         SubscriptionTier subscriptionTier, List<String> enabledFeatures,
                         SubscriptionStatus subscriptionStatus, Instant subscriptionExpiresAt,
-                        String memberPin) {
+                        String memberPin,
+                        String countryCode,
+                        String legalJurisdiction) {
+                public UserDto(Long id, String fullName, String email, String phoneNumber, Role role,
+                                Long branchId, String branchName, Long organizationId, String organizationName,
+                                String organizationLogo,
+                                SubscriptionTier subscriptionTier, List<String> enabledFeatures,
+                                SubscriptionStatus subscriptionStatus, Instant subscriptionExpiresAt,
+                                String memberPin) {
+                        this(id, fullName, email, phoneNumber, role, branchId, branchName, organizationId,
+                                organizationName, organizationLogo, subscriptionTier, enabledFeatures,
+                                subscriptionStatus, subscriptionExpiresAt, memberPin, "IN", "INDIA_DPDP");
+                }
         }
 
         public record LoginResponse(String token, UserDto user) {
@@ -49,7 +61,20 @@ public final class ApiDtos {
                         @NotBlank @Size(max = 40) @Pattern(regexp = "^[A-Za-z0-9_-]+$") String organizationCode,
                         @Size(max = 100) String branchName,
                         @Size(max = 500) String branchAddress,
-                        SubscriptionTier subscriptionTier) {
+                        SubscriptionTier subscriptionTier,
+                        @Size(max = 2) String countryCode) {
+                public GymRegistrationRequest(
+                                String fullName,
+                                String email,
+                                String phoneNumber,
+                                String password,
+                                String organizationName,
+                                String organizationCode,
+                                String branchName,
+                                String branchAddress,
+                                SubscriptionTier subscriptionTier) {
+                        this(fullName, email, phoneNumber, password, organizationName, organizationCode, branchName, branchAddress, subscriptionTier, "IN");
+                }
         }
 
         public record SubscriptionStatusDto(
@@ -68,7 +93,33 @@ public final class ApiDtos {
                         List<String> enabledFeatures,
                         Integer maxBranches,
                         Integer maxStaff,
-                        Integer maxMembers) {
+                        Integer maxMembers,
+                        String countryCode,
+                        String legalJurisdiction,
+                        String grievanceOfficerEmail,
+                        String dpoEmail) {
+                public SubscriptionStatusDto(
+                                Long organizationId,
+                                String organizationName,
+                                String organizationCode,
+                                String organizationLogo,
+                                SubscriptionTier subscriptionTier,
+                                SubscriptionStatus subscriptionStatus,
+                                Instant expiresAt,
+                                boolean brandingEnabled,
+                                boolean receiptUploadEnabled,
+                                boolean historyEnabled,
+                                boolean ptEnabled,
+                                boolean analyticsEnabled,
+                                List<String> enabledFeatures,
+                                Integer maxBranches,
+                                Integer maxStaff,
+                                Integer maxMembers) {
+                        this(organizationId, organizationName, organizationCode, organizationLogo, subscriptionTier,
+                                subscriptionStatus, expiresAt, brandingEnabled, receiptUploadEnabled, historyEnabled,
+                                ptEnabled, analyticsEnabled, enabledFeatures, maxBranches, maxStaff, maxMembers,
+                                "IN", "INDIA_DPDP", "grievance@rememberflow.com", null);
+                }
         }
 
         public record BrandingUpdateRequest(
@@ -188,7 +239,16 @@ public final class ApiDtos {
                         String ownerEmail,
                         String ownerName,
                         long branchCount,
-                        long memberCount) {
+                        long memberCount,
+                        String countryCode,
+                        String legalJurisdiction) {
+                public PlatformOrganizationDto(Long id, String name, String code, String logoData,
+                                SubscriptionTier subscriptionTier, SubscriptionStatus subscriptionStatus,
+                                Instant subscriptionExpiresAt, Instant createdAt, String ownerEmail, String ownerName,
+                                long branchCount, long memberCount) {
+                        this(id, name, code, logoData, subscriptionTier, subscriptionStatus, subscriptionExpiresAt, createdAt,
+                                ownerEmail, ownerName, branchCount, memberCount, "IN", "INDIA_DPDP");
+                }
         }
 
         public record ExtendSubscriptionRequest(

@@ -1,3 +1,5 @@
+export type LegalDocumentId = 'terms' | 'privacy' | 'dpa' | 'disclaimer' | 'acceptable-use';
+
 export interface LegalSection {
   id: string;
   title: string;
@@ -5,11 +7,13 @@ export interface LegalSection {
 }
 
 export interface LegalDocument {
-  id: 'terms' | 'privacy' | 'disclaimer' | 'acceptable-use';
+  id: LegalDocumentId;
   badge: string;
   title: string;
   subtitle: string;
   lastUpdated: string;
   sections: LegalSection[];
+  jurisdiction?: string;
+  jurisdictionLabel?: string;
+  governingLaw?: string;
 }
-

@@ -64,6 +64,8 @@
             <span>·</span>
             <button type="button" class="auth-legal-btn" (click)="openLegal.emit('privacy')">Privacy Policy</button>
             <span>·</span>
+            <button type="button" class="auth-legal-btn" (click)="openLegal.emit('dpa')">DPA</button>
+            <span>·</span>
             <button type="button" class="auth-legal-btn" (click)="openLegal.emit('disclaimer')">Health Waiver</button>
           </div>
         </div>
@@ -93,6 +95,43 @@
           <label>Phone number
             <input name="regOwnerPhone" type="tel" [(ngModel)]="registerGymDraft.phoneNumber" placeholder="+1234567890">
           </label>
+          <label>Country & Legal Jurisdiction
+            <select
+              name="regCountryCode"
+              [(ngModel)]="registerGymDraft.countryCode"
+              class="auth-country-select"
+              aria-label="Select Country and Legal Jurisdiction"
+            >
+              @for (c of complianceCountries; track c.code) {
+                <option [value]="c.code">{{ c.flag }} {{ c.name }} · {{ c.jurisdictionLabel }}</option>
+              }
+            </select>
+          </label>
+
+          <div class="compliance-hint-card">
+            <div class="compliance-hint-header">
+              <span class="compliance-badge-flag">{{ selectedCompliance.flag }}</span>
+              <div class="compliance-badge-title">
+                <strong>{{ selectedCompliance.frameworkName }}</strong>
+                <span>{{ selectedCompliance.governingLaw }}</span>
+              </div>
+            </div>
+            <div class="compliance-hint-details">
+              <div class="hint-item">
+                <span class="hint-key">Statutory Officer:</span>
+                <span class="hint-val">{{ selectedCompliance.statutoryOfficerTitle }} ({{ selectedCompliance.officerEmail }})</span>
+              </div>
+              <div class="hint-item">
+                <span class="hint-key">Minor Age Threshold:</span>
+                <span class="hint-val">{{ selectedCompliance.minorAgeThreshold }} years</span>
+              </div>
+              <div class="hint-item">
+                <span class="hint-key">Breach Reporting SLA:</span>
+                <span class="hint-val">{{ selectedCompliance.breachNotificationSla }}</span>
+              </div>
+            </div>
+          </div>
+
           <div class="legal-consent-card">
             <label class="legal-checkbox-label">
               <input
@@ -104,9 +143,11 @@
               <span class="legal-checkbox-text">
                 I have read, understood, and agree to the
                 <button type="button" class="legal-inline-btn" (click)="openLegal.emit('terms'); $event.preventDefault()">Terms of Use</button>,
-                <button type="button" class="legal-inline-btn" (click)="openLegal.emit('privacy'); $event.preventDefault()">Privacy Policy</button>, and
-                <button type="button" class="legal-inline-btn" (click)="openLegal.emit('disclaimer'); $event.preventDefault()">Health & Safety Disclaimer</button>.
-                I certify that I am authorized to bind this gym organization.
+                <button type="button" class="legal-inline-btn" (click)="openLegal.emit('privacy'); $event.preventDefault()">Privacy Notice</button>,
+                <button type="button" class="legal-inline-btn" (click)="openLegal.emit('dpa'); $event.preventDefault()">Data Processing Addendum (DPA)</button>, and
+                <button type="button" class="legal-inline-btn" (click)="openLegal.emit('disclaimer'); $event.preventDefault()">Health Waiver</button>
+                governed by <strong>{{ selectedCompliance.name }} ({{ selectedCompliance.jurisdictionLabel }})</strong>.
+                I certify that I am authorized to bind this gym organization as a Data Fiduciary / Controller.
               </span>
             </label>
           </div>

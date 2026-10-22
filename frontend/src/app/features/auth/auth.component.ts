@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { COMPLIANCE_COUNTRIES, CountryComplianceOption, LegalDocumentId, resolveComplianceCountry } from '../../core/models';
 
 @Component({
   selector: 'app-auth',
@@ -33,6 +34,7 @@ export class AuthComponent {
     branchName: '',
     branchAddress: '',
     subscriptionTier: 'STANDARD' as 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM',
+    countryCode: 'IN',
     acceptTerms: false
   };
 
@@ -42,6 +44,12 @@ export class AuthComponent {
     newPassword: ''
   };
 
+  readonly complianceCountries = COMPLIANCE_COUNTRIES;
+
+  get selectedCompliance(): CountryComplianceOption {
+    return resolveComplianceCountry(this.registerGymDraft.countryCode);
+  }
+
   @Output() login = new EventEmitter<void>();
   @Output() registerGym = new EventEmitter<void>();
   @Output() requestPasswordReset = new EventEmitter<void>();
@@ -50,5 +58,5 @@ export class AuthComponent {
   @Output() setAuthMode = new EventEmitter<'home' | 'login' | 'forgot-password' | 'register-gym'>();
   @Output() setResetStep = new EventEmitter<'request' | 'confirm'>();
   @Output() showLogin = new EventEmitter<void>();
-  @Output() openLegal = new EventEmitter<'terms' | 'privacy' | 'disclaimer' | 'acceptable-use'>();
+  @Output() openLegal = new EventEmitter<LegalDocumentId>();
 }

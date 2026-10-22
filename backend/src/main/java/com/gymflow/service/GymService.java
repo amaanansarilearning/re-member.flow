@@ -259,8 +259,10 @@ public class GymService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "A gym with code " + request.organizationCode() + " already exists");
         }
         SubscriptionTier tier = SubscriptionTier.STANDARD;
-        GymOrganization organization = organizations.save(new GymOrganization(
-                request.organizationName(), request.organizationCode(), tier));
+        GymOrganization organization = new GymOrganization(
+                request.organizationName(), request.organizationCode(), tier, request.countryCode());
+        organization.recordLegalAcceptance("2026.1");
+        organization = organizations.save(organization);
 
         GymBranch mainBranch = branches.save(new GymBranch(organization,
                 request.branchName() == null || request.branchName().isBlank() ? "Main branch" : request.branchName(),
@@ -1098,7 +1100,9 @@ public class GymService {
                 org == null ? List.of("CORE_MANAGEMENT") : org.getEnabledFeatures(),
                 org == null ? SubscriptionStatus.ACTIVE : org.getSubscriptionStatus(),
                 org == null ? null : org.getSubscriptionExpiresAt(),
-                user.getMemberPin());
+                user.getMemberPin(),
+                org == null ? "IN" : org.getCountryCode(),
+                org == null ? "INDIA_DPDP" : org.getLegalJurisdiction());
     }
 
     @Transactional

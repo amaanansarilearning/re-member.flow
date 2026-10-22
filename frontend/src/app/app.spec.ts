@@ -499,6 +499,28 @@ describe('App', () => {
     app.legalSearchQuery.set('xyznonexistentterm');
     expect(app.filteredLegalSections().length).toBe(0);
   });
+  it('resolves jurisdiction-aware compliance documents including DPDP and DPA', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    // Test default India DPDP
+    app.openLegal('privacy', 'IN');
+    expect(app.activeLegalDoc().title).toContain('India');
+    expect(app.activeLegalDoc().badge).toContain('India DPDP Act 2023');
+
+    // Test UK GDPR and DPA tab
+    app.legalModalCountryCode.set('GB');
+    app.legalModalTab.set('dpa');
+    expect(app.activeLegalDoc().title).toContain('United Kingdom');
+    expect(app.activeLegalDoc().badge).toContain('UK GDPR');
+
+    // Test US CCPA
+    app.legalModalCountryCode.set('US');
+    app.legalModalTab.set('terms');
+    expect(app.activeLegalDoc().title).toContain('United States');
+    expect(app.activeLegalDoc().badge).toContain('US CCPA');
+  });
+
 
   it('blocks gym registration if terms and privacy policy are not accepted', async () => {
     const fixture = TestBed.createComponent(App);
@@ -514,6 +536,7 @@ describe('App', () => {
       branchName: 'Main Branch',
       branchAddress: '123 Fitness St',
       subscriptionTier: 'STANDARD',
+      countryCode: 'IN',
       acceptTerms: false
     };
 

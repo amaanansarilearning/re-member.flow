@@ -527,7 +527,11 @@ public class SubscriptionService {
                 org.getEnabledFeatures(),
                 tier.maxBranches(),
                 tier.maxStaff(),
-                tier.maxMembers()
+                tier.maxMembers(),
+                org.getCountryCode() != null ? org.getCountryCode() : "IN",
+                org.getLegalJurisdiction() != null ? org.getLegalJurisdiction() : "INDIA_DPDP",
+                org.getGrievanceOfficerEmail(),
+                org.getDpoEmail()
         );
     }
 
@@ -569,7 +573,9 @@ public class SubscriptionService {
                 owner != null ? owner.getEmail() : null,
                 owner != null ? owner.getFullName() : null,
                 branchCount,
-                memberCount
+                memberCount,
+                org.getCountryCode() != null ? org.getCountryCode() : "IN",
+                org.getLegalJurisdiction() != null ? org.getLegalJurisdiction() : "INDIA_DPDP"
         );
     }
 }

@@ -745,10 +745,12 @@
     [currentTab]="legalModalTab()"
     [filteredSections]="filteredLegalSections()"
     [searchQuery]="legalSearchQuery()"
+    [selectedCountryCode]="legalModalCountryCode()"
     (close)="closeLegal()"
     (print)="printLegalDoc()"
     (tabChange)="legalModalTab.set($event)"
     (searchQueryChange)="legalSearchQuery.set($event)"
+    (countryChange)="legalModalCountryCode.set($event)"
   />
 }
 

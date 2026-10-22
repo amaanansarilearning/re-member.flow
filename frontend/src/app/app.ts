@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { GymApiService, MembershipUpgradeQuote, MembershipUpgradePayload, SaasUpgradeQuote, ActionHistory, Analytics, Branch, BranchPayload, BranchType, CancellationReason, Dashboard, Freeze, Membership, MembershipAccess, MembershipGroup, Plan, RenewalReminder, User, PtProfile, PtSession, PtEarning, PtPayout, PtAnalytics, PtPackageType, ActivationCode, PlatformMetrics, PlatformOrganization, UpgradeRequest, UpgradeRequestPayload, TenantBackup, BulkMemberImportRow, BulkMemberImportResult } from './gym-api.service';
 import { CsrfTokenService } from './csrf-token.service';
-import { ALL_LEGAL_DOCUMENTS, LegalDocument } from './legal-content';
+import { ALL_LEGAL_DOCUMENTS, LegalDocument, getLegalDocument } from './legal-content';
+import { LegalDocumentId } from './core/models';
 import { CookieBannerComponent, LegalModalComponent } from './shared/components';
 import {
   PublicSiteComponent,
@@ -454,23 +455,29 @@ export class App {
 
   // ─── Legal & Compliance Hub Signals ───────────────────────────────────────
   readonly legalModalOpen = signal(false);
-  readonly legalModalTab = signal<'terms' | 'privacy' | 'disclaimer' | 'acceptable-use'>('terms');
+  readonly legalModalTab = signal<LegalDocumentId>('terms');
+  readonly legalModalCountryCode = signal<string>('IN');
   readonly legalSearchQuery = signal('');
   readonly cookieConsentDismissed = signal(this.readCookieConsent());
 
-  readonly activeLegalDoc = computed<LegalDocument>(() => ALL_LEGAL_DOCUMENTS[this.legalModalTab()]);
+  readonly activeLegalDoc = computed<LegalDocument>(() =>
+    getLegalDocument(this.legalModalTab(), this.legalModalCountryCode())
+  );
   readonly filteredLegalSections = computed(() => {
     const doc = this.activeLegalDoc();
     const query = this.legalSearchQuery().trim().toLowerCase();
     if (!query) return doc.sections;
-    return doc.sections.filter(sec =>
+    return doc.sections.filter((sec: any) =>
       sec.title.toLowerCase().includes(query) ||
-      sec.content.some(para => para.toLowerCase().includes(query))
+      sec.content.some((para: any) => para.toLowerCase().includes(query))
     );
   });
 
-  openLegal(tab: 'terms' | 'privacy' | 'disclaimer' | 'acceptable-use' = 'terms'): void {
+  openLegal(tab: LegalDocumentId = 'terms', countryCode?: string): void {
     this.legalModalTab.set(tab);
+    const user = this.user();
+    const resolvedCountry = countryCode || user?.countryCode || this.registerGymDraft.countryCode || 'IN';
+    this.legalModalCountryCode.set(resolvedCountry);
     this.legalSearchQuery.set('');
     this.legalModalOpen.set(true);
   }
@@ -515,6 +522,7 @@ export class App {
     branchName: '',
     branchAddress: '',
     subscriptionTier: 'STANDARD' as 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM',
+    countryCode: 'IN',
     acceptTerms: false
   };
 
@@ -1010,7 +1018,8 @@ export class App {
         organizationCode: this.registerGymDraft.organizationCode.trim().toUpperCase(),
         branchName: this.registerGymDraft.branchName.trim(),
         branchAddress: this.registerGymDraft.branchAddress.trim(),
-        subscriptionTier: this.registerGymDraft.subscriptionTier
+        subscriptionTier: this.registerGymDraft.subscriptionTier,
+        countryCode: this.registerGymDraft.countryCode
       }));
       this.startSession(session);
     } catch (error) {
@@ -1056,6 +1065,9 @@ export class App {
   private startSession(session: { token: string; user: User }): void {
     this.api.storeSession(session.token, session.user);
     this.user.set(session.user);
+    if (session.user.countryCode) {
+      this.legalModalCountryCode.set(session.user.countryCode);
+    }
     if (session.user.role === 'SUPER_ADMIN') {
       this.view.set('platform-admin');
       void this.loadPlatformData();
