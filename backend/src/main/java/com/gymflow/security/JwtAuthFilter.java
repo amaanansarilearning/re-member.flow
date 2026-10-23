@@ -36,7 +36,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
             }
         }
-        
+
+        if (token == null || token.isBlank()) {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7).trim();
+            }
+        }
+
         if (token != null && !token.isBlank()) {
             try {
                 Claims claims = jwtService.parse(token);

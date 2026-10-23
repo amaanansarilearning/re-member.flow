@@ -43,7 +43,7 @@
       }
       <div class="form-actions">
         <button type="button" class="button button-quiet" (click)="close.emit()">Keep membership</button>
-        <button type="submit" class="button button-dark" [disabled]="busy || cancellationForm.invalid">Record cancellation</button>
+        <button type="submit" class="button button-dark" [disabled]="busy || cancellationForm.invalid">{{ busy ? 'Recording…' : 'Record cancellation' }}</button>
       </div>
     </form>
   </section>

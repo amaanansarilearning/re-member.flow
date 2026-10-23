@@ -46,6 +46,10 @@ export class AuthComponent {
 
   readonly complianceCountries = COMPLIANCE_COUNTRIES;
 
+  showLoginPassword = false;
+  showRegisterPassword = false;
+  showResetPassword = false;
+
   get selectedCompliance(): CountryComplianceOption {
     return resolveComplianceCountry(this.registerGymDraft.countryCode);
   }

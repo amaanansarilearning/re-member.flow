@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { User } from '../../../core/models';
+import { initials } from '../../../core/utils/formatters';
 
 @Component({
   selector: 'app-topbar',
@@ -17,5 +18,7 @@ export class TopbarComponent {
   @Input() todayDateLabel = '';
 
   @Output() logout = new EventEmitter<void>();
+
+  readonly initials = initials;
 }
 

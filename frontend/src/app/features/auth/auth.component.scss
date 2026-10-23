@@ -474,3 +474,92 @@
     }
   }
 }
+
+
+.auth-input-password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  input {
+    width: 100%;
+    padding-right: 42px;
+  }
+
+  .password-toggle-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 6px;
+    border-radius: var(--r-sm);
+    opacity: 0.65;
+    transition: opacity 0.15s, transform 0.15s;
+
+    &:hover {
+      opacity: 1;
+      transform: translateY(-50%) scale(1.1);
+    }
+  }
+}
+
+.dev-otp-card {
+  margin: 12px 0 16px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .dev-otp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .dev-otp-tag {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+    }
+
+    .dev-otp-code {
+      font-family: monospace;
+      font-size: 18px;
+      letter-spacing: 4px;
+      color: var(--ink);
+    }
+  }
+
+  .dev-otp-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .dev-otp-fill-btn {
+    margin-top: 4px;
+    padding: 6px 12px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-sm);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-start;
+    transition: opacity 0.15s;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+}

@@ -1,4 +1,4 @@
-<section class="page-content register-page">
+﻿<section class="page-content register-page">
   <div class="page-heading">
     <div>
       <p class="eyebrow">A NEW FACE ON THE FLOOR</p>
@@ -199,14 +199,14 @@
               id="field-memberTxnId"
               name="memberTransactionId"
               [(ngModel)]="memberDraft.transactionId"
-              [class.input-has-error]="hasFieldError('memberTxnId')"
-              (input)="clearFieldError.emit('memberTxnId')"
+              [class.input-has-error]="hasFieldError('memberTransactionId') || hasFieldError('memberTxnId')"
+              (input)="clearFieldError.emit('memberTransactionId'); clearFieldError.emit('memberTxnId')"
               type="text"
               placeholder="e.g. UPI Ref / UTR / Auth Code / Txn #"
               required
             />
-            @if (hasFieldError('memberTxnId')) {
-              <span class="field-error-msg">⚠️ {{ getFieldError('memberTxnId') }}</span>
+            @if (hasFieldError('memberTransactionId') || hasFieldError('memberTxnId')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('memberTransactionId') || getFieldError('memberTxnId') }}</span>
             }
           </label>
         }

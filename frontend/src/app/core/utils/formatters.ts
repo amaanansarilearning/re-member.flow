@@ -44,7 +44,8 @@ export function dateLabel(value: string | null | undefined): string {
   return value;
 }
 
-export function initials(name: string): string {
-  return name.split(/\s+/).slice(0, 2).map((part) => part.charAt(0)).join('').toUpperCase();
+export function initials(name: string | null | undefined): string {
+  if (!name || !name.trim()) return '?';
+  return name.trim().split(/\s+/).slice(0, 2).map((part) => part.charAt(0)).join('').toUpperCase();
 }
 

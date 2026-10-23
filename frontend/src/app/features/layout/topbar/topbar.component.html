@@ -1,7 +1,8 @@
 <header class="topbar">
   <div class="breadcrumbs">
-    <span>Re-member Flow</span><span class="crumb-slash">/</span
-    ><strong>{{ viewTitle }}</strong>
+    <span class="crumb-brand">Re-member Flow</span>
+    <span class="crumb-slash" aria-hidden="true">/</span>
+    <strong class="crumb-active">{{ viewTitle }}</strong>
   </div>
   <div class="topbar-right">
     @if (user?.role === 'STAFF') {
@@ -11,7 +12,15 @@
     }
     <span class="today-label">{{ todayDateLabel }}</span>
     <span class="live-indicator"><span class="pulse-dot" aria-hidden="true"></span> SYSTEM LIVE</span>
-    <button class="mobile-logout" (click)="logout.emit()">Sign out</button>
+    @if (user) {
+      <div class="topbar-user-pill" [title]="user.fullName + ' (' + user.email + ')'">
+        <span class="topbar-user-avatar">{{ initials(user.fullName) }}</span>
+        <span class="topbar-user-name">{{ user.fullName }}</span>
+      </div>
+    }
+    <button class="topbar-signout-btn" (click)="logout.emit()" title="Sign out of current session">
+      <span aria-hidden="true">⎋</span>
+      <span class="signout-label">Sign out</span>
+    </button>
   </div>
 </header>
-

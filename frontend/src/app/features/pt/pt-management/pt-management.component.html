@@ -1,4 +1,4 @@
-        <section class="page-content">
+﻿        <section class="page-content">
           <div class="page-heading">
             <div>
               <p class="eyebrow">PERSONAL TRAINERS & COMMISSIONS</p>
@@ -125,11 +125,11 @@
                       step="50"
                       required
                       (keydown)="preventNonNumeric($event)"
-                      (input)="sanitizeNumericInput($event, ptDraft, 'sessionFeePerHour'); clearFieldError.emit('ptFee')"
-                      [class.input-has-error]="hasFieldError('ptFee')"
+                      (input)="sanitizeNumericInput($event, ptDraft, 'sessionFeePerHour'); clearFieldError.emit('ptSessionFee'); clearFieldError.emit('ptFee')"
+                      [class.input-has-error]="hasFieldError('ptSessionFee') || hasFieldError('ptFee')"
                     />
-                    @if (hasFieldError('ptFee')) {
-                      <span class="field-error-msg">⚠️ {{ getFieldError('ptFee') }}</span>
+                    @if (hasFieldError('ptSessionFee') || hasFieldError('ptFee')) {
+                      <span class="field-error-msg">⚠️ {{ getFieldError('ptSessionFee') || getFieldError('ptFee') }}</span>
                     }
                   </label>
                   <label><span class="field-label-text">Trainer Commission Share (%) <span class="req-star">*</span></span>

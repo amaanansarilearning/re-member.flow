@@ -1,4 +1,4 @@
-<section class="page-content">
+﻿<section class="page-content">
   <div class="page-heading">
     <div>
       <p class="eyebrow">ORGANIZATION & ACCESS</p>
@@ -304,16 +304,16 @@
             <select
               name="editStaffBranch"
               [(ngModel)]="staffEditDraft.branchId"
-              [class.input-has-error]="hasFieldError('editStaffBranch')"
-              (change)="clearFieldError.emit('editStaffBranch')"
+              [class.input-has-error]="hasFieldError('staffEditBranch') || hasFieldError('editStaffBranch')"
+              (change)="clearFieldError.emit('staffEditBranch'); clearFieldError.emit('editStaffBranch')"
               required
             >
               @for (branch of activeBranches; track branch.id) {
                 <option [value]="branch.id">📍 {{ branch.name }} ({{ branch.code }})</option>
               }
             </select>
-            @if (hasFieldError('editStaffBranch')) {
-              <span class="field-error-msg">⚠️ {{ getFieldError('editStaffBranch') }}</span>
+            @if (hasFieldError('staffEditBranch') || hasFieldError('editStaffBranch')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('staffEditBranch') || getFieldError('editStaffBranch') }}</span>
             }
           </label>
 
@@ -326,11 +326,11 @@
               minlength="8"
               maxlength="72"
               placeholder="Leave blank to keep existing password"
-              [class.input-has-error]="hasFieldError('editStaffPassword')"
-              (input)="clearFieldError.emit('editStaffPassword')"
+              [class.input-has-error]="hasFieldError('staffEditPassword') || hasFieldError('editStaffPassword')"
+              (input)="clearFieldError.emit('staffEditPassword'); clearFieldError.emit('editStaffPassword')"
             />
-            @if (hasFieldError('editStaffPassword')) {
-              <span class="field-error-msg">⚠️ {{ getFieldError('editStaffPassword') }}</span>
+            @if (hasFieldError('staffEditPassword') || hasFieldError('editStaffPassword')) {
+              <span class="field-error-msg">⚠️ {{ getFieldError('staffEditPassword') || getFieldError('editStaffPassword') }}</span>
             }
           </label>
 

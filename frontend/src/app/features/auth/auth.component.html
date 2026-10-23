@@ -22,23 +22,39 @@
           <p class="login-notice" role="status">{{ notice }}</p>
         }
         <form (ngSubmit)="login.emit()" #loginForm="ngForm">
-          <label
-            >Email address<input
+          <label>Email address
+            <input
               name="loginEmail"
               type="email"
               autocomplete="username"
               [(ngModel)]="loginEmail"
               (ngModelChange)="loginEmailChange.emit($event)"
-              required /></label
-          ><label
-            >Password<input
-              name="loginPassword"
-              type="password"
-              autocomplete="current-password"
-              [(ngModel)]="loginPassword"
-              (ngModelChange)="loginPasswordChange.emit($event)"
               required
-          /></label>
+              placeholder="e.g. owner@gym.local"
+            />
+          </label>
+          <label>Password
+            <div class="auth-input-password-wrap">
+              <input
+                name="loginPassword"
+                [type]="showLoginPassword ? 'text' : 'password'"
+                autocomplete="current-password"
+                [(ngModel)]="loginPassword"
+                (ngModelChange)="loginPasswordChange.emit($event)"
+                required
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                class="password-toggle-btn"
+                [attr.aria-label]="showLoginPassword ? 'Hide password' : 'Show password'"
+                (click)="showLoginPassword = !showLoginPassword"
+                tabindex="-1"
+              >
+                {{ showLoginPassword ? '🙈' : '👁️' }}
+              </button>
+            </div>
+          </label>
           @if (error) {
             <p class="form-error" role="alert">{{ error }}</p>
           }
@@ -90,10 +106,29 @@
             <input name="regOwnerEmail" type="email" [(ngModel)]="registerGymDraft.email" required placeholder="owner@ironpeak.com">
           </label>
           <label>Password
-            <input name="regOwnerPassword" type="password" [(ngModel)]="registerGymDraft.password" required minlength="8" maxlength="72">
+            <div class="auth-input-password-wrap">
+              <input
+                name="regOwnerPassword"
+                [type]="showRegisterPassword ? 'text' : 'password'"
+                [(ngModel)]="registerGymDraft.password"
+                required
+                minlength="8"
+                maxlength="72"
+                placeholder="At least 8 characters"
+              />
+              <button
+                type="button"
+                class="password-toggle-btn"
+                [attr.aria-label]="showRegisterPassword ? 'Hide password' : 'Show password'"
+                (click)="showRegisterPassword = !showRegisterPassword"
+                tabindex="-1"
+              >
+                {{ showRegisterPassword ? '🙈' : '👁️' }}
+              </button>
+            </div>
           </label>
           <label>Phone number
-            <input name="regOwnerPhone" type="tel" [(ngModel)]="registerGymDraft.phoneNumber" placeholder="+1234567890">
+            <input name="regOwnerPhone" type="tel" [(ngModel)]="registerGymDraft.phoneNumber" placeholder="+91 98765 43210">
           </label>
           <label>Country & Legal Jurisdiction
             <select
@@ -180,6 +215,7 @@
                 [(ngModel)]="resetDraft.email"
                 required
                 autocomplete="email"
+                placeholder="Enter your account email"
             /></label>
             @if (error) {
               <p class="form-error" role="alert">{{ error }}</p>
@@ -193,6 +229,22 @@
             </button>
           </form>
         } @else {
+          @if (developmentResetCode) {
+            <div class="dev-otp-card" role="status">
+              <div class="dev-otp-header">
+                <span class="dev-otp-tag">⚡ DEV ENVIRONMENT OTP</span>
+                <strong class="dev-otp-code">{{ developmentResetCode }}</strong>
+              </div>
+              <p class="dev-otp-note">In local dev mode, email codes are surfaced directly for testing.</p>
+              <button
+                type="button"
+                class="dev-otp-fill-btn"
+                (click)="resetDraft.code = developmentResetCode"
+              >
+                Auto-fill Code ⚡
+              </button>
+            </div>
+          }
           <form (ngSubmit)="confirmPasswordReset.emit()" #resetConfirmForm="ngForm">
             <label
               >Verification code<input
@@ -203,17 +255,31 @@
                 required
                 minlength="6"
                 maxlength="6"
+                placeholder="6-digit code"
             /></label>
-            <label
-              >New password<input
-                name="newPassword"
-                type="password"
-                [(ngModel)]="resetDraft.newPassword"
-                required
-                minlength="8"
-                maxlength="72"
-                autocomplete="new-password"
-            /></label>
+            <label>New password
+              <div class="auth-input-password-wrap">
+                <input
+                  name="newPassword"
+                  [type]="showResetPassword ? 'text' : 'password'"
+                  [(ngModel)]="resetDraft.newPassword"
+                  required
+                  minlength="8"
+                  maxlength="72"
+                  autocomplete="new-password"
+                  placeholder="At least 8 characters"
+                />
+                <button
+                  type="button"
+                  class="password-toggle-btn"
+                  [attr.aria-label]="showResetPassword ? 'Hide password' : 'Show password'"
+                  (click)="showResetPassword = !showResetPassword"
+                  tabindex="-1"
+                >
+                  {{ showResetPassword ? '🙈' : '👁️' }}
+                </button>
+              </div>
+            </label>
             @if (error) {
               <p class="form-error" role="alert">{{ error }}</p>
             }
@@ -243,4 +309,3 @@
     <span class="login-version">Re-member FLOW · 01</span>
   </section>
 </main>
-

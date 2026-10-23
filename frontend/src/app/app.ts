@@ -954,7 +954,39 @@ export class App {
     return list;
   });
 
+  private noticeTimer: ReturnType<typeof setTimeout> | null = null;
+  private errorTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor(private readonly api: GymApiService, private readonly csrfTokens: CsrfTokenService) {
+    effect(() => {
+      const msg = this.notice();
+      if (this.noticeTimer) {
+        clearTimeout(this.noticeTimer);
+        this.noticeTimer = null;
+      }
+      if (msg) {
+        this.noticeTimer = setTimeout(() => {
+          if (this.notice() === msg) {
+            this.notice.set('');
+          }
+        }, 5000);
+      }
+    });
+
+    effect(() => {
+      const err = this.error();
+      if (this.errorTimer) {
+        clearTimeout(this.errorTimer);
+        this.errorTimer = null;
+      }
+      if (err) {
+        this.errorTimer = setTimeout(() => {
+          if (this.error() === err) {
+            this.error.set('');
+          }
+        }, 7000);
+      }
+    });
     if (hasExpiredSession()) sessionStorage.removeItem('gym.session-expired');
     effect(() => {
       const open = this.isAnyModalOpen();
@@ -2395,6 +2427,9 @@ export class App {
       }
       const result = await firstValueFrom(this.api.registerMembership({
         ...this.memberDraft,
+        fullName: this.memberDraft.fullName.trim(),
+        email: this.memberDraft.email.trim(),
+        phoneNumber: (this.memberDraft.phoneNumber || '').trim(),
         planId: Number(this.memberDraft.planId),
         branchId: this.memberDraft.branchId ? Number(this.memberDraft.branchId) : null,
         personalTrainerId: this.memberDraft.personalTrainerId ? Number(this.memberDraft.personalTrainerId) : null,
