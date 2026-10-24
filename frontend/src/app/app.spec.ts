@@ -593,6 +593,73 @@ describe('App', () => {
     expect(localStorage.getItem('gym_cookie_consent_accepted')).toBe('true');
   });
 
+  it('renders landing page interactive showcase mockup and trust factors', async () => {
+    sessionStorage.clear();
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.hero-showcase-container')).toBeTruthy();
+    expect(compiled.querySelector('.mock-kpi-revenue strong')?.textContent).toContain('₹4,85,200');
+    expect(compiled.querySelector('.mock-verification-banner')?.textContent).toContain('ACCESS GRANTED');
+    expect(compiled.querySelector('.hero-trust-strip')?.textContent).toContain('99.9% Cloud Uptime');
+  });
+
+  it('renders 4 distinct commercial pricing tier cards and handles mobile drawer toggle', async () => {
+    sessionStorage.clear();
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const pricingCards = compiled.querySelectorAll('.pricing-card');
+    expect(pricingCards.length).toBe(4);
+    expect(compiled.querySelector('.pricing-card-popular .p-tier-name')?.textContent).toContain('Pro');
+
+    // Test mobile nav toggle
+    const toggleBtn = compiled.querySelector<HTMLButtonElement>('.mobile-nav-toggle');
+    expect(toggleBtn).toBeTruthy();
+    toggleBtn?.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.mobile-nav-drawer')).toBeTruthy();
+    const closeBtn = compiled.querySelector<HTMLButtonElement>('.mobile-drawer-close');
+    closeBtn?.click();
+    fixture.detectChanges();
+
+    expect(compiled.querySelector('.mobile-nav-drawer')).toBeNull();
+  });
+
+  it('toggles FAQ accordion and granular feature matrix on landing page', async () => {
+    sessionStorage.clear();
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    // Test FAQ questions
+    const faqButtons = compiled.querySelectorAll<HTMLButtonElement>('.faq-question-btn');
+    expect(faqButtons.length).toBeGreaterThanOrEqual(4);
+
+    // First FAQ open by default
+    expect(compiled.querySelector('.faq-card.is-open')).toBeTruthy();
+
+    // Toggle second FAQ
+    faqButtons[1]?.click();
+    fixture.detectChanges();
+    expect(faqButtons[1]?.getAttribute('aria-expanded')).toBe('true');
+
+    // Test feature matrix expansion toggle
+    const matrixBtn = compiled.querySelector<HTMLButtonElement>('.matrix-toggle-btn');
+    expect(matrixBtn).toBeTruthy();
+    expect(compiled.querySelector('.comparison-table')).toBeNull();
+
+    matrixBtn?.click();
+    fixture.detectChanges();
+    expect(compiled.querySelector('.comparison-table')).toBeTruthy();
+  });
+
   function membership(overrides: Partial<Membership> = {}): Membership {
     const today = new Date().toISOString().slice(0, 10);
     return {

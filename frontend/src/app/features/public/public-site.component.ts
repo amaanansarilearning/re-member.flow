@@ -16,4 +16,29 @@ export class PublicSiteComponent {
   @Output() registerGym = new EventEmitter<void>();
   @Output() togglePricingCycle = new EventEmitter<void>();
   @Output() openLegal = new EventEmitter<LegalDocumentId>();
+
+  mobileMenuOpen = false;
+  activeFaqIndex: number | null = 0;
+  showComparisonMatrix = false;
+  activeFeatureCategory: 'all' | 'memberships' | 'trainers' | 'analytics' | 'branches' = 'all';
+
+  toggleMobileMenu(): void {
+    this.mobileMenuOpen = !this.mobileMenuOpen;
+  }
+
+  closeMobileMenu(): void {
+    this.mobileMenuOpen = false;
+  }
+
+  toggleFaq(index: number): void {
+    this.activeFaqIndex = this.activeFaqIndex === index ? null : index;
+  }
+
+  toggleComparisonMatrix(): void {
+    this.showComparisonMatrix = !this.showComparisonMatrix;
+  }
+
+  setActiveFeatureCategory(cat: 'all' | 'memberships' | 'trainers' | 'analytics' | 'branches'): void {
+    this.activeFeatureCategory = cat;
+  }
 }
