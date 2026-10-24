@@ -28,9 +28,9 @@ public class PlatformEmailService {
 
     public PlatformEmailService(
             JavaMailSender mailSender,
-            @Value("${gym.mail.from:noreply@gym.local}") String fromAddress,
-            @Value("${gym.platform.billing-email:billing@gymflow.io}") String billingEmail,
-            @Value("${gym.platform.admin-email:admin@gymflow.io}") String adminEmail,
+            @Value("${gym.mail.from:noreply@rememberflow.com}") String fromAddress,
+            @Value("${gym.platform.billing-email:billing@rememberflow.com}") String billingEmail,
+            @Value("${gym.platform.admin-email:admin@rememberflow.com}") String adminEmail,
             @Value("${gym.app.url:http://localhost:4200}") String appUrl) {
         this.mailSender = mailSender;
         this.fromAddress = fromAddress;
@@ -41,7 +41,7 @@ public class PlatformEmailService {
 
     public void sendUpgradeRequestConfirmationToOwner(UpgradeRequest request) {
         String orgName = request.getOrganization() != null ? request.getOrganization().getName() : "Your Gym";
-        String subject = "[GymFlow] Upgrade Request Received: " + request.getBillingPlanName();
+        String subject = "[Re-member Flow] Upgrade Request Received: " + request.getBillingPlanName();
         String html = """
             <!DOCTYPE html>
             <html>
@@ -49,8 +49,8 @@ public class PlatformEmailService {
             <body style="margin: 0; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; color: #f8fafc;">
               <div style="max-width: 600px; margin: 0 auto; background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
                 <div style="background: linear-gradient(135deg, #0284c7 0%%, #0369a1 100%%); padding: 24px; text-align: center;">
-                  <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">GymFlow SaaS Platform</h1>
-                  <p style="margin: 6px 0 0; color: #bae6fd; font-size: 13px;">B2B Subscription &amp; Licensing Desk</p>
+                  <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700; letter-spacing: -0.5px;">Re-member Flow Platform</h1>
+                  <p style="margin: 6px 0 0; color: #bae6fd; font-size: 13px;">Enterprise Subscription &amp; Licensing Desk</p>
                 </div>
                 <div style="padding: 28px;">
                   <p style="margin: 0 0 16px; font-size: 15px; color: #f1f5f9;">Hello <strong>%s</strong>,</p>
@@ -72,11 +72,11 @@ public class PlatformEmailService {
                     </p>
                   </div>
                   <p style="margin: 0; font-size: 13px; color: #64748b; line-height: 1.5;">
-                    Questions? Reach our enterprise concierge at <a href="mailto:billing@gymflow.io" style="color: #38bdf8; text-decoration: none;">billing@gymflow.io</a>.
+                    Questions? Reach our enterprise concierge at <a href="mailto:billing@rememberflow.com" style="color: #38bdf8; text-decoration: none;">billing@rememberflow.com</a>.
                   </p>
                 </div>
                 <div style="background-color: #0b1120; padding: 14px; text-align: center; border-top: 1px solid #1e293b; font-size: 11px; color: #64748b;">
-                  &copy; GymFlow Multi-Tenant Cloud Platform. All rights reserved.
+                  &copy; Re-member Flow Multi-Location Platform. All rights reserved.
                 </div>
               </div>
             </body>
@@ -140,7 +140,7 @@ public class PlatformEmailService {
     public void sendActivationKeyToOwner(UpgradeRequest request, String activationCode, Integer durationDays) {
         String orgName = request.getOrganization() != null ? request.getOrganization().getName() : "Your Gym";
         String deepLink = appUrl + "/#redeem?code=" + activationCode;
-        String subject = "[GymFlow] Your PRO Activation Key is Ready: " + activationCode;
+        String subject = "[Re-member Flow] Your PRO Activation Key is Ready: " + activationCode;
         String html = """
             <!DOCTYPE html>
             <html>
@@ -148,13 +148,13 @@ public class PlatformEmailService {
             <body style="margin: 0; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0f172a; color: #f8fafc;">
               <div style="max-width: 600px; margin: 0 auto; background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
                 <div style="background: linear-gradient(135deg, #10b981 0%%, #059669 100%%); padding: 24px; text-align: center;">
-                  <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700;">GymFlow PRO License Activated</h1>
+                  <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700;">Re-member Flow PRO License Activated</h1>
                   <p style="margin: 6px 0 0; color: #d1fae5; font-size: 13px;">Official Commercial Activation Voucher</p>
                 </div>
                 <div style="padding: 28px;">
                   <p style="margin: 0 0 16px; font-size: 15px; color: #f1f5f9;">Hello <strong>%s</strong>,</p>
                   <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #cbd5e1;">
-                    Your payment for <strong>%s</strong> has been verified. Below is your official, single-use activation voucher key to unlock <strong>GymFlow PRO</strong> for <strong>%d days</strong>.
+                    Your payment for <strong>%s</strong> has been verified. Below is your official, single-use activation voucher key to unlock <strong>Re-member Flow PRO</strong> for <strong>%d days</strong>.
                   </p>
                   
                   <div style="background-color: #0f172a; border: 2px dashed #10b981; border-radius: 10px; padding: 22px; text-align: center; margin-bottom: 24px;">
@@ -164,16 +164,16 @@ public class PlatformEmailService {
 
                   <div style="text-align: center; margin-bottom: 24px;">
                     <a href="%s" style="background-color: #0284c7; color: #ffffff; padding: 12px 28px; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 14px; display: inline-block;">
-                      Activate GymFlow PRO Now &rarr;
+                      Activate Re-member Flow PRO Now &rarr;
                     </a>
                   </div>
 
                   <p style="margin: 0 0 10px; font-size: 13px; color: #94a3b8; line-height: 1.6;">
-                    Alternatively, log into your GymFlow dashboard, open <strong>Upgrade to PRO &rarr; I Have an Activation Code</strong>, and paste your voucher key.
+                    Alternatively, log into your Re-member Flow dashboard, open <strong>Upgrade to PRO &rarr; I Have an Activation Code</strong>, and paste your voucher key.
                   </p>
                 </div>
                 <div style="background-color: #0b1120; padding: 14px; text-align: center; border-top: 1px solid #1e293b; font-size: 11px; color: #64748b;">
-                  &copy; GymFlow Multi-Tenant Cloud Platform. Licensed to %s.
+                  &copy; Re-member Flow Multi-Location Platform. Licensed to %s.
                 </div>
               </div>
             </body>
@@ -192,16 +192,16 @@ public class PlatformEmailService {
 
     public void sendDirectUpgradeNoticeToOwner(GymOrganization org, String ownerEmail, int durationDays) {
         String orgName = org != null ? org.getName() : "Your Gym";
-        String subject = "[GymFlow] Your Gym is Now Upgraded to PRO!";
+        String subject = "[Re-member Flow] Your Gym is Now Upgraded to PRO!";
         String html = """
             <!DOCTYPE html>
             <html>
             <head><meta charset="utf-8"></head>
             <body style="margin: 0; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0f172a; color: #f8fafc;">
               <div style="max-width: 600px; margin: 0 auto; background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 24px;">
-                <h2 style="margin: 0 0 14px; color: #10b981; font-size: 20px;">GymFlow PRO Activated</h2>
+                <h2 style="margin: 0 0 14px; color: #10b981; font-size: 20px;">Re-member Flow PRO Activated</h2>
                 <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #cbd5e1;">
-                  Great news! Your gym organization <strong>%s</strong> has been directly upgraded to <strong>GymFlow PREMIUM (PRO)</strong> for <strong>%d days</strong> by the platform administration team.
+                  Great news! Your gym organization <strong>%s</strong> has been directly upgraded to <strong>Re-member Flow PREMIUM (PRO)</strong> for <strong>%d days</strong> by the platform administration team.
                 </p>
                 <div style="background-color: #0f172a; border-left: 4px solid #10b981; padding: 14px; border-radius: 4px; margin-bottom: 20px;">
                   <p style="margin: 0; font-size: 13px; color: #94a3b8;">
@@ -209,7 +209,7 @@ public class PlatformEmailService {
                   </p>
                 </div>
                 <p style="margin: 0; font-size: 12px; color: #64748b;">
-                  Thank you for partnering with GymFlow Cloud Platform.
+                  Thank you for partnering with Re-member Flow.
                 </p>
               </div>
             </body>
@@ -223,7 +223,7 @@ public class PlatformEmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, StandardCharsets.UTF_8.name());
-            String personal = tenantName != null && !tenantName.isBlank() ? tenantName + " via GymFlow" : "GymFlow Notifications";
+            String personal = tenantName != null && !tenantName.isBlank() ? tenantName + " via Re-member Flow" : "Re-member Flow Notifications";
             helper.setFrom(new InternetAddress(fromAddress, personal, StandardCharsets.UTF_8.name()));
             if (ownerEmail != null && !ownerEmail.isBlank()) {
                 helper.setReplyTo(new InternetAddress(ownerEmail.trim(), personal, StandardCharsets.UTF_8.name()));
@@ -247,9 +247,9 @@ public class PlatformEmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, false, StandardCharsets.UTF_8.name());
-            helper.setFrom(new InternetAddress(fromAddress, "GymFlow SaaS Platform", StandardCharsets.UTF_8.name()));
+            helper.setFrom(new InternetAddress(fromAddress, "Re-member Flow Platform", StandardCharsets.UTF_8.name()));
             if (billingEmail != null && !billingEmail.isBlank()) {
-                helper.setReplyTo(new InternetAddress(billingEmail, "GymFlow Billing", StandardCharsets.UTF_8.name()));
+                helper.setReplyTo(new InternetAddress(billingEmail, "Re-member Flow Billing", StandardCharsets.UTF_8.name()));
             }
             helper.setTo(recipient.trim().toLowerCase());
             helper.setSubject(subject);

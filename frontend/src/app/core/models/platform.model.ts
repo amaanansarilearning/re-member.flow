@@ -77,7 +77,7 @@ export interface UpgradeRequestPayload {
   estimatedTopUp?: number;
 }
 
-export interface SaasUpgradeQuote {
+export interface PlatformUpgradeQuote {
   currentTier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
   targetTier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
   currentMonthlyPrice: number;
@@ -86,6 +86,8 @@ export interface SaasUpgradeQuote {
   estimatedTopUp: number;
   effectiveDate: string;
 }
+
+export type SaasUpgradeQuote = PlatformUpgradeQuote;
 
 export interface PlatformMetrics {
   totalGyms: number;

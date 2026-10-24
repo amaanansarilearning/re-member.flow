@@ -653,7 +653,7 @@ export class App {
     'pt-management': 'Trainer Management',
     'pt-dashboard': 'Trainer Dashboard',
     'pt-earnings': 'My Earnings & Payouts',
-    'platform-admin': 'SaaS Platform Command Center'
+    'platform-admin': 'Platform Command Center'
   })[this.view()]);
   readonly dashboardMetrics = computed(() => {
     const dashboard = this.dashboard();
@@ -695,6 +695,12 @@ export class App {
   });
 
   readonly isAnyModalOpen = computed(() => !!(
+    this.approvalsHubOpen() ||
+    this.renewalReviewTarget() ||
+    this.renewalRejectTarget() ||
+    this.memberUpgradeReviewTarget() ||
+    this.memberUpgradeRejectTarget() ||
+    this.enterpriseBranchPromptOpen() ||
     this.upgradingMembership() ||
     this.legalModalOpen() ||
     this.sessionCompleting() ||
@@ -713,6 +719,12 @@ export class App {
 
   @HostListener('window:keydown.escape')
   onEscapePress(): void {
+    if (this.approvalsHubOpen()) { this.closeApprovalsHub(); return; }
+    if (this.renewalReviewTarget()) { this.closeRenewalApproval(); return; }
+    if (this.renewalRejectTarget()) { this.closeRenewalReject(); return; }
+    if (this.memberUpgradeReviewTarget()) { this.closeMemberUpgradeApproval(); return; }
+    if (this.memberUpgradeRejectTarget()) { this.closeMemberUpgradeReject(); return; }
+    if (this.enterpriseBranchPromptOpen()) { this.closeEnterpriseBranchPrompt(); return; }
     if (this.upgradingMembership()) { this.closeMemberUpgradeModal(); return; }
     if (this.legalModalOpen()) { this.closeLegal(); return; }
     if (this.sessionCompleting()) { this.closeSessionCompletionModal(); return; }
@@ -3947,7 +3959,7 @@ export class App {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `gymflow-${orgCode.toLowerCase()}-backup-${dateStr}.json`;
+      a.download = `rememberflow-${orgCode.toLowerCase()}-backup-${dateStr}.json`;
       a.click();
       window.URL.revokeObjectURL(url);
       this.notice.set('Complete gym data backup archive downloaded successfully.');
@@ -3978,7 +3990,7 @@ export class App {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'gymflow-member-import-template.csv';
+    a.download = 'rememberflow-member-import-template.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   }
@@ -4050,7 +4062,7 @@ export class App {
     if (typeof window === 'undefined') return;
     const win = window.open('', '_blank', 'width=750,height=850');
     if (!win) return;
-    const gymName = this.user()?.organizationName || 'GymFlow Club';
+    const gymName = this.user()?.organizationName || 'Re-member Flow Club';
     const gymLogo = this.user()?.organizationLogo;
     const dateFormatted = this.dateLabel(m.startDate);
     const expiryFormatted = this.dateLabel(m.endDate);

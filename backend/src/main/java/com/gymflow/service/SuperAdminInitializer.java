@@ -15,7 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class SuperAdminInitializer {
     private static final Logger log = LoggerFactory.getLogger(SuperAdminInitializer.class);
 
-    @Value("${gym.platform.admin-email:admin@gymflow.io}")
+    @Value("${gym.platform.admin-email:admin@rememberflow.com}")
     private String adminEmail;
 
     @Value("${gym.platform.admin-password:AdminPassword123!}")

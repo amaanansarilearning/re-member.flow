@@ -1081,7 +1081,7 @@ class GymApiIntegrationTest {
                                 request(cookies, Map.of("tier", "PREMIUM")), MAP_RESPONSE);
                 assertThat(directUpgrade.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
 
-                String adminCookies = login("admin@gymflow.io", "AdminPassword123!").get("token").toString();
+                String adminCookies = login("admin@rememberflow.com", "AdminPassword123!").get("token").toString();
                 ResponseEntity<Map<String, Object>> codeRes = rest.exchange(
                                 url("/api/platform/activation-codes"), HttpMethod.POST,
                                 request(adminCookies, Map.of("tier", "PREMIUM", "durationDays", 30)), MAP_RESPONSE);
@@ -1107,7 +1107,7 @@ class GymApiIntegrationTest {
         @Test
         void superAdminAndActivationCodeAndCancellationLifecycle() {
                 // 1. Super-Admin login
-                String adminCookies = login("admin@gymflow.io", "AdminPassword123!").get("token").toString();
+                String adminCookies = login("admin@rememberflow.com", "AdminPassword123!").get("token").toString();
 
                 // 2. Super-Admin fetches platform metrics
                 ResponseEntity<Map<String, Object>> metricsRes = rest.exchange(
@@ -1278,7 +1278,7 @@ class GymApiIntegrationTest {
                 assertThat(myRequests.getBody().get(0).get("id")).isEqualTo(requestId.intValue());
 
                 // 5. Super-Admin lists pending upgrade requests
-                String adminToken = login("admin@gymflow.io", "AdminPassword123!").get("token").toString();
+                String adminToken = login("admin@rememberflow.com", "AdminPassword123!").get("token").toString();
                 ResponseEntity<List<Map<String, Object>>> pendingRequests = rest.exchange(
                                 url("/api/platform/upgrade-requests?status=PENDING"), HttpMethod.GET,
                                 request(adminToken, null), LIST_RESPONSE);
@@ -1381,7 +1381,7 @@ class GymApiIntegrationTest {
         String ownerToken = login(gymOwnerEmail, "OwnerPass123!").get("token").toString();
 
         // Redeem Enterprise code to enable PT feature
-        Map<String, Object> adminLogin = login("admin@gymflow.io", "AdminPassword123!");
+        Map<String, Object> adminLogin = login("admin@rememberflow.com", "AdminPassword123!");
         String adminToken = adminLogin.get("token").toString();
         Map<String, Object> genReq = Map.of(
                 "tier", "ENTERPRISE",

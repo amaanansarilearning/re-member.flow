@@ -20,8 +20,8 @@ export function getLegalDocument(
     case 'terms':
       return {
         id: 'terms',
-        badge: `${flag} ${compliance.jurisdictionLabel} · SaaS Agreement`,
-        title: `Terms of Use & SaaS Subscription Agreement (${countryName})`,
+        badge: `${flag} ${compliance.jurisdictionLabel} · Platform Agreement`,
+        title: `Terms of Use & Platform Subscription Agreement (${countryName})`,
         subtitle: `Binding enterprise terms governing use of Re-member Flow software, subscriptions, accounts, and gym operations under ${framework}.`,
         lastUpdated,
         jurisdiction: compliance.jurisdiction,
@@ -39,9 +39,9 @@ export function getLegalDocument(
           },
           {
             id: 'nature-of-service',
-            title: '2. Nature of SaaS Services & Platform Independence',
+            title: '2. Nature of Platform Services & Platform Independence',
             content: [
-              'Re-member Flow provides a cloud-based software-as-a-service (SaaS) management portal designed for health clubs, gym owners, and fitness operations. The Platform enables multi-branch organization oversight, package and membership lifecycle management, access verification, front desk operations, staff permission delegation, personal training scheduling, and automated renewal reminders.',
+              'Re-member Flow provides a cloud-based gym management platform designed for health clubs, gym owners, and fitness operations. The Platform enables multi-branch organization oversight, package and membership lifecycle management, access verification, front desk operations, staff permission delegation, personal training scheduling, and automated renewal reminders.',
               'Re-member Flow is purely a technology software provider. We do NOT own, operate, manage, supervise, or inspect any subscriber gym locations, physical facilities, workout floors, or exercise machinery. The physical condition, maintenance, safety, sanitation, and regulatory compliance of any gym premises are the sole, independent responsibility of the respective Gym Organization.'
             ]
           },
@@ -50,7 +50,7 @@ export function getLegalDocument(
             title: `3. Regional Statutory Compliance (${framework})`,
             content: [
               `This organization is registered under the ${compliance.jurisdictionLabel} compliance profile.`,
-              `DATA ROLES: In operating this SaaS platform, the Gym Organization acts as the primary Data Fiduciary / Data Controller regarding all member and staff data. Re-member Flow acts strictly as a Data Processor / Service Provider pursuant to the statutory provisions of ${framework}.`,
+              `DATA ROLES: In operating this platform, the Gym Organization acts as the primary Data Fiduciary / Data Controller regarding all member and staff data. Re-member Flow acts strictly as a Data Processor / Service Provider pursuant to the statutory provisions of ${framework}.`,
               `STATUTORY CONTACT: For all legal, privacy, and regulatory correspondence concerning ${countryName}, contact our designated ${officer} at: ${officerEmail}.`,
               `AGE OF MAJORITY & MINORS: In accordance with statutory rules for ${countryName}, individuals under ${minorAge} years of age are classified as minors. Gym Organizations must obtain verifiable parental or legal guardian consent prior to entering minor profiles into the Platform.`
             ]
@@ -114,7 +114,7 @@ export function getLegalDocument(
             title: '10. Intellectual Property & Customer Data Ownership',
             content: [
               'PLATFORM INTELLECTUAL PROPERTY: The software, source code, database architecture, user interfaces, branding, visual styling, algorithms, and documentation are the sole and exclusive intellectual property of Re-member Flow and its licensors.',
-              'CUSTOMER DATA OWNERSHIP: The Gym Organization retains all ownership rights in its proprietary member lists, branch records, and customer contact information. You grant Re-member Flow a non-exclusive, worldwide, royalty-free license to store, process, transmit, and backup Customer Data solely as necessary to provide and maintain the SaaS platform.'
+              'CUSTOMER DATA OWNERSHIP: The Gym Organization retains all ownership rights in its proprietary member lists, branch records, and customer contact information. You grant Re-member Flow a non-exclusive, worldwide, royalty-free license to store, process, transmit, and backup Customer Data solely as necessary to provide and maintain the platform.'
             ]
           },
           {
@@ -187,7 +187,7 @@ export function getLegalDocument(
               `This Privacy Policy governs the processing of personal data across the Re-member Flow software platform under the legal framework of ${framework} in ${countryName}.`,
               'DATA CONTROLLER / DATA FIDUCIARY: When gym owners register an organization and manage member lists, branch records, trainer assignments, and membership finances, the Gym Organization acts as the Data Controller (or Data Fiduciary under India DPDP Act 2023). The Gym Organization determines the purpose and means of collecting member data.',
               'DATA PROCESSOR / SERVICE PROVIDER: Re-member Flow acts strictly as a Data Processor (or Data Intermediary / Service Provider) processing personal data solely on documented instructions from the Gym Organization pursuant to our Data Processing Addendum (DPA).',
-              'DIRECT ACCOUNT DATA: Re-member Flow acts as Data Controller only for the business contact details of gym owners who directly subscribe to our SaaS platform.'
+              'DIRECT ACCOUNT DATA: Re-member Flow acts as Data Controller only for the business contact details of gym owners who directly subscribe to our platform.'
             ]
           },
           {
@@ -334,7 +334,7 @@ export function getLegalDocument(
             id: 'data-return-deletion',
             title: '7. Data Deletion & Return upon Termination',
             content: [
-              'Upon termination of the SaaS agreement, Re-member Flow shall, at the Customer\'s choice, securely return or delete all Customer Personal Data within thirty (30) days, unless applicable statutory law requires retention of certain financial or accounting records (up to 7 years).'
+              'Upon termination of the subscription agreement, Re-member Flow shall, at the Customer\'s choice, securely return or delete all Customer Personal Data within thirty (30) days, unless applicable statutory law requires retention of certain financial or accounting records (up to 7 years).'
             ]
           },
           {

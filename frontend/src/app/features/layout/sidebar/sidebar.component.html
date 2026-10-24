@@ -36,7 +36,7 @@
   </div>
   <nav class="side-nav" aria-label="Main navigation">
     @if (user?.role === 'SUPER_ADMIN') {
-      <button type="button" [class.active]="view === 'platform-admin'" [attr.aria-current]="view === 'platform-admin' ? 'page' : null" (click)="navigate.emit('platform-admin')" title="SaaS Platform Command Center">
+      <button type="button" [class.active]="view === 'platform-admin'" [attr.aria-current]="view === 'platform-admin' ? 'page' : null" (click)="navigate.emit('platform-admin')" title="Platform Command Center">
         <span class="nav-icon">🌐</span> Platform Ops
         @if (pendingUpgradeRequestsCount > 0) {
           <span class="nav-count">{{ pendingUpgradeRequestsCount }}</span>

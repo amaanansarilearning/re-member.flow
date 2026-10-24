@@ -59,8 +59,8 @@ public class PasswordResetService {
         SimpleMailMessage mail = new SimpleMailMessage();
         mail.setFrom(fromAddress);
         mail.setTo(normalizedEmail);
-        mail.setSubject("Your FORM / Club password reset code");
-        mail.setText("Your password reset code is " + code + ". It expires in 10 minutes.");
+        mail.setSubject("Your Re-member Flow password reset code");
+        mail.setText("Your Re-member Flow password reset code is " + code + ". It expires in 10 minutes.");
         mailSender.send(mail);
         return new PasswordResetResponse(message, null);
     }

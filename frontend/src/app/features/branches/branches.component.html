@@ -211,10 +211,10 @@
           <p style="font-size: 13px; color: var(--muted); max-width: 440px; margin: 0 auto 16px; line-height: 1.5;">
             Your current <strong>{{ tierBadgeLabel(subscriptionTier) }}</strong> plan includes <strong>1 branch location</strong>. Operating more than 1 facility, franchise hubs, and cross-branch analytics requires an <strong>Enterprise</strong> subscription.
           </p>
-          <div class="enterprise-feature-pills" style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
-            <span class="feat-pill" style="padding: 5px 12px; background: var(--surface-subtle); border-radius: 20px; font-size: 12px; border: 1px solid var(--border);">🏢 Unlimited Gym Locations</span>
-            <span class="feat-pill" style="padding: 5px 12px; background: var(--surface-subtle); border-radius: 20px; font-size: 12px; border: 1px solid var(--border);">🤝 Franchise & Company Hubs</span>
-            <span class="feat-pill" style="padding: 5px 12px; background: var(--surface-subtle); border-radius: 20px; font-size: 12px; border: 1px solid var(--border);">📊 Cross-Location Unified BI</span>
+          <div class="enterprise-feature-pills">
+            <span class="feat-pill">🏢 Unlimited Gym Locations</span>
+            <span class="feat-pill">🤝 Franchise & Company Hubs</span>
+            <span class="feat-pill">📊 Cross-Location Unified BI</span>
           </div>
           <div style="display: flex; justify-content: center; gap: 12px;">
             <button type="button" class="button button-quiet" (click)="closeEnterpriseBranchPrompt.emit()">Cancel</button>

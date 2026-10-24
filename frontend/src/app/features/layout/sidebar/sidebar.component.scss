@@ -364,3 +364,134 @@
   }
 }
 
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE DESIGN (TABLET & MOBILE SCREEN BREAKPOINTS)
+   ══════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .sidebar {
+    position: sticky;
+    z-index: 40;
+    top: 0;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    overflow-y: visible;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  .sidebar-brand-card {
+    padding: 0;
+    border-bottom: none;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .brand {
+    padding: 2px 4px;
+    gap: 8px;
+  }
+
+  .brand-badge {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border-radius: 9px;
+    padding: 4px;
+  }
+
+  .brand-mark {
+    width: 22px;
+    height: 22px;
+  }
+
+  .brand-badge-ring {
+    display: none;
+  }
+
+  .brand-text {
+    max-width: 120px;
+
+    .brand-meta {
+      display: none;
+    }
+
+    .brand-name {
+      font-size: 13px;
+    }
+  }
+
+  .side-nav {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 2px 0;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    button {
+      min-height: 36px;
+      padding: 0 10px;
+      font-size: 12px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      gap: 6px;
+
+      &:hover {
+        transform: none;
+      }
+
+      &.active {
+        box-shadow: inset 0 -2px 0 var(--accent);
+      }
+    }
+
+    .nav-icon {
+      font-size: 14px;
+      width: auto;
+    }
+
+    .nav-count {
+      min-width: 18px;
+      height: 18px;
+      font-size: 8.5px;
+    }
+  }
+
+  .sidebar-bottom {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-text {
+    display: none;
+  }
+
+  .sidebar {
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  .side-nav button {
+    padding: 0 8px;
+    font-size: 11px;
+  }
+}
+

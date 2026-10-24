@@ -1,8 +1,8 @@
         <section class="page-content platform-admin-page">
           <div class="page-heading">
             <div>
-              <p class="eyebrow">SAAS GLOBAL OPERATIONS · MULTI-TENANT CONTROL PLANE</p>
-              <h1>SaaS Platform Command Center</h1>
+              <p class="eyebrow">GLOBAL OPERATIONS · MULTI-TENANT CONTROL PLANE</p>
+              <h1>Platform Command Center</h1>
               <p class="page-subtitle">Tenant health monitoring, active subscription management, and license key generation.</p>
             </div>
             <div style="display: flex; gap: 8px;">
@@ -18,7 +18,7 @@
           <!-- Platform Navigation Tabs -->
           <div class="platform-tabs">
             <button type="button" [class.active]="platformTab === 'metrics'" (click)="setTab('metrics')">
-              📊 SaaS Telemetry & KPI Metrics
+              📊 Telemetry & KPI Metrics
             </button>
             <button type="button" [class.active]="platformTab === 'organizations'" (click)="setTab('organizations')">
               🏢 Gym Tenants Directory ({{ platformOrganizations.length }})
@@ -34,7 +34,7 @@
             </button>
           </div>
 
-          <!-- Tab 1: SaaS Telemetry & KPI Metrics -->
+          <!-- Tab 1: Telemetry & KPI Metrics -->
           @if (platformTab === 'metrics') {
             @if (pendingUpgradeRequestsCount > 0) {
               <div class="pending-admin-alert-banner" (click)="setTab('upgrade-requests')" role="button" tabindex="0">
@@ -53,7 +53,7 @@
               <div class="platform-stat-card">
                 <p class="stat-eyebrow">Total Gym Tenants</p>
                 <div class="stat-value">{{ platformMetrics?.totalGyms ?? 0 }}</div>
-                <p class="stat-subtext">Registered SaaS organizations</p>
+                <p class="stat-subtext">Registered gym organizations</p>
               </div>
               <div class="platform-stat-card">
                 <p class="stat-eyebrow">Active Premium PRO Gyms</p>

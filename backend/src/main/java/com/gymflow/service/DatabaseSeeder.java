@@ -51,8 +51,8 @@ public class DatabaseSeeder {
                 users.save(new UserAccount("Gym Owner", "owner@gym.local", null,
                         encoder.encode("ChangeMe123!"), Role.OWNER, organization, null));
             }
-            if (!users.existsByEmailIgnoreCase("admin@gymflow.io")) {
-                users.save(new UserAccount("Platform Super-Admin", "admin@gymflow.io", null,
+            if (!users.existsByEmailIgnoreCase("admin@rememberflow.com")) {
+                users.save(new UserAccount("Platform Super-Admin", "admin@rememberflow.com", null,
                         encoder.encode("AdminPassword123!"), Role.SUPER_ADMIN, null, null));
             }
             if (plans.count() == 0) {

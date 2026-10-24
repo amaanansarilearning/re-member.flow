@@ -223,7 +223,7 @@
         ></app-members>
       }
 
-      @if (view() === 'packages' && (user()!.role === 'OWNER' || user()!.role === 'STAFF' || user()!.role === 'PERSONAL_TRAINER')) {
+      @if (view() === 'packages' && user()) {
         <app-packages
           [userRole]="user()?.role"
           [editingPlan]="editingPlan()"

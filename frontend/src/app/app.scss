@@ -1,4 +1,4 @@
-﻿:host {
+:host {
   display: block;
   min-height: 100vh;
 }
@@ -8808,7 +8808,8 @@ tr:hover td.sticky-action-col {
   }
 }
 
-/* SaaS Pro-Rata Credit Banner in SaaS Upgrade Modal */
+/* Platform Pro-Rata Credit Banner */
+.platform-prorata-banner,
 .saas-prorata-banner {
   display: grid;
   gap: 8px;
@@ -8818,6 +8819,7 @@ tr:hover td.sticky-action-col {
   padding: 12px 16px;
   margin-bottom: 14px;
 
+  .platform-prorata-header,
   .saas-prorata-header {
     display: flex;
     justify-content: space-between;
@@ -8825,6 +8827,7 @@ tr:hover td.sticky-action-col {
     flex-wrap: wrap;
     gap: 6px;
 
+    .platform-prorata-tag,
     .saas-prorata-tag {
       font-size: 10px;
       font-weight: 800;
@@ -8835,6 +8838,7 @@ tr:hover td.sticky-action-col {
       border-radius: var(--r-full);
     }
 
+    .platform-prorata-days,
     .saas-prorata-days {
       font-size: 11px;
       font-weight: 600;
@@ -8842,6 +8846,7 @@ tr:hover td.sticky-action-col {
     }
   }
 
+  .platform-prorata-body,
   .saas-prorata-body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -8864,6 +8869,7 @@ tr:hover td.sticky-action-col {
       color: var(--ink);
     }
 
+    .platform-prorata-highlight,
     .saas-prorata-highlight {
       grid-column: 1 / -1;
       display: flex;
@@ -8880,6 +8886,7 @@ tr:hover td.sticky-action-col {
         font-weight: 600;
       }
 
+      .platform-topup-val,
       .saas-topup-val {
         font-size: 15px;
         font-weight: 800;

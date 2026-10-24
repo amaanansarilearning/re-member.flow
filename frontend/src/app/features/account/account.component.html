@@ -66,7 +66,7 @@
               [(ngModel)]="profileDraft.email"
               type="email"
               required
-              placeholder="name@gymflow.com"
+              placeholder="name@rememberflow.com"
             />
           </div>
           <small>This email address serves as your primary login identifier.</small>
@@ -174,7 +174,7 @@
             }
           </div>
           <h2>Gym Branding &amp; Custom Logo</h2>
-          <p class="page-subtitle">White-label your SaaS application with your own gym logo and business name.</p>
+          <p class="page-subtitle">White-label your application with your own gym logo and business name.</p>
         </div>
       </div>
 
@@ -183,7 +183,7 @@
           <span style="font-size: 26px; display: block; margin-bottom: 6px;">🏢</span>
           <strong style="color: #3b82f6; font-size: 14px; display: block;">Custom Branding is a Starter Tier Feature</strong>
           <p style="font-size: 12px; color: var(--muted); margin: 6px auto 14px; max-width: 480px; line-height: 1.45;">
-            Upgrade to <strong>Starter</strong>, <strong>Pro</strong>, or <strong>Enterprise</strong> to replace the SaaS product logo with your custom gym logo and white-label your gym name across navigation, headers, and reports.
+            Upgrade to <strong>Starter</strong>, <strong>Pro</strong>, or <strong>Enterprise</strong> to replace default Re-member Flow branding with your custom gym logo and white-label your gym name across navigation, headers, and reports.
           </p>
           <button type="button" class="button button-dark" (click)="openUpgradeModal.emit('branding')">
             ★ Upgrade to Starter Plan ↗
@@ -503,12 +503,12 @@
   }
 
   @if (user?.role === 'OWNER') {
-    <!-- Commercial SaaS Subscription & Entitlement Details -->
+    <!-- Commercial Platform Subscription & Entitlement Details -->
     <div class="account-subscription-card" [class.is-premium]="isPremium">
       <div class="sub-header-row">
         <div>
-          <p class="sub-eyebrow">COMMERCIAL SAAS SUBSCRIPTION</p>
-          <h3>{{ user?.organizationName || 'GymFlow Network' }} Membership</h3>
+          <p class="sub-eyebrow">COMMERCIAL PLATFORM SUBSCRIPTION</p>
+          <h3>{{ user?.organizationName || 'Re-member Flow Network' }} Membership</h3>
           <div class="sub-tier-display">
             <span>Current Tier:</span>
             <span class="tier-pill" [ngClass]="tierPillClass(user?.subscriptionTier)">
@@ -676,7 +676,7 @@
       <div class="account-legal-item">
         <div class="legal-item-icon">📜</div>
         <div class="legal-item-copy">
-          <h4>Terms of Use & SaaS Agreement</h4>
+          <h4>Terms of Use & Platform Agreement</h4>
           <p>Master subscription agreement, licensing parameters, limitation of liability, and branch delegation terms.</p>
           <button type="button" class="button button-quiet" (click)="openLegal.emit('terms')">Review Terms →</button>
         </div>

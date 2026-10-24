@@ -59,6 +59,7 @@ import {
   Report,
   ResetRequestResponse,
   Role,
+  PlatformUpgradeQuote,
   SaasUpgradeQuote,
   Session,
   StaffPayload,
@@ -161,6 +162,10 @@ export class GymApiService {
 
   upgradeMembership(membershipId: number, payload: MembershipUpgradePayload): Observable<Membership> {
     return this.http.post<Membership>(`${this.baseUrl}/memberships/${membershipId}/upgrade`, payload);
+  }
+
+  quotePlatformUpgrade(targetTier?: string): Observable<PlatformUpgradeQuote> {
+    return this.quoteSaasUpgrade(targetTier);
   }
 
   quoteSaasUpgrade(targetTier?: string): Observable<SaasUpgradeQuote> {

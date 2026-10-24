@@ -9,7 +9,7 @@
     <!-- Pinned Header -->
     <div class="upgrade-modal-header">
       <div>
-        <span class="upgrade-brand-badge">★ COMMERCIAL SAAS LICENSING · {{ tierBadgeLabel(targetTier) }}</span>
+        <span class="upgrade-brand-badge">★ COMMERCIAL PLATFORM LICENSING · {{ tierBadgeLabel(targetTier) }}</span>
         <h2 id="upgrade-modal-title">Elevate Your Club with {{ tierDisplayName(targetTier) }}</h2>
         <p class="dialog-subtitle">Unlock custom branding, digital receipt archiving, audit histories, and personal trainer economics</p>
       </div>
@@ -83,7 +83,7 @@
           <div>
             @if (targetTier === 'STARTER') {
               <strong>White-Label Gym Branding (Starter Plan)</strong>
-              <p>Upgrade to upload your custom gym logo, replace SaaS branding, and white-label your gym name across the entire software interface.</p>
+              <p>Upgrade to upload your custom gym logo, replace platform branding, and white-label your gym name across the entire software interface.</p>
             } @else if (targetTier === 'PRO') {
               <strong>Pro Power: Receipts &amp; Audit Trail (Pro Plan)</strong>
               <p>Includes Starter features plus member payment receipt photo uploads, receipt management, and full real-time action audit trail logs.</p>
@@ -208,16 +208,16 @@
         <div class="upgrade-quote-summary">
           <div class="quote-heading">
             <span>3. Commercial Quote Summary</span>
-            <span style="color: var(--primary);">B2B SaaS License</span>
+            <span style="color: var(--primary);">Enterprise License</span>
           </div>
 
           @if (quote) {
-            <div class="saas-prorata-banner">
-              <div class="saas-prorata-header">
-                <span class="saas-prorata-tag">⚡ PRO-RATA UPGRADE CREDIT</span>
-                <span class="saas-prorata-days">{{ quote.remainingDays }} days remaining in current billing cycle</span>
+            <div class="platform-prorata-banner">
+              <div class="platform-prorata-header">
+                <span class="platform-prorata-tag">⚡ PRO-RATA UPGRADE CREDIT</span>
+                <span class="platform-prorata-days">{{ quote.remainingDays }} days remaining in current billing cycle</span>
               </div>
-              <div class="saas-prorata-body">
+              <div class="platform-prorata-body">
                 <div>
                   <span>Current Rate ({{ quote.currentTier }})</span>
                   <strong>{{ money(quote.currentMonthlyPrice) }}/mo</strong>
@@ -226,9 +226,9 @@
                   <span>Target Rate ({{ quote.targetTier }})</span>
                   <strong>{{ money(quote.targetMonthlyPrice) }}/mo</strong>
                 </div>
-                <div class="saas-prorata-highlight">
+                <div class="platform-prorata-highlight">
                   <span>Estimated Mid-Cycle Top-Up:</span>
-                  <strong class="saas-topup-val">{{ money(quote.estimatedTopUp) }}</strong>
+                  <strong class="platform-topup-val">{{ money(quote.estimatedTopUp) }}</strong>
                 </div>
               </div>
             </div>
@@ -280,7 +280,7 @@
             </label>
           </div>
 
-          <!-- SaaS Settlement Accounts Box -->
+          <!-- Platform Settlement Accounts Box -->
           <div class="settlement-account-card" style="margin: 12px 0 16px;">
             <div class="settlement-title">
               <span>🏦</span>
@@ -289,7 +289,7 @@
             <div class="settlement-grid">
               <div class="settlement-item">
                 <span>Beneficiary:</span>
-                <span class="item-val">GymFlow Cloud Inc</span>
+                <span class="item-val">Re-member Flow Operations</span>
               </div>
               <div class="settlement-item">
                 <span>Account No:</span>
@@ -312,8 +312,8 @@
               <div class="settlement-item">
                 <span>UPI ID:</span>
                 <div style="display: flex; align-items: center; gap: 6px;">
-                  <span class="item-val">billing@gymflow</span>
-                  <button type="button" class="copy-btn" [class.copied]="copiedField === 'upi'" (click)="copySettlement('upi', 'billing@gymflow')">
+                  <span class="item-val">billing@rememberflow.com</span>
+                  <button type="button" class="copy-btn" [class.copied]="copiedField === 'upi'" (click)="copySettlement('upi', 'billing@rememberflow.com')">
                     {{ copiedField === 'upi' ? '✓ Copied' : 'Copy' }}
                   </button>
                 </div>
