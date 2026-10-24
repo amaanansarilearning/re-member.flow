@@ -76,9 +76,9 @@
   --r-full: 9999px;
 
   /* ── Typography ── */
-  --font-body:    'Inter', 'Segoe UI', system-ui, sans-serif;
-  --font-base:    'Inter', 'Segoe UI', system-ui, sans-serif;
-  --font-display: 'Clash Display', 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-base:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 
   font-family: var(--font-body);
   font-synthesis: none;
@@ -247,7 +247,7 @@ button:active:not(:disabled),
 .toast-pill.toast-success .toast-icon {
   color: #059669;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .toast-pill .toast-close-btn {
@@ -517,7 +517,7 @@ button:active:not(:disabled),
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   flex-shrink: 0;
 }
 .checkin-result-info {
@@ -529,13 +529,13 @@ button:active:not(:disabled),
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   flex-wrap: wrap;
   margin-bottom: 2px;
 }
 .checkin-plan-tag {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   padding: 2px 7px;
   border-radius: var(--r-sm);
   background: var(--surface-2);
@@ -676,7 +676,7 @@ button:active:not(:disabled),
   background: var(--surface-2);
   color: var(--accent);
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.06em;
 }
 .branch-pulse-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; }
@@ -860,7 +860,7 @@ button:active:not(:disabled),
   color: var(--accent);
   cursor: pointer;
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 600;
   transition: background 0.15s;
 }
 .clear-filter-btn:hover {
@@ -1050,7 +1050,7 @@ button:active:not(:disabled),
   height: 40px;
   border-radius: 50%;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 600;
 }
 .checkin-result-card.allowed .checkin-result-icon {
   background: var(--emerald);
@@ -2016,7 +2016,7 @@ button.contact-pill:active {
   background: currentColor;
   color: #fff;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   flex-shrink: 0;
 }
 
@@ -2264,7 +2264,7 @@ button.contact-pill:active {
 .drawer-title {
   color: var(--accent);
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
 }
 
@@ -2810,7 +2810,7 @@ button.contact-pill:active {
   background: rgba(245,158,11,0.12);
   color: var(--amber);
   font-size: 8px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.1em;
 }
 .tax-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
@@ -2858,7 +2858,7 @@ button.contact-pill:active {
 
 .req-star {
   color: #ef4444 !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   font-size: 1.15em !important;
   display: inline !important;
   line-height: 1 !important;
@@ -2978,7 +2978,7 @@ button.contact-pill:active {
 }
 .branch-pill-active span {
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--muted);
   letter-spacing: 0.06em;
   display: flex;
@@ -3301,7 +3301,7 @@ button.contact-pill:active {
 
     .chart-eyebrow {
       font-size: 10px;
-      font-weight: 800;
+      font-weight: 600;
       letter-spacing: 0.08em;
       color: var(--muted);
       text-transform: uppercase;
@@ -3310,7 +3310,7 @@ button.contact-pill:active {
 
     h3 {
       font-size: 16px;
-      font-weight: 800;
+      font-weight: 650;
       color: var(--foreground);
       margin: 0;
     }
@@ -3323,7 +3323,7 @@ button.contact-pill:active {
 
     .chart-badge {
       font-size: 10px;
-      font-weight: 800;
+      font-weight: 600;
       padding: 3px 8px;
       border-radius: var(--r-full);
       background: rgba(99, 102, 241, 0.1);
@@ -3408,7 +3408,7 @@ button.contact-pill:active {
 
       .center-val {
         font-size: 15px;
-        font-weight: 800;
+        font-weight: 650;
         color: var(--foreground);
         line-height: 1.1;
       }
@@ -3476,7 +3476,7 @@ button.contact-pill:active {
 
         .legend-pct {
           font-size: 10px;
-          font-weight: 800;
+          font-weight: 600;
           padding: 1.5px 5px;
           border-radius: var(--r-sm);
           background: var(--border);
@@ -3515,7 +3515,7 @@ button.contact-pill:active {
         font-size: 11px;
 
         .ranked-amount {
-          font-weight: 800;
+          font-weight: 650;
           color: var(--foreground);
         }
         .ranked-sub {
@@ -3563,7 +3563,7 @@ button.contact-pill:active {
 
     .step-badge {
       font-size: 9px;
-      font-weight: 800;
+      font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
@@ -3571,7 +3571,7 @@ button.contact-pill:active {
 
     .step-big-val {
       font-size: 22px;
-      font-weight: 800;
+      font-weight: 650;
       line-height: 1;
     }
 
@@ -3773,7 +3773,7 @@ button.contact-pill:active {
     .queue-count-badge {
       background: #f59e0b;
       color: #000;
-      font-weight: 800;
+      font-weight: 600;
       font-size: 11px;
       padding: 2.5px 8px;
       border-radius: var(--r-full);

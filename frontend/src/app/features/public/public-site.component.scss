@@ -83,14 +83,14 @@
 .brand-title {
   font-family: var(--font-display);
   font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  letter-spacing: -0.015em;
   color: #ffffff;
 }
 
 .brand-version-pill {
   font-size: 9px;
-  font-weight: 800;
+  font-weight: 600;
   padding: 2px 6px;
   border-radius: 9999px;
   background: rgba(99, 102, 241, 0.2);
@@ -106,8 +106,8 @@
 
   a, .public-nav-legal {
     color: rgba(226, 232, 240, 0.8);
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 13.5px;
+    font-weight: 500;
     text-decoration: none;
     padding: 8px 4px;
     position: relative;
@@ -175,7 +175,7 @@
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: #ffffff;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transition: all 0.2s ease;
@@ -275,7 +275,7 @@
 .mobile-drawer-title {
   font-family: var(--font-display);
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   color: #f1f5f9;
 }
 
@@ -312,7 +312,7 @@
     border-radius: var(--r-md);
     color: #cbd5e1;
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     text-decoration: none;
     background: transparent;
     border: none;
@@ -343,7 +343,7 @@
   button {
     min-height: 46px;
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
   }
 }
 
@@ -490,7 +490,7 @@
 
 .hero-eyebrow-label {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #c7d2fe;
@@ -502,8 +502,8 @@
 }
 
 .hero-eyebrow-badge {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 10.5px;
+  font-weight: 500;
   color: #a5b4fc;
 }
 
@@ -517,10 +517,10 @@
   max-width: 960px;
   margin: 0;
   font-family: var(--font-display);
-  font-size: clamp(48px, 6.8vw, 92px);
-  font-weight: 800;
-  line-height: 1.02;
-  letter-spacing: -0.035em;
+  font-size: clamp(40px, 5.5vw, 76px);
+  font-weight: 650;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
   color: #ffffff;
   text-wrap: balance;
 }
@@ -564,7 +564,7 @@
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: #ffffff;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   position: relative;
@@ -733,7 +733,7 @@
 
 .showcase-badge-pill {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 3px 10px;
   border-radius: var(--r-full);
   background: rgba(99, 102, 241, 0.15);
@@ -781,7 +781,7 @@
   align-items: center;
   justify-content: space-between;
   font-size: 9.5px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.06em;
   color: #94a3b8;
   margin-bottom: 8px;
@@ -789,7 +789,7 @@
 
 .mock-trend-tag {
   font-size: 9.5px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 2px 6px;
   border-radius: 4px;
 
@@ -806,7 +806,7 @@
 .mock-kpi-val {
   font-family: var(--font-display);
   font-size: 24px;
-  font-weight: 800;
+  font-weight: 650;
   color: #f8fafc;
   line-height: 1.1;
   margin-bottom: 6px;
@@ -859,7 +859,7 @@
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   box-shadow: 0 0 16px rgba(16, 185, 129, 0.4);
   flex-shrink: 0;
 }
@@ -872,17 +872,17 @@
 
   strong {
     color: #34d399;
-    font-weight: 800;
+    font-weight: 600;
   }
 
   .mock-v-member {
     color: #f1f5f9;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   .mock-v-plan {
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 500;
     padding: 2px 7px;
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.1);
@@ -907,7 +907,7 @@
   border: 1px solid rgba(16, 185, 129, 0.3);
   color: #34d399;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 
   .pulse-ring {
@@ -967,8 +967,8 @@
   gap: 20px;
   color: rgba(148, 163, 184, 0.5);
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-weight: 500;
+  letter-spacing: 0.08em;
 
   span:first-child {
     color: var(--accent-light);
@@ -1009,7 +1009,7 @@
 .stat-number-wrap strong {
   font-family: var(--font-display);
   font-size: clamp(30px, 3.6vw, 44px);
-  font-weight: 800;
+  font-weight: 650;
   background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -1056,8 +1056,8 @@
   align-items: center;
   gap: 8px;
   font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #6366f1;
   margin-bottom: 16px;
@@ -1081,10 +1081,10 @@
   margin: 0;
   color: #0f172a;
   font-family: var(--font-display);
-  font-size: clamp(34px, 4vw, 54px);
-  font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -0.025em;
+  font-size: clamp(32px, 3.8vw, 48px);
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 
   .accent-text, em {
     color: #4f46e5;
@@ -1109,7 +1109,7 @@
     min-height: 48px;
     padding: 0 24px;
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
   }
 }
 
@@ -1178,14 +1178,14 @@
 
 .public-feature-number {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   color: #6366f1;
 }
 
 .feature-tag {
   font-size: 9.5px;
-  font-weight: 700;
+  font-weight: 500;
   padding: 2px 7px;
   border-radius: 4px;
   background: rgba(99, 102, 241, 0.08);
@@ -1196,8 +1196,8 @@
   margin: 2px 0 0;
   color: #0f172a;
   font-family: var(--font-display);
-  font-size: 19px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 600;
   letter-spacing: -0.015em;
 }
 
@@ -1248,10 +1248,10 @@
   h2 {
     color: #ffffff;
     font-family: var(--font-display);
-    font-size: clamp(34px, 4vw, 52px);
-    font-weight: 800;
-    line-height: 1.08;
-    letter-spacing: -0.025em;
+    font-size: clamp(32px, 3.8vw, 48px);
+    font-weight: 650;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
     margin: 8px 0 14px;
   }
 
@@ -1312,7 +1312,7 @@
 
 .highlight-tier-badge {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 600;
   padding: 3px 9px;
   border-radius: var(--r-full);
   letter-spacing: 0.04em;
@@ -1346,7 +1346,7 @@
   margin: 0;
   font-family: var(--font-display);
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 600;
   color: #f1f5f9;
 }
 
@@ -1374,9 +1374,9 @@
   gap: 8px;
   text-align: center;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   color: #4f46e5;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-bottom: 12px;
 
@@ -1391,10 +1391,10 @@
 .section-heading {
   text-align: center;
   font-family: var(--font-display);
-  font-size: clamp(32px, 4vw, 50px);
-  font-weight: 800;
+  font-size: clamp(32px, 3.8vw, 48px);
+  font-weight: 650;
   color: var(--ink);
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
   margin: 0 0 14px;
 }
 
@@ -1431,7 +1431,7 @@
     padding: 8px 18px;
     border-radius: var(--r-full);
     font-size: 13px;
-    font-weight: 700;
+    font-weight: 550;
     color: var(--muted);
     cursor: pointer;
     transition: all 0.2s ease;
@@ -1452,7 +1452,7 @@
   background: #10b981;
   color: #ffffff;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   padding: 4px 10px;
   border-radius: var(--r-full);
   letter-spacing: 0.05em;
@@ -1504,8 +1504,8 @@
   background: linear-gradient(135deg, #6366f1, #a855f7);
   color: #ffffff;
   font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   padding: 4px 14px;
   border-radius: var(--r-full);
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
@@ -1519,7 +1519,7 @@
 .p-tier-name {
   font-family: var(--font-display);
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 650;
   color: var(--ink);
   display: block;
 
@@ -1548,7 +1548,7 @@
 .p-amount {
   font-family: var(--font-display);
   font-size: 38px;
-  font-weight: 800;
+  font-weight: 650;
   color: var(--ink);
   line-height: 1;
 
@@ -1560,7 +1560,7 @@
 .p-cadence {
   font-size: 13px;
   color: var(--muted);
-  font-weight: 600;
+  font-weight: 500;
   margin-left: 4px;
 }
 
@@ -1584,7 +1584,7 @@
 
   .p-check {
     color: #10b981;
-    font-weight: 800;
+    font-weight: 600;
     font-size: 14px;
     flex-shrink: 0;
   }
@@ -1598,7 +1598,7 @@
   background: var(--surface);
   color: var(--ink);
   font-size: 13.5px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 
@@ -1640,7 +1640,7 @@
   background: var(--surface-2);
   color: var(--ink);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 
@@ -1680,10 +1680,10 @@
   h2 {
     font-family: var(--font-display);
     font-size: clamp(32px, 3.8vw, 48px);
-    font-weight: 800;
+    font-weight: 650;
     color: var(--ink);
     margin: 8px 0 12px;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
   }
 
   p {
@@ -1735,6 +1735,7 @@
   color: var(--ink);
   margin: 0;
   font-style: italic;
+  font-weight: 400;
   flex: 1;
 }
 
@@ -1751,7 +1752,7 @@
   background: #0f172a;
   color: #ffffff;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1768,7 +1769,7 @@
 
   strong {
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--ink);
   }
 
@@ -1818,8 +1819,8 @@
   background: rgba(6, 11, 24, 0.85);
   color: #ffffff;
   font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
@@ -1843,12 +1844,12 @@
   align-items: center;
   gap: 10px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink);
 
   .hl-check {
     color: #10b981;
-    font-weight: 800;
+    font-weight: 600;
   }
 }
 
@@ -1858,7 +1859,7 @@
   gap: 8px;
   color: #4f46e5;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
   transition: gap 0.2s ease;
 
@@ -1901,7 +1902,7 @@
   background: rgba(255, 255, 255, 0.05);
   color: #ffffff;
   font-size: 13.5px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 
@@ -1929,7 +1930,7 @@
 .location-number {
   color: #818cf8;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
 }
 
@@ -1942,7 +1943,7 @@
     color: #ffffff;
     font-family: var(--font-display);
     font-size: 18px;
-    font-weight: 700;
+    font-weight: 600;
   }
 
   small {
@@ -1972,10 +1973,10 @@
   h2 {
     font-family: var(--font-display);
     font-size: clamp(32px, 3.8vw, 48px);
-    font-weight: 800;
+    font-weight: 650;
     color: var(--ink);
     margin: 8px 0 12px;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
   }
 
   p {
@@ -2021,13 +2022,13 @@
   text-align: left;
   font-family: var(--font-display);
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink);
   cursor: pointer;
 
   .faq-toggle-icon {
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 600;
     color: #4f46e5;
     flex-shrink: 0;
   }
@@ -2095,7 +2096,7 @@
   color: var(--ink);
   cursor: pointer;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   transition: all 0.2s ease;
   box-shadow: var(--shadow-sm);
 
@@ -2111,7 +2112,7 @@
 .close-security-note {
   margin-top: 24px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: #64748b;
 }
 
@@ -2176,7 +2177,7 @@
   border: 1px solid rgba(16, 185, 129, 0.25);
   color: #34d399;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .status-pulse-dot {
@@ -2203,8 +2204,8 @@
   h4 {
     margin: 0 0 6px;
     font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.1em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: #94a3b8;
   }
@@ -2231,7 +2232,7 @@
     align-items: center;
     gap: 6px;
     color: #a5b4fc;
-    font-weight: 700;
+    font-weight: 600;
 
     &:hover {
       color: #ffffff;
