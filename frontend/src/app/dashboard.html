@@ -58,16 +58,22 @@
         [todayDateLabel]="todayLabel()"
         (logout)="logout()"
       />
-      @if (error() && user()) {
-        <div class="toast-error" role="alert">
-          {{ error() }}
-          <button title="Dismiss" aria-label="Dismiss" (click)="error.set('')">×</button>
-        </div>
-      }
-      @if (notice()) {
-        <div class="toast-success" role="status">
-          {{ notice() }}
-          <button title="Dismiss" aria-label="Dismiss" (click)="notice.set('')">×</button>
+      @if ((error() && user()) || notice()) {
+        <div class="toast-notification-hub" aria-live="polite">
+          @if (error() && user()) {
+            <div class="toast-pill toast-error" role="alert">
+              <span class="toast-icon" aria-hidden="true">⚠️</span>
+              <span class="toast-msg">{{ error() }}</span>
+              <button type="button" class="toast-close-btn" title="Dismiss" aria-label="Dismiss notification" (click)="error.set('')">×</button>
+            </div>
+          }
+          @if (notice()) {
+            <div class="toast-pill toast-success" role="status">
+              <span class="toast-icon" aria-hidden="true">✓</span>
+              <span class="toast-msg">{{ notice() }}</span>
+              <button type="button" class="toast-close-btn" title="Dismiss" aria-label="Dismiss notification" (click)="notice.set('')">×</button>
+            </div>
+          }
         </div>
       }
 
