@@ -1832,6 +1832,10 @@ export class App {
   }
 
   async loadReport(): Promise<void> {
+    if (this.reportFrom && this.reportTo && this.reportFrom > this.reportTo) {
+      this.error.set('The "From" date cannot be later than the "To" date.');
+      return;
+    }
     this.busy.set(true);
     this.error.set('');
     try {
@@ -2864,7 +2868,7 @@ export class App {
     this.busy.set(true);
     this.error.set('');
     try {
-      const payload: BranchPayload = { ...this.branchDraft, name: this.branchDraft.name.trim(), code: this.branchDraft.code.trim().toUpperCase(), address: this.branchDraft.address.trim(), phoneNumber: this.branchDraft.phoneNumber.trim() };
+      const payload: BranchPayload = { ...this.branchDraft, name: this.branchDraft.name.trim(), code: this.branchDraft.code.trim().toUpperCase(), address: (this.branchDraft.address || '').trim(), phoneNumber: (this.branchDraft.phoneNumber || '').trim() };
       if (this.branchDraft.id) await firstValueFrom(this.api.updateBranch(this.branchDraft.id, payload));
       else await firstValueFrom(this.api.createBranch(payload));
       this.editingBranch.set(false);
@@ -2882,7 +2886,7 @@ export class App {
     this.busy.set(true);
     this.error.set('');
     try {
-      const session = await firstValueFrom(this.api.updateProfile({ ...this.profileDraft, fullName: this.profileDraft.fullName.trim(), email: this.profileDraft.email.trim(), phoneNumber: this.profileDraft.phoneNumber.trim() }));
+      const session = await firstValueFrom(this.api.updateProfile({ ...this.profileDraft, fullName: this.profileDraft.fullName.trim(), email: this.profileDraft.email.trim(), phoneNumber: (this.profileDraft.phoneNumber || '').trim() }));
       this.api.storeSession(session.token, session.user);
       this.user.set(session.user);
       this.notice.set('Account details updated.');
@@ -3056,7 +3060,16 @@ export class App {
       && this.isUpcoming(member.renewalStartDate);
   }
   canUpgradeMembership(member: Membership): boolean {
-    return member.status === 'ACTIVE' && !this.isExpired(member.endDate) && !member.renewalStartDate;
+    if (member.status !== 'ACTIVE' || this.isExpired(member.endDate) || member.renewalStartDate) {
+      return false;
+    }
+    return !this.hasPendingUpgrade(member);
+  }
+  hasPendingUpgrade(member: Membership): boolean {
+    return this.memberUpgradeRequests().some((r) => r.membershipId === member.id && r.status === 'PENDING');
+  }
+  hasPendingRenewal(member: Membership): boolean {
+    return this.renewalRequests().some((r) => r.membershipId === member.id && r.status === 'PENDING');
   }
   canRenewMembership(member: Membership): boolean {
     if (member.renewalStartDate || (member.status === 'ACTIVE' && this.isUpcoming(member.startDate))) {
@@ -3534,11 +3547,11 @@ export class App {
         await firstValueFrom(this.api.createPt({
           fullName: this.ptDraft.fullName.trim(),
           email: this.ptDraft.email.trim(),
-          phoneNumber: this.ptDraft.phoneNumber.trim(),
+          phoneNumber: (this.ptDraft.phoneNumber || '').trim(),
           password: this.ptDraft.password,
           branchId: this.ptDraft.branchId ? Number(this.ptDraft.branchId) : null,
-          specializations: this.ptDraft.specializations.trim(),
-          bio: this.ptDraft.bio.trim(),
+          specializations: (this.ptDraft.specializations || '').trim(),
+          bio: (this.ptDraft.bio || '').trim(),
           sessionFeePerHour: fee,
           commissionPercent: comm
         }));
@@ -3546,8 +3559,8 @@ export class App {
       } else {
         await firstValueFrom(this.api.updatePt(this.ptDraft.id, {
           branchId: this.ptDraft.branchId ? Number(this.ptDraft.branchId) : null,
-          specializations: this.ptDraft.specializations.trim(),
-          bio: this.ptDraft.bio.trim(),
+          specializations: (this.ptDraft.specializations || '').trim(),
+          bio: (this.ptDraft.bio || '').trim(),
           sessionFeePerHour: fee,
           commissionPercent: comm
         }));

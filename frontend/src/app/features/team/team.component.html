@@ -1,4 +1,4 @@
-﻿<section class="page-content">
+<section class="page-content">
   <div class="page-heading">
     <div>
       <p class="eyebrow">ORGANIZATION & ACCESS</p>
@@ -121,17 +121,28 @@
           </label>
           <label>
             <span class="field-label-text">Temporary Password <span class="req-star">*</span></span>
+            <div class="password-input-wrap">
             <input
               name="staffPassword"
               [(ngModel)]="staffDraft.password"
               [class.input-has-error]="hasFieldError('staffPassword')"
               (input)="clearFieldError.emit('staffPassword')"
-              type="password"
+              [type]="showStaffPassword ? 'text' : 'password'"
               required
               minlength="8"
               maxlength="72"
               placeholder="Minimum 8 characters"
             />
+              <button
+                type="button"
+                class="password-toggle-btn"
+                [attr.aria-label]="showStaffPassword ? 'Hide password' : 'Show password'"
+                (click)="showStaffPassword = !showStaffPassword"
+                tabindex="-1"
+              >
+                {{ showStaffPassword ? '🙈' : '👁️' }}
+              </button>
+            </div>
             <small>Staff member will use this to sign into the front desk dashboard.</small>
             @if (hasFieldError('staffPassword')) {
               <span class="field-error-msg">⚠️ {{ getFieldError('staffPassword') }}</span>
@@ -319,16 +330,27 @@
 
           <label>
             <span class="field-label-text">Reset Password <span class="label-note">OPTIONAL</span></span>
-            <input
-              name="editStaffPassword"
-              [(ngModel)]="staffEditDraft.password"
-              type="password"
-              minlength="8"
-              maxlength="72"
-              placeholder="Leave blank to keep existing password"
-              [class.input-has-error]="hasFieldError('staffEditPassword') || hasFieldError('editStaffPassword')"
-              (input)="clearFieldError.emit('staffEditPassword'); clearFieldError.emit('editStaffPassword')"
-            />
+            <div class="password-input-wrap">
+              <input
+                name="editStaffPassword"
+                [(ngModel)]="staffEditDraft.password"
+                [type]="showStaffEditPassword ? 'text' : 'password'"
+                minlength="8"
+                maxlength="72"
+                placeholder="Leave blank to keep existing password"
+                [class.input-has-error]="hasFieldError('staffEditPassword') || hasFieldError('editStaffPassword')"
+                (input)="clearFieldError.emit('staffEditPassword'); clearFieldError.emit('editStaffPassword')"
+              />
+              <button
+                type="button"
+                class="password-toggle-btn"
+                [attr.aria-label]="showStaffEditPassword ? 'Hide password' : 'Show password'"
+                (click)="showStaffEditPassword = !showStaffEditPassword"
+                tabindex="-1"
+              >
+                {{ showStaffEditPassword ? '🙈' : '👁️' }}
+              </button>
+            </div>
             @if (hasFieldError('staffEditPassword') || hasFieldError('editStaffPassword')) {
               <span class="field-error-msg">⚠️ {{ getFieldError('staffEditPassword') || getFieldError('editStaffPassword') }}</span>
             }

@@ -30,6 +30,8 @@ export interface StaffEditDraft {
   styleUrl: './team.component.scss'
 })
 export class TeamComponent {
+  showStaffPassword = false;
+  showStaffEditPassword = false;
   @Input({ required: true }) staff: User[] = [];
   @Input({ required: true }) filteredStaff: User[] = [];
   @Input({ required: true }) maxStaffDisplay: string | number = '3';

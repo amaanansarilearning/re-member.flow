@@ -220,13 +220,21 @@
                   </div>
 
                   <div class="footer-right-actions">
-                    @if (canUpgradeMembership(member)) {
+                    @if (hasPendingUpgrade(member)) {
+                      <span class="pending-chip upgrade-pending-chip" title="A package upgrade request is currently pending front-desk review">
+                        <span>⚡</span> Upgrade in review
+                      </span>
+                    } @else if (canUpgradeMembership(member)) {
                       <button class="action-btn action-btn-upgrade-member" type="button" title="Upgrade package mid-cycle" (click)="openMemberUpgradeModal.emit(member)">
                         <span class="btn-icon" aria-hidden="true">⬆</span>
                         <span>Upgrade</span>
                       </button>
                     }
-                    @if (canRenewMembership(member)) {
+                    @if (hasPendingRenewal(member)) {
+                      <span class="pending-chip renewal-pending-chip" title="A renewal request is currently pending front-desk review">
+                        <span>↻</span> Renewal in review
+                      </span>
+                    } @else if (canRenewMembership(member)) {
                       <button class="action-btn action-btn-renew" type="button" title="Schedule renewal" (click)="openRenewal.emit(member)">
                         <span class="btn-icon" aria-hidden="true">↻</span>
                         <span>Renew</span>

@@ -52,6 +52,7 @@ export class PlatformAdminComponent {
 
   onOrgSearchChange(val: string): void {
     this.platformOrgSearchChange.emit(val);
+    this.loadPlatformData.emit();
   }
 
   onUpgradeSearchChange(val: string): void {

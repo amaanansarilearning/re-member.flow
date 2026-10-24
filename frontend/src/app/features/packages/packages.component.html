@@ -1,4 +1,4 @@
-﻿<section class="page-content">
+<section class="page-content">
   <div class="page-heading">
     <div>
       <p class="eyebrow">MEMBERSHIP DESIGN</p>
@@ -179,7 +179,7 @@
             Cancel
           </button>
           <button class="button button-dark" type="submit" [disabled]="busy || planForm.invalid || !!planPtValidationError">
-            Save package <span>↗</span>
+            {{ busy ? 'Saving package…' : 'Save package' }} <span>↗</span>
           </button>
         </div>
       </form>

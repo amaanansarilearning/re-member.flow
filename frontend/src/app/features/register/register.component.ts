@@ -27,6 +27,7 @@ export interface MemberDraft {
   styleUrl: './register.component.scss'
 })
 export class RegisterComponent {
+  showMemberPassword = false;
   @Input() userRole?: Role;
   @Input() userBranchName?: string | null;
   @Input({ required: true }) memberDraft!: MemberDraft;

@@ -66,8 +66,8 @@
               <button type="button" [class.selected]="analyticsPeriod === 'twelve-months'" (click)="onSelectPeriod('twelve-months')">Last 12 months</button>
               <button type="button" [class.selected]="analyticsPeriod === 'custom'" (click)="onSelectPeriod('custom')">Custom</button>
             </div>
-            <label>From<input type="date" name="reportFrom" [ngModel]="reportFrom" (ngModelChange)="onReportFromChange($event)" required></label>
-            <label>To<input type="date" name="reportTo" [ngModel]="reportTo" (ngModelChange)="onReportToChange($event)" required></label>
+            <label>From<input type="date" name="reportFrom" [max]="reportTo" [ngModel]="reportFrom" (ngModelChange)="onReportFromChange($event)" required></label>
+            <label>To<input type="date" name="reportTo" [min]="reportFrom" [ngModel]="reportTo" (ngModelChange)="onReportToChange($event)" required></label>
             <label>Branch<select name="reportBranch" [ngModel]="reportBranchId" (ngModelChange)="onReportBranchIdChange($event)"><option value="">All branches</option>@for (branch of branches; track branch.id) { <option [value]="branch.id">{{ branch.name }}</option> }</select></label>
             <button class="button button-dark" (click)="loadReport.emit()" [disabled]="busy">Update analytics</button>
           </section>

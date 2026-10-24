@@ -23,8 +23,8 @@
 
           <!-- Front Desk Quick Launch Strip -->
           <div class="overview-quick-launch-strip" aria-label="Quick operations">
-                        @if (pendingRenewalRequests.length + pendingMemberUpgradeRequests.length > 0) {
-              <button type="button" class="quick-launch-chip" style="background: rgba(245, 158, 11, 0.15); border-color: #f59e0b; color: #d97706; font-weight: 700;" (click)="openApprovalsHub.emit()">
+            @if (pendingRenewalRequests.length + pendingMemberUpgradeRequests.length > 0) {
+              <button type="button" class="approvals-alert-chip" (click)="openApprovalsHub.emit()" title="Review pending member requests">
                 <span class="ql-icon">🔔</span> Pending Approvals ({{ pendingRenewalRequests.length + pendingMemberUpgradeRequests.length }})
               </button>
             }

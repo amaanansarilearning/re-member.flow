@@ -33,6 +33,8 @@ export class MembersComponent {
   @Input({ required: true }) canRenewMembership!: (member: Membership) => boolean;
   @Input({ required: true }) canSendRenewalReminder!: (member: Membership) => boolean;
   @Input({ required: true }) canUpgradeMembership!: (member: Membership) => boolean;
+  @Input({ required: true }) hasPendingUpgrade!: (member: Membership) => boolean;
+  @Input({ required: true }) hasPendingRenewal!: (member: Membership) => boolean;
   @Input({ required: true }) freezeStatus!: (freeze: Freeze) => string;
   @Input({ required: true }) groupState!: (group: MembershipGroup) => string;
   @Input({ required: true }) currentTerm!: (group: MembershipGroup) => Membership;

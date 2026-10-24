@@ -43,6 +43,8 @@ export interface BrandingDraft {
   styleUrl: './account.component.scss'
 })
 export class AccountComponent {
+  showCurrentPassword = false;
+  showNewPassword = false;
   @Input() user: User | null = null;
   @Input({ required: true }) profileDraft!: ProfileDraft;
   @Input({ required: true }) passwordDraft!: PasswordDraft;

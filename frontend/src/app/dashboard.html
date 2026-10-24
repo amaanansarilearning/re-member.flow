@@ -1,4 +1,4 @@
-﻿@if (!user()) {
+@if (!user()) {
   @if (authMode() === 'home') {
     <app-public-site
       [pricingCycle]="publicPricingCycle()"
@@ -188,6 +188,8 @@
           [canFreezeMembership]="canFreezeMembership.bind(this)"
           [canRenewMembership]="canRenewMembership.bind(this)"
           [canSendRenewalReminder]="canSendRenewalReminder.bind(this)"
+          [hasPendingUpgrade]="hasPendingUpgrade.bind(this)"
+          [hasPendingRenewal]="hasPendingRenewal.bind(this)"
           [canUpgradeMembership]="canUpgradeMembership.bind(this)"
           [freezeStatus]="freezeStatus.bind(this)"
           [groupState]="groupState.bind(this)"

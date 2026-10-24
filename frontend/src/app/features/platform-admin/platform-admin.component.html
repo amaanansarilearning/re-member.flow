@@ -90,7 +90,7 @@
                 type="text"
                 placeholder="Search gyms by name or code..."
                 [ngModel]="platformOrgSearch" (ngModelChange)="onOrgSearchChange($event)"
-                (ngModelChange)="loadPlatformData.emit()"
+
                 style="max-width: 360px; padding: 8px 12px; border-radius: var(--r-md); border: 1px solid var(--border); font-size: 13px;"
               />
               <span class="report-note">{{ platformOrganizations.length }} gym organizations enrolled</span>

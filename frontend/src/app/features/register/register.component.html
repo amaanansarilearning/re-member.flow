@@ -1,4 +1,4 @@
-﻿<section class="page-content register-page">
+<section class="page-content register-page">
   <div class="page-heading">
     <div>
       <p class="eyebrow">A NEW FACE ON THE FLOOR</p>
@@ -73,18 +73,29 @@
         </label>
         <label>
           <span class="field-label-text">Temporary password <span class="req-star">*</span></span>
+          <div class="password-input-wrap">
           <input
             id="field-memberPassword"
             name="memberPassword"
             [(ngModel)]="memberDraft.password"
             [class.input-has-error]="hasFieldError('memberPassword')"
             (input)="clearFieldError.emit('memberPassword')"
-            type="password"
+            [type]="showMemberPassword ? 'text' : 'password'"
             required
             minlength="8"
             autocomplete="new-password"
             placeholder="At least 8 characters"
           />
+            <button
+              type="button"
+              class="password-toggle-btn"
+              [attr.aria-label]="showMemberPassword ? 'Hide password' : 'Show password'"
+              (click)="showMemberPassword = !showMemberPassword"
+              tabindex="-1"
+            >
+              {{ showMemberPassword ? '🙈' : '👁️' }}
+            </button>
+          </div>
           <small>They can use this to access their member account.</small>
           @if (hasFieldError('memberPassword')) {
             <span class="field-error-msg">⚠️ {{ getFieldError('memberPassword') }}</span>

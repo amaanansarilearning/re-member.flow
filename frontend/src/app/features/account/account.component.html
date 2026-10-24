@@ -99,30 +99,48 @@
       </div>
       <form class="account-modern-form" (ngSubmit)="changePassword.emit()">
         <label>Current Password
-          <div class="input-with-icon">
+          <div class="input-with-icon password-input-wrap">
             <span class="input-icon">🔑</span>
             <input
               name="currentPassword"
               [(ngModel)]="passwordDraft.currentPassword"
-              type="password"
+              [type]="showCurrentPassword ? 'text' : 'password'"
               required
               autocomplete="current-password"
               placeholder="Enter current password"
             />
+            <button
+              type="button"
+              class="password-toggle-btn"
+              [attr.aria-label]="showCurrentPassword ? 'Hide password' : 'Show password'"
+              (click)="showCurrentPassword = !showCurrentPassword"
+              tabindex="-1"
+            >
+              {{ showCurrentPassword ? '🙈' : '👁️' }}
+            </button>
           </div>
         </label>
         <label>New Password
-          <div class="input-with-icon">
+          <div class="input-with-icon password-input-wrap">
             <span class="input-icon">🛡️</span>
             <input
               name="newAccountPassword"
               [(ngModel)]="passwordDraft.newPassword"
-              type="password"
+              [type]="showNewPassword ? 'text' : 'password'"
               required
               minlength="8"
               autocomplete="new-password"
               placeholder="Minimum 8 characters"
             />
+            <button
+              type="button"
+              class="password-toggle-btn"
+              [attr.aria-label]="showNewPassword ? 'Hide password' : 'Show password'"
+              (click)="showNewPassword = !showNewPassword"
+              tabindex="-1"
+            >
+              {{ showNewPassword ? '🙈' : '👁️' }}
+            </button>
           </div>
         </label>
         <div class="password-guidance-card">

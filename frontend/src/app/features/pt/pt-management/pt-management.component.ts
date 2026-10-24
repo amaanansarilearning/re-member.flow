@@ -13,6 +13,7 @@ import { dateLabel, initials, money } from '../../../core/utils/formatters';
 })
 export class PtManagementComponent {
   readonly Math = Math;
+  showPtPassword = false;
 
   @Input() busy = false;
   @Input() user: User | null = null;

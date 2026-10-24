@@ -96,17 +96,28 @@
                   <div class="form-step-title" style="margin-top: 18px;">02 Portal Credentials</div>
                   <div class="form-grid">
                     <label><span class="field-label-text">Temporary password <span class="req-star">*</span></span>
-                      <input
-                        name="ptPassword"
-                        [(ngModel)]="ptDraft.password"
-                        [class.input-has-error]="hasFieldError('ptPassword')"
-                        (input)="clearFieldError.emit('ptPassword')"
-                        type="password"
-                        required
-                        minlength="8"
-                        maxlength="72"
-                        placeholder="At least 8 characters"
-                      />
+                      <div class="password-input-wrap">
+                        <input
+                          name="ptPassword"
+                          [(ngModel)]="ptDraft.password"
+                          [class.input-has-error]="hasFieldError('ptPassword')"
+                          (input)="clearFieldError.emit('ptPassword')"
+                          [type]="showPtPassword ? 'text' : 'password'"
+                          required
+                          minlength="8"
+                          maxlength="72"
+                          placeholder="At least 8 characters"
+                        />
+                        <button
+                          type="button"
+                          class="password-toggle-btn"
+                          [attr.aria-label]="showPtPassword ? 'Hide password' : 'Show password'"
+                          (click)="showPtPassword = !showPtPassword"
+                          tabindex="-1"
+                        >
+                          {{ showPtPassword ? '🙈' : '👁️' }}
+                        </button>
+                      </div>
                       @if (hasFieldError('ptPassword')) {
                         <span class="field-error-msg">⚠️ {{ getFieldError('ptPassword') }}</span>
                       }
