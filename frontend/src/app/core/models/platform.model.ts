@@ -96,6 +96,14 @@ export interface PlatformMetrics {
   totalMembersAcrossGyms: number;
   totalBranches: number;
   availableCodes: number;
+  totalPlatformGmv?: number;
+  platformEstimatedMrr?: number;
+  totalActiveMembershipsAcrossGyms?: number;
+  totalPtSessionsAcrossGyms?: number;
+  totalPlansAcrossGyms?: number;
+  healthyGymsCount?: number;
+  atRiskGymsCount?: number;
+  upsellCandidatesCount?: number;
 }
 
 export interface PlatformOrganization {
@@ -111,6 +119,122 @@ export interface PlatformOrganization {
   ownerName: string | null;
   branchCount: number;
   memberCount: number;
+  countryCode?: string;
+  legalJurisdiction?: string;
+  activeMemberCount?: number;
+  totalRevenue?: number;
+  revenueLast30Days?: number;
+  discountsGiven?: number;
+  planCount?: number;
+  ptTrainerCount?: number;
+  ptSessionsConducted?: number;
+  staffCount?: number;
+  actionHistoryCount?: number;
+  customBrandingActive?: boolean;
+  healthScore?: number;
+  healthStatus?: 'HEALTHY' | 'MODERATE' | 'AT_RISK' | string;
+  decisionInsights?: string[];
+}
+
+export interface PlatformGymBranch {
+  id: number;
+  name: string;
+  code: string;
+  type: string;
+  address: string | null;
+  phone: string | null;
+  activeMembers: number;
+  totalMembers: number;
+  totalRevenue: number;
+}
+
+export interface PlatformGymPlan {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  durationMonths: number;
+  durationDays: number | null;
+  active: boolean;
+  activeEnrollments: number;
+}
+
+export interface PlatformGymTrainer {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  specialties: string;
+  commissionRate: number;
+  active: boolean;
+  activeMembers: number;
+  totalSessions: number;
+  totalEarnings: number;
+}
+
+export interface PlatformGymStaff {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  role: string;
+  branchName: string;
+}
+
+export interface PlatformGymAction {
+  id: number;
+  actorEmail: string;
+  actorName: string;
+  action: string;
+  entityType: string;
+  entityId: number;
+  occurredAt: string;
+  reason: string;
+}
+
+export interface PlatformGymFinancials {
+  totalRevenue: number;
+  revenueLast30Days: number;
+  discountsGiven: number;
+  estimatedTax: number;
+  averageTicketPrice: number;
+  arpu: number;
+}
+
+export interface PlatformGymServiceUsage {
+  totalMembers: number;
+  activeMembers: number;
+  expiredMembers: number;
+  totalBranches: number;
+  totalPlans: number;
+  totalTrainers: number;
+  totalPtSessions: number;
+  actionHistoryCount: number;
+  renewalRemindersCount: number;
+  customBrandingActive: boolean;
+}
+
+export interface PlatformGymDecisionSupport {
+  healthScore: number;
+  healthStatus: 'HEALTHY' | 'MODERATE' | 'AT_RISK' | string;
+  daysUntilExpiry: number | null;
+  churnRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH' | string;
+  strategicRecommendations: string[];
+  positiveIndicators: string[];
+  riskFactors: string[];
+}
+
+export interface PlatformGymDetail {
+  organization: PlatformOrganization;
+  owner: User | null;
+  branches: PlatformGymBranch[];
+  plans: PlatformGymPlan[];
+  trainers: PlatformGymTrainer[];
+  staff: PlatformGymStaff[];
+  recentActivity: PlatformGymAction[];
+  financials: PlatformGymFinancials;
+  serviceUsage: PlatformGymServiceUsage;
+  decisionSupport: PlatformGymDecisionSupport;
 }
 
 export interface TenantBackup {

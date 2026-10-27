@@ -3,7 +3,14 @@
           <div class="page-heading">
             <div>
               <p class="eyebrow">COMMUNITY & MEMBERSHIPS</p>
-              <h1>{{ user!.role === 'MEMBER' ? 'My Membership & Access' : 'Member Directory' }}</h1>
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <h1>{{ user!.role === 'MEMBER' ? 'My Membership & Access' : 'Member Directory' }}</h1>
+                @if (user?.role === 'MEMBER') {
+                  <span class="tier-chip" [ngClass]="'tier-chip-' + tierPillClass(user?.subscriptionTier).replace('tier-', '')" style="font-size: 11px; padding: 4px 10px; border-radius: 999px;">
+                    {{ tierBadgeLabel(user?.subscriptionTier) }} Member
+                  </span>
+                }
+              </div>
               <p class="page-subtitle">{{ user!.role === 'MEMBER' ? 'Review your active plan, facility check-in status, and trainer attendance credentials.' : 'Manage memberships, check facility access, and review member histories.' }}</p>
             </div>
             @if (user!.role !== 'MEMBER') {
@@ -111,6 +118,11 @@
                         <span class="branch-pill-tag">
                           <span class="branch-icon" aria-hidden="true">📍</span> {{ member.branchName || 'All locations' }}
                         </span>
+                        @if (user?.role === 'MEMBER') {
+                          <span class="tier-chip" [ngClass]="'tier-chip-' + tierPillClass(user?.subscriptionTier).replace('tier-', '')" style="font-size: 10px; padding: 2px 8px; border-radius: 999px;">
+                            {{ tierBadgeLabel(user?.subscriptionTier) }}
+                          </span>
+                        }
                       </div>
                       <div class="member-contact-row">
                         <button type="button" class="contact-pill copyable" (click)="onCopy(group.email, 'Email copied: ' + group.email)" title="Click to copy email">

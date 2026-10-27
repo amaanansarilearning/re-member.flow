@@ -155,10 +155,17 @@ public class SecurityHardeningIntegrationTest {
 
         @Test
         void testPublicGymRegistrationLocksToStandardTier() {
+                ResponseEntity<Map> otpRes = rest.postForEntity(
+                                "/api/auth/register-gym/send-otp",
+                                Map.of("email", "sneaky@gym.test", "organizationCode", "SNEAKY"),
+                                Map.class);
+                assertThat(otpRes.getStatusCode()).isEqualTo(HttpStatus.OK);
+                String otp = (String) otpRes.getBody().get("developmentCode");
+
                 GymRegistrationRequest req = new GymRegistrationRequest(
                                 "Sneaky Gym Owner", "sneaky@gym.test", "999-000", "password123",
                                 "Sneaky Gym", "SNEAKY", "Main", "101 Street",
-                                SubscriptionTier.PREMIUM); // Attempting to request PREMIUM for free
+                                SubscriptionTier.PREMIUM, "IN", otp); // Attempting to request PREMIUM for free
 
                 ResponseEntity<LoginResponse> response = rest.postForEntity(
                                 "/api/auth/register-gym", req, LoginResponse.class);

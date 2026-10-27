@@ -176,6 +176,16 @@ export function resolveComplianceCountry(countryCodeOrJurisdiction?: string | nu
   return COMPLIANCE_COUNTRIES[0];
 }
 
+export interface GymRegistrationOtpRequest {
+  email: string;
+  organizationCode?: string;
+}
+
+export interface GymRegistrationOtpResponse {
+  message: string;
+  developmentCode?: string | null;
+}
+
 export interface GymRegistrationPayload {
   fullName: string;
   email: string;
@@ -187,6 +197,7 @@ export interface GymRegistrationPayload {
   branchAddress?: string;
   subscriptionTier?: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM';
   countryCode?: string;
+  verificationCode?: string;
 }
 
 export interface ProfilePayload {

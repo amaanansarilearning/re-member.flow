@@ -28,6 +28,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final GymService gymService;
     private final PasswordResetService passwordResetService;
+    private final com.gymflow.service.GymRegistrationOtpService gymRegistrationOtpService;
 
     @Value("${gym.app.url:http://localhost:4200}")
     private String appUrl;
@@ -36,12 +37,14 @@ public class AuthController {
     private Boolean cookieSecureConfig;
 
     public AuthController(AuthenticationManager authenticationManager, UserRepository users, JwtService jwtService,
-            GymService gymService, PasswordResetService passwordResetService) {
+            GymService gymService, PasswordResetService passwordResetService,
+            com.gymflow.service.GymRegistrationOtpService gymRegistrationOtpService) {
         this.authenticationManager = authenticationManager;
         this.users = users;
         this.jwtService = jwtService;
         this.gymService = gymService;
         this.passwordResetService = passwordResetService;
+        this.gymRegistrationOtpService = gymRegistrationOtpService;
     }
 
     private boolean isSecureCookie(jakarta.servlet.http.HttpServletRequest request) {
@@ -90,6 +93,11 @@ public class AuthController {
         attachJwtCookie(response, httpRequest, token, (int) (jwtService.getExpirationMs() / 1000));
         
         return new LoginResponse(null, gymService.userDto(user.getEmail()));
+    }
+
+    @PostMapping("/register-gym/send-otp")
+    public GymRegistrationOtpResponse sendRegistrationOtp(@Valid @RequestBody GymRegistrationOtpRequest request) {
+        return gymRegistrationOtpService.requestOtp(request);
     }
 
     @PostMapping("/register-gym")

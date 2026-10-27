@@ -16,6 +16,8 @@ import {
   CancellationReason,
   Dashboard,
   Freeze,
+  GymRegistrationOtpRequest,
+  GymRegistrationOtpResponse,
   GymRegistrationPayload,
   Membership,
   MembershipAccess,
@@ -30,6 +32,7 @@ import {
   PlanPayload,
   PlatformMetrics,
   PlatformOrganization,
+  PlatformGymDetail,
   ProfilePayload,
   PtAnalytics,
   PtAvailability,
@@ -79,6 +82,7 @@ export class GymApiService {
   private readonly baseUrl = '/api';
   me(): Observable<User> { return this.http.get<User>(`${this.baseUrl}/auth/me`); }
   login(email: string, password: string): Observable<Session> { return this.http.post<Session>(`${this.baseUrl}/auth/login`, { email, password }); }
+  sendGymRegistrationOtp(payload: GymRegistrationOtpRequest): Observable<GymRegistrationOtpResponse> { return this.http.post<GymRegistrationOtpResponse>(`${this.baseUrl}/auth/register-gym/send-otp`, payload); }
   registerGym(payload: GymRegistrationPayload): Observable<Session> { return this.http.post<Session>(`${this.baseUrl}/auth/register-gym`, payload); }
   currentSubscription(): Observable<SubscriptionStatus> { return this.http.get<SubscriptionStatus>(`${this.baseUrl}/subscription/current`); }
   upgradeSubscription(tier: 'PREMIUM' = 'PREMIUM'): Observable<SubscriptionStatus> { return this.http.post<SubscriptionStatus>(`${this.baseUrl}/subscription/upgrade`, { tier }); }
@@ -88,6 +92,9 @@ export class GymApiService {
   cancelSubscription(immediate: boolean, reason?: string): Observable<SubscriptionStatus> { return this.http.post<SubscriptionStatus>(`${this.baseUrl}/subscription/cancel`, { immediate, reason: reason || '' }); }
   reactivateSubscription(): Observable<SubscriptionStatus> { return this.http.post<SubscriptionStatus>(`${this.baseUrl}/subscription/reactivate`, {}); }
   platformMetrics(): Observable<PlatformMetrics> { return this.http.get<PlatformMetrics>(`${this.baseUrl}/platform/metrics`); }
+  platformOrganizationDetails(id: number): Observable<PlatformGymDetail> {
+    return this.http.get<PlatformGymDetail>(`${this.baseUrl}/platform/organizations/${id}/details`);
+  }
   platformOrganizations(search?: string): Observable<PlatformOrganization[]> {
     let params = new HttpParams();
     if (search) params = params.set('search', search);

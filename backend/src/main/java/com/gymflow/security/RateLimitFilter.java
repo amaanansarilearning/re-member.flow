@@ -74,6 +74,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
                     .addLimit(Bandwidth.classic(10, Refill.intervally(10, Duration.ofHours(1))))
                     .build();
         }
+        if (path.contains("/register-gym/send-otp")) {
+            return Bucket.builder()
+                    .addLimit(Bandwidth.classic(5, Refill.intervally(5, Duration.ofMinutes(5))))
+                    .addLimit(Bandwidth.classic(15, Refill.intervally(15, Duration.ofHours(1))))
+                    .build();
+        }
         return Bucket.builder()
                 .addLimit(Bandwidth.classic(200, Refill.intervally(200, Duration.ofMinutes(1))))
                 .build();

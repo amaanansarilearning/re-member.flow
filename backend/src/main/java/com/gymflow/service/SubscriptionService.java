@@ -15,6 +15,8 @@ import com.gymflow.repository.BranchRepository;
 import com.gymflow.repository.OrganizationRepository;
 import com.gymflow.repository.UpgradeRequestRepository;
 import com.gymflow.repository.UserRepository;
+import com.gymflow.repository.*;
+import com.gymflow.domain.*;
 import static com.gymflow.web.ApiDtos.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
+import java.util.List;
+import java.util.ArrayList;
 
 @Service
 @Transactional(readOnly = true)
@@ -38,7 +41,14 @@ public class SubscriptionService {
     private final ActivationCodeRepository activationCodes;
     private final BranchRepository branches;
     private final UpgradeRequestRepository upgradeRequests;
-    private final PlatformEmailService platformEmailService;
+    private final PlatformEmailService platformEmailService;
+    private final MembershipRepository memberships;
+    private final PlanRepository plans;
+    private final PersonalTrainerRepository trainers;
+    private final PtSessionRepository ptSessions;
+    private final ActionHistoryRepository actionHistories;
+    private final RenewalReminderRepository renewalReminders;
+    private final PtEarningRepository ptEarnings;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public SubscriptionService(UserRepository users,
@@ -46,13 +56,27 @@ public class SubscriptionService {
                                ActivationCodeRepository activationCodes,
                                BranchRepository branches,
                                UpgradeRequestRepository upgradeRequests,
-                               PlatformEmailService platformEmailService) {
+                               PlatformEmailService platformEmailService,
+                               MembershipRepository memberships,
+                               PlanRepository plans,
+                               PersonalTrainerRepository trainers,
+                               PtSessionRepository ptSessions,
+                               ActionHistoryRepository actionHistories,
+                               RenewalReminderRepository renewalReminders,
+                               PtEarningRepository ptEarnings) {
         this.users = users;
         this.organizations = organizations;
         this.activationCodes = activationCodes;
         this.branches = branches;
         this.upgradeRequests = upgradeRequests;
         this.platformEmailService = platformEmailService;
+        this.memberships = memberships;
+        this.plans = plans;
+        this.trainers = trainers;
+        this.ptSessions = ptSessions;
+        this.actionHistories = actionHistories;
+        this.renewalReminders = renewalReminders;
+        this.ptEarnings = ptEarnings;
     }
 
     public void requireFeature(String userEmail, AppFeature feature) {
@@ -225,13 +249,44 @@ public class SubscriptionService {
         long totalBranches = branches.count();
         long availableCodes = activationCodes.countByStatus(ActivationCodeStatus.AVAILABLE);
 
+        BigDecimal totalPlatformGmv = memberships.sumAllPlatformRevenue();
+        BigDecimal platformEstimatedMrr = allOrgs.stream()
+                .filter(o -> o.getSubscriptionStatus() == SubscriptionStatus.ACTIVE)
+                .map(o -> o.getSubscriptionTier() != null ? o.getSubscriptionTier().monthlyPrice() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        long totalActiveMembershipsAcrossGyms = memberships.countByStatus(MembershipStatus.ACTIVE);
+        long totalPtSessionsAcrossGyms = ptSessions.count();
+        long totalPlansAcrossGyms = plans.count();
+
+        long healthyGymsCount = 0;
+        long atRiskGymsCount = 0;
+        long upsellCandidatesCount = 0;
+
+        for (GymOrganization org : allOrgs) {
+            PlatformOrganizationDto dto = toPlatformOrgDto(org);
+            if ("HEALTHY".equals(dto.healthStatus())) healthyGymsCount++;
+            else if ("AT_RISK".equals(dto.healthStatus())) atRiskGymsCount++;
+
+            if (dto.decisionInsights().stream().anyMatch(i -> i.contains("Upsell") || i.contains("Upgrade") || i.contains("Opportunity"))) {
+                upsellCandidatesCount++;
+            }
+        }
+
         return new PlatformMetricsDto(
                 totalGyms,
                 activePremiumGyms,
                 standardGyms,
                 totalMembersAcrossGyms,
                 totalBranches,
-                availableCodes
+                availableCodes,
+                totalPlatformGmv != null ? totalPlatformGmv : BigDecimal.ZERO,
+                platformEstimatedMrr != null ? platformEstimatedMrr : BigDecimal.ZERO,
+                totalActiveMembershipsAcrossGyms,
+                totalPtSessionsAcrossGyms,
+                totalPlansAcrossGyms,
+                healthyGymsCount,
+                atRiskGymsCount,
+                upsellCandidatesCount
         );
     }
 
@@ -555,18 +610,288 @@ public class SubscriptionService {
         );
     }
 
+    public PlatformGymDetailDto getOrganizationDetails(Long organizationId) {
+        GymOrganization org = organizations.findById(organizationId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Gym organization not found"));
+
+        PlatformOrganizationDto orgDto = toPlatformOrgDto(org);
+
+        UserAccount owner = users.findByOrganizationIdAndRoleOrderByFullNameAsc(org.getId(), Role.OWNER)
+                .stream().findFirst().orElse(null);
+        UserDto ownerDto = owner != null ? toUserDto(owner) : null;
+
+        List<PlatformGymBranchDto> branchDtos = branches.findByOrganizationIdOrderByNameAsc(org.getId()).stream()
+                .map(b -> {
+                    long activeMembers = users.countByRoleAndOrganizationIdAndBranchId(Role.MEMBER, org.getId(), b.getId());
+                    BigDecimal branchRevenue = memberships.sumAmountPaidByBranchId(b.getId());
+                    if (branchRevenue == null) branchRevenue = BigDecimal.ZERO;
+                    return new PlatformGymBranchDto(
+                            b.getId(),
+                            b.getName(),
+                            b.getCode(),
+                            b.getType() != null ? b.getType().name() : "COMPANY_OWNED",
+                            b.getAddress(),
+                            b.getPhoneNumber(),
+                            activeMembers,
+                            activeMembers,
+                            branchRevenue
+                    );
+                }).toList();
+
+        List<PlatformGymPlanDto> planDtos = plans.findByOrganizationIdOrderByPriceAsc(org.getId()).stream()
+                .map(p -> new PlatformGymPlanDto(
+                        p.getId(),
+                        p.getName(),
+                        p.getDescription(),
+                        p.getPrice(),
+                        p.getDurationMonths(),
+                        p.getDurationDays(),
+                        p.isActive(),
+                        memberships.countActiveByPlanId(p.getId())
+                )).toList();
+
+        List<PlatformGymTrainerDto> trainerDtos = trainers.findByOrganizationIdOrderByUserAccountFullNameAsc(org.getId()).stream()
+                .map(t -> {
+                    long activeM = trainers.countActiveMembers(t.getId());
+                    long totalS = ptSessions.countByPersonalTrainerId(t.getId());
+                    BigDecimal pendingE = ptEarnings.sumPendingEarnings(t.getId());
+                    if (pendingE == null) pendingE = BigDecimal.ZERO;
+                    return new PlatformGymTrainerDto(
+                            t.getId(),
+                            t.getUserAccount() != null ? t.getUserAccount().getFullName() : "Trainer",
+                            t.getUserAccount() != null ? t.getUserAccount().getEmail() : "",
+                            t.getUserAccount() != null ? t.getUserAccount().getPhoneNumber() : "",
+                            t.getSpecializations(),
+                            t.getCommissionPercent(),
+                            t.isActive(),
+                            activeM,
+                            totalS,
+                            pendingE
+                    );
+                }).toList();
+
+        List<PlatformGymStaffDto> staffDtos = users.findByOrganizationIdAndRoleOrderByFullNameAsc(org.getId(), Role.STAFF).stream()
+                .map(u -> new PlatformGymStaffDto(
+                        u.getId(),
+                        u.getFullName(),
+                        u.getEmail(),
+                        u.getPhoneNumber(),
+                        u.getRole(),
+                        u.getBranch() != null ? u.getBranch().getName() : "All Branches"
+                )).toList();
+
+        List<PlatformGymActionDto> actionDtos = actionHistories.findTop250ByOrganizationIdOrderByOccurredAtDesc(org.getId()).stream()
+                .limit(25)
+                .map(a -> new PlatformGymActionDto(
+                        a.getId(),
+                        a.getActorEmail(),
+                        a.getActorName(),
+                        a.getAction(),
+                        a.getEntityType(),
+                        a.getEntityId(),
+                        a.getOccurredAt(),
+                        a.getReason()
+                )).toList();
+
+        BigDecimal totalRev = orgDto.totalRevenue();
+        BigDecimal rev30 = orgDto.revenueLast30Days();
+        BigDecimal discounts = orgDto.discountsGiven();
+        BigDecimal estimatedTax = totalRev.multiply(new BigDecimal("0.18")).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal avgTicket = orgDto.memberCount() > 0 
+                ? totalRev.divide(BigDecimal.valueOf(orgDto.memberCount()), 2, RoundingMode.HALF_UP) 
+                : BigDecimal.ZERO;
+        BigDecimal arpu = orgDto.activeMemberCount() > 0 
+                ? rev30.divide(BigDecimal.valueOf(orgDto.activeMemberCount()), 2, RoundingMode.HALF_UP) 
+                : BigDecimal.ZERO;
+
+        PlatformGymFinancialsDto financials = new PlatformGymFinancialsDto(
+                totalRev, rev30, discounts, estimatedTax, avgTicket, arpu
+        );
+
+        long renewalRemindersSent = renewalReminders.countByMembershipMemberOrganizationId(org.getId());
+        long expiredMembers = Math.max(0, orgDto.memberCount() - orgDto.activeMemberCount());
+
+        PlatformGymServiceUsageDto serviceUsage = new PlatformGymServiceUsageDto(
+                orgDto.memberCount(),
+                orgDto.activeMemberCount(),
+                expiredMembers,
+                orgDto.branchCount(),
+                orgDto.planCount(),
+                orgDto.ptTrainerCount(),
+                orgDto.ptSessionsConducted(),
+                orgDto.actionHistoryCount(),
+                renewalRemindersSent,
+                orgDto.customBrandingActive()
+        );
+
+        Long daysUntilExpiry = null;
+        if (org.getSubscriptionExpiresAt() != null) {
+            daysUntilExpiry = ChronoUnit.DAYS.between(Instant.now(), org.getSubscriptionExpiresAt());
+        }
+        String churnRisk = orgDto.healthScore() < 45 ? "HIGH" : orgDto.healthScore() < 75 ? "MEDIUM" : "LOW";
+
+        List<String> positiveIndicators = new ArrayList<>();
+        if (orgDto.activeMemberCount() > 0) positiveIndicators.add(orgDto.activeMemberCount() + " actively paying gym members on roster");
+        if (rev30.compareTo(BigDecimal.ZERO) > 0) positiveIndicators.add("₹" + rev30 + " revenue recorded in previous 30 days");
+        if (orgDto.ptTrainerCount() > 0) positiveIndicators.add("Personal Training service active with " + orgDto.ptTrainerCount() + " trainer(s)");
+        if (orgDto.branchCount() > 1) positiveIndicators.add("Multi-facility operation across " + orgDto.branchCount() + " branches");
+        if (orgDto.customBrandingActive()) positiveIndicators.add("White-label custom branding configured");
+
+        List<String> riskFactors = new ArrayList<>();
+        if (daysUntilExpiry != null && daysUntilExpiry <= 14) riskFactors.add("Subscription expiring in " + daysUntilExpiry + " days");
+        if (org.getSubscriptionStatus() == SubscriptionStatus.SUSPENDED) riskFactors.add("Tenant is currently SUSPENDED");
+        if (rev30.compareTo(BigDecimal.ZERO) == 0 && orgDto.memberCount() > 0) riskFactors.add("Zero sales transactions recorded in last 30 days");
+        if (expiredMembers > orgDto.activeMemberCount()) riskFactors.add("High expired membership ratio vs active members");
+
+        PlatformGymDecisionSupportDto decisionSupport = new PlatformGymDecisionSupportDto(
+                orgDto.healthScore(),
+                orgDto.healthStatus(),
+                daysUntilExpiry,
+                churnRisk,
+                orgDto.decisionInsights(),
+                positiveIndicators,
+                riskFactors
+        );
+
+        return new PlatformGymDetailDto(
+                orgDto,
+                ownerDto,
+                branchDtos,
+                planDtos,
+                trainerDtos,
+                staffDtos,
+                actionDtos,
+                financials,
+                serviceUsage,
+                decisionSupport
+        );
+    }
+
+    private UserDto toUserDto(UserAccount user) {
+        GymOrganization org = user.getOrganization();
+        GymBranch branch = user.getBranch();
+        return new UserDto(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getPhoneNumber(),
+                user.getRole(),
+                branch != null ? branch.getId() : null,
+                branch != null ? branch.getName() : null,
+                org != null ? org.getId() : null,
+                org != null ? org.getName() : null,
+                org != null ? org.getLogoData() : null,
+                org == null ? SubscriptionTier.STANDARD : org.getSubscriptionTier(),
+                org == null ? List.of("CORE_MANAGEMENT") : org.getEnabledFeatures(),
+                org != null ? org.getSubscriptionStatus() : null,
+                org != null ? org.getSubscriptionExpiresAt() : null,
+                user.getMemberPin(),
+                org != null && org.getCountryCode() != null ? org.getCountryCode() : "IN",
+                org != null && org.getLegalJurisdiction() != null ? org.getLegalJurisdiction() : "INDIA_DPDP"
+        );
+    }
+
     private PlatformOrganizationDto toPlatformOrgDto(GymOrganization org) {
         UserAccount owner = users.findByOrganizationIdAndRoleOrderByFullNameAsc(org.getId(), Role.OWNER)
                 .stream().findFirst().orElse(null);
         long branchCount = branches.countByOrganizationId(org.getId());
         long memberCount = users.countByRoleAndOrganizationId(Role.MEMBER, org.getId());
+        long activeMemberCount = memberships.countByOrganizationIdAndStatus(org.getId(), MembershipStatus.ACTIVE);
+        BigDecimal totalRevenue = memberships.sumAmountPaidByOrganizationId(org.getId());
+        if (totalRevenue == null) totalRevenue = BigDecimal.ZERO;
+        
+        Instant thirtyDaysAgo = Instant.now().minus(30, ChronoUnit.DAYS);
+        BigDecimal revenueLast30Days = memberships.sumAmountPaidByOrganizationIdSince(org.getId(), thirtyDaysAgo);
+        if (revenueLast30Days == null) revenueLast30Days = BigDecimal.ZERO;
+
+        BigDecimal discountsGiven = memberships.sumDiscountsByOrganizationId(org.getId());
+        if (discountsGiven == null) discountsGiven = BigDecimal.ZERO;
+
+        long planCount = plans.countByOrganizationId(org.getId());
+        long ptTrainerCount = trainers.countByOrganizationId(org.getId());
+        long ptSessionsConducted = ptSessions.countByOrganizationId(org.getId());
+        long staffCount = users.countByRoleAndOrganizationId(Role.STAFF, org.getId());
+        long actionHistoryCount = actionHistories.countByOrganizationId(org.getId());
+        
+        boolean customBrandingActive = org.getLogoData() != null && !org.getLogoData().isBlank();
+
+        int healthScore = 0;
+
+        Long daysUntilExpiry = null;
+        if (org.getSubscriptionExpiresAt() != null) {
+            daysUntilExpiry = ChronoUnit.DAYS.between(Instant.now(), org.getSubscriptionExpiresAt());
+        }
+
+        if (org.getSubscriptionStatus() == SubscriptionStatus.ACTIVE) {
+            if (daysUntilExpiry == null) {
+                healthScore += 25;
+            } else if (daysUntilExpiry > 30) {
+                healthScore += 25;
+            } else if (daysUntilExpiry > 7) {
+                healthScore += 15;
+            } else if (daysUntilExpiry >= 0) {
+                healthScore += 5;
+            }
+        } else if (org.getSubscriptionStatus() == SubscriptionStatus.TRIAL) {
+            healthScore += 15;
+        }
+
+        if (memberCount > 0) {
+            double activeRatio = (double) activeMemberCount / memberCount;
+            if (activeRatio >= 0.70) healthScore += 30;
+            else if (activeRatio >= 0.40) healthScore += 20;
+            else healthScore += 10;
+        }
+
+        if (revenueLast30Days.compareTo(BigDecimal.ZERO) > 0) {
+            healthScore += 25;
+        } else if (totalRevenue.compareTo(BigDecimal.ZERO) > 0) {
+            healthScore += 15;
+        }
+
+        if (ptTrainerCount > 0) healthScore += 5;
+        if (branchCount > 1) healthScore += 5;
+        if (planCount >= 2) healthScore += 5;
+        if (customBrandingActive || actionHistoryCount > 5) healthScore += 5;
+
+        healthScore = Math.min(100, Math.max(0, healthScore));
+
+        String healthStatus = healthScore >= 75 ? "HEALTHY" : healthScore >= 45 ? "MODERATE" : "AT_RISK";
+
+        List<String> decisionInsights = new ArrayList<>();
+        SubscriptionTier tier = org.getSubscriptionTier() != null ? org.getSubscriptionTier() : SubscriptionTier.STANDARD;
+
+        if (tier == SubscriptionTier.STANDARD && (memberCount >= 20 || branchCount > 1 || totalRevenue.compareTo(new BigDecimal("20000")) > 0)) {
+            decisionInsights.add("🚀 Upsell Target: High activity on STANDARD tier. Recommend PRO or ENTERPRISE.");
+        }
+        if (tier == SubscriptionTier.PRO && branchCount >= 2) {
+            decisionInsights.add("🏢 Multi-Branch Expansion: Ready for ENTERPRISE multi-site agreement.");
+        }
+        if (daysUntilExpiry != null && daysUntilExpiry >= 0 && daysUntilExpiry <= 14) {
+            decisionInsights.add("⏳ Renewal Approaching: Subscription expires in " + daysUntilExpiry + " days. Contact owner.");
+        }
+        if (org.getSubscriptionStatus() == SubscriptionStatus.SUSPENDED || org.getSubscriptionStatus() == SubscriptionStatus.EXPIRED) {
+            decisionInsights.add("⚠️ Tenant Inactive: Subscription is " + org.getSubscriptionStatus() + ". Follow up on reactivation.");
+        }
+        if (memberCount > 10 && revenueLast30Days.compareTo(BigDecimal.ZERO) == 0) {
+            decisionInsights.add("💤 Low Momentum: 0 memberships sold in last 30 days. Recommend outreach.");
+        }
+        if (memberCount >= 15 && ptTrainerCount == 0) {
+            decisionInsights.add("🏋️ PT Adoption Opportunity: 0 Personal Trainers registered. Pitch PT module.");
+        }
+        if (healthScore >= 85 && activeMemberCount >= 15) {
+            decisionInsights.add("⭐ Platform Champion: Outstanding retention and steady cashflow.");
+        }
+        if (decisionInsights.isEmpty()) {
+            decisionInsights.add("✓ Core Operations: Tenant operating within expected operational baselines.");
+        }
 
         return new PlatformOrganizationDto(
                 org.getId(),
                 org.getName(),
                 org.getCode(),
                 org.getLogoData(),
-                org.getSubscriptionTier(),
+                tier,
                 org.getSubscriptionStatus(),
                 org.getSubscriptionExpiresAt(),
                 org.getCreatedAt(),
@@ -575,7 +900,20 @@ public class SubscriptionService {
                 branchCount,
                 memberCount,
                 org.getCountryCode() != null ? org.getCountryCode() : "IN",
-                org.getLegalJurisdiction() != null ? org.getLegalJurisdiction() : "INDIA_DPDP"
+                org.getLegalJurisdiction() != null ? org.getLegalJurisdiction() : "INDIA_DPDP",
+                activeMemberCount,
+                totalRevenue,
+                revenueLast30Days,
+                discountsGiven,
+                planCount,
+                ptTrainerCount,
+                ptSessionsConducted,
+                staffCount,
+                actionHistoryCount,
+                customBrandingActive,
+                healthScore,
+                healthStatus,
+                decisionInsights
         );
     }
 }

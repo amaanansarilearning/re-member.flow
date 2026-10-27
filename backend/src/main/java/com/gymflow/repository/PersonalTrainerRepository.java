@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PersonalTrainerRepository extends JpaRepository<PersonalTrainer, Long> {
+    long countByOrganizationId(Long organizationId);
+
     List<PersonalTrainer> findByOrganizationIdOrderByUserAccountFullNameAsc(Long organizationId);
     List<PersonalTrainer> findByOrganizationIdAndActiveTrueOrderByUserAccountFullNameAsc(Long organizationId);
     Optional<PersonalTrainer> findByUserAccountId(Long userAccountId);

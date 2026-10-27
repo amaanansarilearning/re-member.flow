@@ -47,4 +47,9 @@ public interface PtSessionRepository extends JpaRepository<PtSession, Long> {
     long countByPersonalTrainerOrganizationIdAndStatusAndPeriod(
         @Param("orgId") Long orgId, @Param("status") PtSessionStatus status,
         @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Query("select count(s) from PtSession s where s.personalTrainer.organization.id = :orgId")
+    long countByOrganizationId(@Param("orgId") Long orgId);
+
+    long countByPersonalTrainerId(Long personalTrainerId);
 }

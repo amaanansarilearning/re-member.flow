@@ -1059,6 +1059,7 @@ class GymApiIntegrationTest {
                 regReq.put("organizationCode", "STDFIT");
                 regReq.put("branchName", "Downtown");
                 regReq.put("subscriptionTier", "STANDARD");
+                regReq.put("verificationCode", requestRegistrationOtp("standard-owner@gym.local", "STDFIT"));
 
                 ResponseEntity<Map<String, Object>> regRes = rest.exchange(
                                 url("/api/auth/register-gym"), HttpMethod.POST, request(null, regReq), MAP_RESPONSE);
@@ -1127,14 +1128,15 @@ class GymApiIntegrationTest {
                 assertThat(activationCode).startsWith("GF-PRO-");
 
                 // 4. Register a Standard Gym
-                Map<String, Object> gymRegistration = Map.of(
+                Map<String, Object> gymRegistration = new HashMap<>(Map.of(
                                 "fullName", "Apex Owner",
                                 "email", "apex-owner@gym.local",
                                 "password", "ApexPass123!",
                                 "organizationName", "Apex Fitness",
                                 "organizationCode", "APEX",
                                 "branchName", "Apex Central",
-                                "subscriptionTier", "STANDARD");
+                                "subscriptionTier", "STANDARD"));
+                gymRegistration.put("verificationCode", requestRegistrationOtp("apex-owner@gym.local", "APEX"));
                 ResponseEntity<Map> regRes = rest.postForEntity(
                                 url("/api/auth/register-gym"), gymRegistration, Map.class);
                 assertThat(regRes.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -1206,14 +1208,15 @@ class GymApiIntegrationTest {
         @Test
         void upgradeRequestAndApprovalLifecycleTest() {
                 // 1. Register a standard gym
-                Map<String, Object> titanGym = Map.of(
+                Map<String, Object> titanGym = new HashMap<>(Map.of(
                                 "fullName", "Titan Owner",
                                 "email", "titan-owner@gym.local",
                                 "password", "TitanPass123!",
                                 "organizationName", "Titan Athletics",
                                 "organizationCode", "TITAN",
                                 "branchName", "Titan North",
-                                "subscriptionTier", "STANDARD");
+                                "subscriptionTier", "STANDARD"));
+                titanGym.put("verificationCode", requestRegistrationOtp("titan-owner@gym.local", "TITAN"));
                 ResponseEntity<Map> regRes = rest.postForEntity(
                                 url("/api/auth/register-gym"), titanGym, Map.class);
                 assertThat(regRes.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -1309,14 +1312,15 @@ class GymApiIntegrationTest {
                 assertThat(ptUnlocked.getStatusCode()).isEqualTo(HttpStatus.OK);
 
                 // 9. Test Direct Upgrade workflow on another gym
-                Map<String, Object> vanguardGym = Map.of(
+                Map<String, Object> vanguardGym = new HashMap<>(Map.of(
                                 "fullName", "Vanguard Owner",
                                 "email", "vanguard-owner@gym.local",
                                 "password", "VanguardPass123!",
                                 "organizationName", "Vanguard Fitness",
                                 "organizationCode", "VANGUARD",
                                 "branchName", "Vanguard South",
-                                "subscriptionTier", "STANDARD");
+                                "subscriptionTier", "STANDARD"));
+                vanguardGym.put("verificationCode", requestRegistrationOtp("vanguard-owner@gym.local", "VANGUARD"));
                 rest.postForEntity(url("/api/auth/register-gym"), vanguardGym, Map.class);
                 String vanguardToken = login("vanguard-owner@gym.local", "VanguardPass123!").get("token").toString();
 
@@ -1366,17 +1370,31 @@ class GymApiIntegrationTest {
                 return "http://localhost:" + port + path;
         }
 
+        private String requestRegistrationOtp(String email, String organizationCode) {
+                Map<String, String> req = new HashMap<>();
+                req.put("email", email);
+                if (organizationCode != null) {
+                        req.put("organizationCode", organizationCode);
+                }
+                ResponseEntity<Map> res = rest.postForEntity(url("/api/auth/register-gym/send-otp"), req, Map.class);
+                assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+                return (String) res.getBody().get("developmentCode");
+        }
+
+
     @Test
     void memberUpgradeQuoteAndExecutionLifecycleTest() {
         String gymOwnerEmail = "upgrade-owner-" + System.nanoTime() + "@gym.local";
-        Map<String, Object> gym = Map.of(
+        String gymOrgCode = "UPG" + (System.currentTimeMillis() % 10000);
+        Map<String, Object> gym = new HashMap<>(Map.of(
                 "fullName", "Upgrade Owner",
                 "email", gymOwnerEmail,
                 "password", "OwnerPass123!",
                 "organizationName", "Upgrade Gym " + System.nanoTime(),
-                "organizationCode", "UPG" + (System.currentTimeMillis() % 10000),
+                "organizationCode", gymOrgCode,
                 "branchName", "Main Branch",
-                "subscriptionTier", "ENTERPRISE");
+                "subscriptionTier", "ENTERPRISE"));
+        gym.put("verificationCode", requestRegistrationOtp(gymOwnerEmail, gymOrgCode));
         rest.postForEntity(url("/api/auth/register-gym"), gym, Map.class);
         String ownerToken = login(gymOwnerEmail, "OwnerPass123!").get("token").toString();
 

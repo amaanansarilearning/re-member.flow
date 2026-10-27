@@ -32,6 +32,12 @@ public class PlatformAdminController {
         return subscriptionService.listAllOrganizations(search);
     }
 
+    @GetMapping("/organizations/{id}/details")
+    public PlatformGymDetailDto getOrganizationDetails(@PathVariable Long id) {
+        return subscriptionService.getOrganizationDetails(id);
+    }
+
+
     @PutMapping("/organizations/{id}/subscription")
     public PlatformOrganizationDto updateOrganizationSubscription(
             @PathVariable Long id,

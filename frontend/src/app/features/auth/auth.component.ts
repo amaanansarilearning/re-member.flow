@@ -13,10 +13,13 @@ import { COMPLIANCE_COUNTRIES, CountryComplianceOption, LegalDocumentId, resolve
 export class AuthComponent {
   @Input({ required: true }) authMode: 'home' | 'login' | 'forgot-password' | 'register-gym' = 'login';
   @Input({ required: true }) resetStep: 'request' | 'confirm' = 'request';
+  @Input() registerStep: 'details' | 'otp' = 'details';
   @Input() notice = '';
   @Input() error = '';
   @Input() busy = false;
   @Input() developmentResetCode = '';
+  @Input() developmentRegisterCode = '';
+  @Input() registerOtpCooldown = 0;
 
   @Input() loginEmail = '';
   @Output() loginEmailChange = new EventEmitter<string>();
@@ -35,7 +38,8 @@ export class AuthComponent {
     branchAddress: '',
     subscriptionTier: 'STANDARD' as 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM',
     countryCode: 'IN',
-    acceptTerms: false
+    acceptTerms: false,
+    verificationCode: ''
   };
 
   @Input() resetDraft = {
@@ -56,6 +60,8 @@ export class AuthComponent {
 
   @Output() login = new EventEmitter<void>();
   @Output() registerGym = new EventEmitter<void>();
+  @Output() requestRegisterOtp = new EventEmitter<void>();
+  @Output() setRegisterStep = new EventEmitter<'details' | 'otp'>();
   @Output() requestPasswordReset = new EventEmitter<void>();
   @Output() confirmPasswordReset = new EventEmitter<void>();
   @Output() backToHome = new EventEmitter<void>();

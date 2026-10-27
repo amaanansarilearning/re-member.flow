@@ -34,6 +34,7 @@ public class SecurityConfig {
                         .ignoringRequestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register-gym",
+                                "/api/auth/register-gym/**",
                                 "/api/auth/password-reset/**",
                                 "/api/csrf")
                         .csrfTokenRequestHandler(
@@ -46,6 +47,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/register-gym",
+                                "/api/auth/register-gym/**",
                                 "/api/auth/password-reset/request",
                                 "/api/auth/password-reset/confirm",
                                 "/error")

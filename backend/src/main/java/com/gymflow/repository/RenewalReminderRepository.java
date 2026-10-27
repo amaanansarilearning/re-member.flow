@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface RenewalReminderRepository extends JpaRepository<RenewalReminder, Long> {
+    long countByMembershipMemberOrganizationId(Long organizationId);
+
     @Query("select case when count(r) > 0 then true else false end from RenewalReminder r "
             + "where r.membership.id = :membershipId and r.daysBefore = :daysBefore "
             + "and lower(r.recipientEmail) = lower(:recipientEmail)")

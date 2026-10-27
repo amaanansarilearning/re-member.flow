@@ -52,6 +52,16 @@ public final class ApiDtos {
         public record LoginResponse(String token, UserDto user) {
         }
 
+        public record GymRegistrationOtpRequest(
+                        @NotBlank @Email String email,
+                        @Size(max = 40) @Pattern(regexp = "^$|^[A-Za-z0-9_-]+$") String organizationCode) {
+        }
+
+        public record GymRegistrationOtpResponse(
+                        String message,
+                        String developmentCode) {
+        }
+
         public record GymRegistrationRequest(
                         @NotBlank @Size(max = 100) String fullName,
                         @NotBlank @Email String email,
@@ -62,7 +72,8 @@ public final class ApiDtos {
                         @Size(max = 100) String branchName,
                         @Size(max = 500) String branchAddress,
                         SubscriptionTier subscriptionTier,
-                        @Size(max = 2) String countryCode) {
+                        @Size(max = 2) String countryCode,
+                        @NotBlank @Size(min = 6, max = 6) String verificationCode) {
                 public GymRegistrationRequest(
                                 String fullName,
                                 String email,
@@ -73,7 +84,21 @@ public final class ApiDtos {
                                 String branchName,
                                 String branchAddress,
                                 SubscriptionTier subscriptionTier) {
-                        this(fullName, email, phoneNumber, password, organizationName, organizationCode, branchName, branchAddress, subscriptionTier, "IN");
+                        this(fullName, email, phoneNumber, password, organizationName, organizationCode, branchName, branchAddress, subscriptionTier, "IN", null);
+                }
+
+                public GymRegistrationRequest(
+                                String fullName,
+                                String email,
+                                String phoneNumber,
+                                String password,
+                                String organizationName,
+                                String organizationCode,
+                                String branchName,
+                                String branchAddress,
+                                SubscriptionTier subscriptionTier,
+                                String countryCode) {
+                        this(fullName, email, phoneNumber, password, organizationName, organizationCode, branchName, branchAddress, subscriptionTier, countryCode, null);
                 }
         }
 
@@ -224,7 +249,21 @@ public final class ApiDtos {
                         long standardGyms,
                         long totalMembersAcrossGyms,
                         long totalBranches,
-                        long availableCodes) {
+                        long availableCodes,
+                        BigDecimal totalPlatformGmv,
+                        BigDecimal platformEstimatedMrr,
+                        long totalActiveMembershipsAcrossGyms,
+                        long totalPtSessionsAcrossGyms,
+                        long totalPlansAcrossGyms,
+                        long healthyGymsCount,
+                        long atRiskGymsCount,
+                        long upsellCandidatesCount) {
+
+                public PlatformMetricsDto(long totalGyms, long activePremiumGyms, long standardGyms,
+                                long totalMembersAcrossGyms, long totalBranches, long availableCodes) {
+                        this(totalGyms, activePremiumGyms, standardGyms, totalMembersAcrossGyms, totalBranches, availableCodes,
+                                BigDecimal.ZERO, BigDecimal.ZERO, 0, 0, 0, 0, 0, 0);
+                }
         }
 
         public record PlatformOrganizationDto(
@@ -241,7 +280,30 @@ public final class ApiDtos {
                         long branchCount,
                         long memberCount,
                         String countryCode,
-                        String legalJurisdiction) {
+                        String legalJurisdiction,
+                        long activeMemberCount,
+                        BigDecimal totalRevenue,
+                        BigDecimal revenueLast30Days,
+                        BigDecimal discountsGiven,
+                        long planCount,
+                        long ptTrainerCount,
+                        long ptSessionsConducted,
+                        long staffCount,
+                        long actionHistoryCount,
+                        boolean customBrandingActive,
+                        int healthScore,
+                        String healthStatus,
+                        List<String> decisionInsights) {
+
+                public PlatformOrganizationDto(Long id, String name, String code, String logoData,
+                                SubscriptionTier subscriptionTier, SubscriptionStatus subscriptionStatus,
+                                Instant subscriptionExpiresAt, Instant createdAt, String ownerEmail, String ownerName,
+                                long branchCount, long memberCount, String countryCode, String legalJurisdiction) {
+                        this(id, name, code, logoData, subscriptionTier, subscriptionStatus, subscriptionExpiresAt, createdAt,
+                                ownerEmail, ownerName, branchCount, memberCount, countryCode, legalJurisdiction,
+                                memberCount, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0, 0, 0, 0, 0, false, 50, "MODERATE", List.of());
+                }
+
                 public PlatformOrganizationDto(Long id, String name, String code, String logoData,
                                 SubscriptionTier subscriptionTier, SubscriptionStatus subscriptionStatus,
                                 Instant subscriptionExpiresAt, Instant createdAt, String ownerEmail, String ownerName,
@@ -249,6 +311,107 @@ public final class ApiDtos {
                         this(id, name, code, logoData, subscriptionTier, subscriptionStatus, subscriptionExpiresAt, createdAt,
                                 ownerEmail, ownerName, branchCount, memberCount, "IN", "INDIA_DPDP");
                 }
+        }
+
+        public record PlatformGymBranchDto(
+                        Long id,
+                        String name,
+                        String code,
+                        String type,
+                        String address,
+                        String phone,
+                        long activeMembers,
+                        long totalMembers,
+                        BigDecimal totalRevenue) {
+        }
+
+        public record PlatformGymPlanDto(
+                        Long id,
+                        String name,
+                        String description,
+                        BigDecimal price,
+                        int durationMonths,
+                        Integer durationDays,
+                        boolean active,
+                        long activeEnrollments) {
+        }
+
+        public record PlatformGymTrainerDto(
+                        Long id,
+                        String fullName,
+                        String email,
+                        String phone,
+                        String specialties,
+                        BigDecimal commissionRate,
+                        boolean active,
+                        long activeMembers,
+                        long totalSessions,
+                        BigDecimal totalEarnings) {
+        }
+
+        public record PlatformGymStaffDto(
+                        Long id,
+                        String fullName,
+                        String email,
+                        String phone,
+                        Role role,
+                        String branchName) {
+        }
+
+        public record PlatformGymActionDto(
+                        Long id,
+                        String actorEmail,
+                        String actorRole,
+                        String action,
+                        String entityType,
+                        Long entityId,
+                        Instant occurredAt,
+                        String details) {
+        }
+
+        public record PlatformGymFinancialsDto(
+                        BigDecimal totalRevenue,
+                        BigDecimal revenueLast30Days,
+                        BigDecimal discountsGiven,
+                        BigDecimal estimatedTax,
+                        BigDecimal averageTicketPrice,
+                        BigDecimal arpu) {
+        }
+
+        public record PlatformGymServiceUsageDto(
+                        long totalMembers,
+                        long activeMembers,
+                        long expiredMembers,
+                        long totalBranches,
+                        long totalPlans,
+                        long totalTrainers,
+                        long totalPtSessions,
+                        long actionHistoryCount,
+                        long renewalRemindersCount,
+                        boolean customBrandingActive) {
+        }
+
+        public record PlatformGymDecisionSupportDto(
+                        int healthScore,
+                        String healthStatus,
+                        Long daysUntilExpiry,
+                        String churnRiskLevel,
+                        List<String> strategicRecommendations,
+                        List<String> positiveIndicators,
+                        List<String> riskFactors) {
+        }
+
+        public record PlatformGymDetailDto(
+                        PlatformOrganizationDto organization,
+                        UserDto owner,
+                        List<PlatformGymBranchDto> branches,
+                        List<PlatformGymPlanDto> plans,
+                        List<PlatformGymTrainerDto> trainers,
+                        List<PlatformGymStaffDto> staff,
+                        List<PlatformGymActionDto> recentActivity,
+                        PlatformGymFinancialsDto financials,
+                        PlatformGymServiceUsageDto serviceUsage,
+                        PlatformGymDecisionSupportDto decisionSupport) {
         }
 
         public record ExtendSubscriptionRequest(

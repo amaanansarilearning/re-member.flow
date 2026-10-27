@@ -62,6 +62,7 @@ public class GymService {
     private final MembershipFreezeRepository freezes;
     private final ActionHistoryService actionHistory;
     private final SubscriptionService subscriptionService;
+    private final GymRegistrationOtpService gymRegistrationOtpService;
     private final ZoneId businessZone;
 
     public GymService(UserRepository users, PlanRepository plans, MembershipRepository memberships,
@@ -72,6 +73,7 @@ public class GymService {
             MembershipEmailService membershipEmailService, MembershipFreezeRepository freezes,
             ActionHistoryService actionHistory,
             SubscriptionService subscriptionService,
+            GymRegistrationOtpService gymRegistrationOtpService,
             @Value("${gym.business-zone:Asia/Kolkata}") String businessZone) {
         this.users = users;
         this.plans = plans;
@@ -86,6 +88,7 @@ public class GymService {
         this.freezes = freezes;
         this.actionHistory = actionHistory;
         this.subscriptionService = subscriptionService;
+        this.gymRegistrationOtpService = gymRegistrationOtpService;
         this.businessZone = ZoneId.of(businessZone);
     }
 
@@ -252,6 +255,7 @@ public class GymService {
     }
 
     public synchronized UserDto registerGym(GymRegistrationRequest request) {
+        gymRegistrationOtpService.verifyAndConsumeOtp(request.email(), request.verificationCode());
         if (users.existsByEmailIgnoreCase(request.email())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
         }

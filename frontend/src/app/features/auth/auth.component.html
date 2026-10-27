@@ -66,6 +66,18 @@
             {{ busy ? 'Signing in…' : 'Sign in' }} <span aria-hidden="true">↗</span>
           </button>
         </form>
+        <div class="demo-accounts-pill-row" role="region" aria-label="Demo Quick Logins">
+          <span class="demo-pill-title">Quick Demo Logins:</span>
+          <button type="button" class="demo-login-chip chip-member" (click)="loginEmail = 'member@gym.local'; loginEmailChange.emit('member@gym.local'); loginPassword = 'ChangeMe123!'; loginPasswordChange.emit('ChangeMe123!')">
+            ⚡ Enterprise Member
+          </button>
+          <button type="button" class="demo-login-chip" (click)="loginEmail = 'owner@gym.local'; loginEmailChange.emit('owner@gym.local'); loginPassword = 'ChangeMe123!'; loginPasswordChange.emit('ChangeMe123!')">
+            👑 Gym Owner
+          </button>
+          <button type="button" class="demo-login-chip" (click)="loginEmail = 'admin@rememberflow.com'; loginEmailChange.emit('admin@rememberflow.com'); loginPassword = 'AdminPassword123!'; loginPasswordChange.emit('AdminPassword123!')">
+            🌐 Super Admin
+          </button>
+        </div>
         <div class="auth-links">
           <button (click)="setAuthMode.emit('forgot-password')">
             Forgot password?</button
@@ -86,122 +98,188 @@
           </div>
         </div>
       } @else if (authMode === 'register-gym') {
-        <p class="eyebrow">ORGANIZATION ONBOARDING</p>
-        <h2>Register your Gym</h2>
-        <p class="muted">Set up your gym's dedicated workspace and start managing members.</p>
-        <form (ngSubmit)="registerGym.emit()" #regGymForm="ngForm">
-          <label>Gym / Organization name
-            <input name="regOrgName" [(ngModel)]="registerGymDraft.organizationName" required maxlength="120" placeholder="e.g. Iron Peak Fitness">
-          </label>
-          <label>Gym unique code (slug)
-            <input name="regOrgCode" [(ngModel)]="registerGymDraft.organizationCode" required maxlength="40" placeholder="e.g. IRONPEAK" style="text-transform: uppercase;">
-          </label>
-          <label>Initial Branch name
-            <input name="regBranchName" [(ngModel)]="registerGymDraft.branchName" placeholder="e.g. Main Facility (optional)">
-          </label>
-          <label>Your full name
-            <input name="regOwnerName" [(ngModel)]="registerGymDraft.fullName" required maxlength="100" placeholder="e.g. Alex Morgan">
-          </label>
-          <label>Owner email address
-            <input name="regOwnerEmail" type="email" [(ngModel)]="registerGymDraft.email" required placeholder="owner@ironpeak.com">
-          </label>
-          <label>Password
-            <div class="auth-input-password-wrap">
-              <input
-                name="regOwnerPassword"
-                [type]="showRegisterPassword ? 'text' : 'password'"
-                [(ngModel)]="registerGymDraft.password"
-                required
-                minlength="8"
-                maxlength="72"
-                placeholder="At least 8 characters"
-              />
+        @if (registerStep === 'details') {
+          <p class="eyebrow">ORGANIZATION ONBOARDING</p>
+          <h2>Register your Gym</h2>
+          <p class="muted">Set up your gym's dedicated workspace and start managing members.</p>
+          <form (ngSubmit)="requestRegisterOtp.emit()" #regGymForm="ngForm">
+            <label>Gym / Organization name
+              <input name="regOrgName" [(ngModel)]="registerGymDraft.organizationName" required maxlength="120" placeholder="e.g. Iron Peak Fitness">
+            </label>
+            <label>Gym unique code (slug)
+              <input name="regOrgCode" [(ngModel)]="registerGymDraft.organizationCode" required maxlength="40" placeholder="e.g. IRONPEAK" style="text-transform: uppercase;">
+            </label>
+            <label>Initial Branch name
+              <input name="regBranchName" [(ngModel)]="registerGymDraft.branchName" placeholder="e.g. Main Facility (optional)">
+            </label>
+            <label>Your full name
+              <input name="regOwnerName" [(ngModel)]="registerGymDraft.fullName" required maxlength="100" placeholder="e.g. Alex Morgan">
+            </label>
+            <label>Owner email address
+              <input name="regOwnerEmail" type="email" [(ngModel)]="registerGymDraft.email" required placeholder="owner@ironpeak.com">
+            </label>
+            <label>Password
+              <div class="auth-input-password-wrap">
+                <input
+                  name="regOwnerPassword"
+                  [type]="showRegisterPassword ? 'text' : 'password'"
+                  [(ngModel)]="registerGymDraft.password"
+                  required
+                  minlength="8"
+                  maxlength="72"
+                  placeholder="At least 8 characters"
+                />
+                <button
+                  type="button"
+                  class="password-toggle-btn"
+                  [attr.aria-label]="showRegisterPassword ? 'Hide password' : 'Show password'"
+                  (click)="showRegisterPassword = !showRegisterPassword"
+                  tabindex="-1"
+                >
+                  {{ showRegisterPassword ? '🙈' : '👁️' }}
+                </button>
+              </div>
+            </label>
+            <label>Phone number
+              <input name="regOwnerPhone" type="tel" [(ngModel)]="registerGymDraft.phoneNumber" placeholder="+91 98765 43210">
+            </label>
+            <label>Country & Legal Jurisdiction
+              <select
+                name="regCountryCode"
+                [(ngModel)]="registerGymDraft.countryCode"
+                class="auth-country-select"
+                aria-label="Select Country and Legal Jurisdiction"
+              >
+                @for (c of complianceCountries; track c.code) {
+                  <option [value]="c.code">{{ c.flag }} {{ c.name }} · {{ c.jurisdictionLabel }}</option>
+                }
+              </select>
+            </label>
+
+            <div class="compliance-hint-card">
+              <div class="compliance-hint-header">
+                <span class="compliance-badge-flag">{{ selectedCompliance.flag }}</span>
+                <div class="compliance-badge-title">
+                  <strong>{{ selectedCompliance.frameworkName }}</strong>
+                  <span>{{ selectedCompliance.governingLaw }}</span>
+                </div>
+              </div>
+              <div class="compliance-hint-details">
+                <div class="hint-item">
+                  <span class="hint-key">Statutory Officer:</span>
+                  <span class="hint-val">{{ selectedCompliance.statutoryOfficerTitle }} ({{ selectedCompliance.officerEmail }})</span>
+                </div>
+                <div class="hint-item">
+                  <span class="hint-key">Minor Age Threshold:</span>
+                  <span class="hint-val">{{ selectedCompliance.minorAgeThreshold }} years</span>
+                </div>
+                <div class="hint-item">
+                  <span class="hint-key">Breach Reporting SLA:</span>
+                  <span class="hint-val">{{ selectedCompliance.breachNotificationSla }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="legal-consent-card">
+              <label class="legal-checkbox-label">
+                <input
+                  type="checkbox"
+                  name="regAcceptTerms"
+                  [(ngModel)]="registerGymDraft.acceptTerms"
+                  required
+                />
+                <span class="legal-checkbox-text">
+                  I have read, understood, and agree to the
+                  <button type="button" class="legal-inline-btn" (click)="openLegal.emit('terms'); $event.preventDefault()">Terms of Use</button>,
+                  <button type="button" class="legal-inline-btn" (click)="openLegal.emit('privacy'); $event.preventDefault()">Privacy Notice</button>,
+                  <button type="button" class="legal-inline-btn" (click)="openLegal.emit('dpa'); $event.preventDefault()">Data Processing Addendum (DPA)</button>, and
+                  <button type="button" class="legal-inline-btn" (click)="openLegal.emit('disclaimer'); $event.preventDefault()">Health Waiver</button>
+                  governed by <strong>{{ selectedCompliance.name }} ({{ selectedCompliance.jurisdictionLabel }})</strong>.
+                  I certify that I am authorized to bind this gym organization as a Data Fiduciary / Controller.
+                </span>
+              </label>
+            </div>
+            @if (error) {
+              <p class="form-error" role="alert">{{ error }}</p>
+            }
+            <button
+              class="button button-dark button-wide"
+              type="submit"
+              [disabled]="busy || regGymForm.invalid || !registerGymDraft.acceptTerms"
+            >
+              {{ busy ? 'Sending verification code…' : 'Verify Email & Continue' }} <span aria-hidden="true">↗</span>
+            </button>
+          </form>
+          <div class="auth-links">
+            <button (click)="setAuthMode.emit('login')">
+              ← Already registered? Sign in
+            </button>
+          </div>
+        } @else {
+          <p class="eyebrow">EMAIL VERIFICATION</p>
+          <h2>Verify your email</h2>
+          <p class="muted">
+            We sent a 6-digit verification code to <strong>{{ registerGymDraft.email }}</strong>. Enter it below to validate your account and activate your workspace.
+          </p>
+
+          @if (developmentRegisterCode) {
+            <div class="dev-otp-card" role="status">
+              <div class="dev-otp-header">
+                <span class="dev-otp-tag">⚡ DEV ENVIRONMENT OTP</span>
+                <strong class="dev-otp-code">{{ developmentRegisterCode }}</strong>
+              </div>
+              <p class="dev-otp-note">In local dev mode, email verification codes are surfaced directly for testing.</p>
               <button
                 type="button"
-                class="password-toggle-btn"
-                [attr.aria-label]="showRegisterPassword ? 'Hide password' : 'Show password'"
-                (click)="showRegisterPassword = !showRegisterPassword"
-                tabindex="-1"
+                class="dev-otp-fill-btn"
+                (click)="registerGymDraft.verificationCode = developmentRegisterCode"
               >
-                {{ showRegisterPassword ? '🙈' : '👁️' }}
+                Auto-fill Code ⚡
               </button>
             </div>
-          </label>
-          <label>Phone number
-            <input name="regOwnerPhone" type="tel" [(ngModel)]="registerGymDraft.phoneNumber" placeholder="+91 98765 43210">
-          </label>
-          <label>Country & Legal Jurisdiction
-            <select
-              name="regCountryCode"
-              [(ngModel)]="registerGymDraft.countryCode"
-              class="auth-country-select"
-              aria-label="Select Country and Legal Jurisdiction"
-            >
-              @for (c of complianceCountries; track c.code) {
-                <option [value]="c.code">{{ c.flag }} {{ c.name }} · {{ c.jurisdictionLabel }}</option>
-              }
-            </select>
-          </label>
-
-          <div class="compliance-hint-card">
-            <div class="compliance-hint-header">
-              <span class="compliance-badge-flag">{{ selectedCompliance.flag }}</span>
-              <div class="compliance-badge-title">
-                <strong>{{ selectedCompliance.frameworkName }}</strong>
-                <span>{{ selectedCompliance.governingLaw }}</span>
-              </div>
-            </div>
-            <div class="compliance-hint-details">
-              <div class="hint-item">
-                <span class="hint-key">Statutory Officer:</span>
-                <span class="hint-val">{{ selectedCompliance.statutoryOfficerTitle }} ({{ selectedCompliance.officerEmail }})</span>
-              </div>
-              <div class="hint-item">
-                <span class="hint-key">Minor Age Threshold:</span>
-                <span class="hint-val">{{ selectedCompliance.minorAgeThreshold }} years</span>
-              </div>
-              <div class="hint-item">
-                <span class="hint-key">Breach Reporting SLA:</span>
-                <span class="hint-val">{{ selectedCompliance.breachNotificationSla }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="legal-consent-card">
-            <label class="legal-checkbox-label">
-              <input
-                type="checkbox"
-                name="regAcceptTerms"
-                [(ngModel)]="registerGymDraft.acceptTerms"
-                required
-              />
-              <span class="legal-checkbox-text">
-                I have read, understood, and agree to the
-                <button type="button" class="legal-inline-btn" (click)="openLegal.emit('terms'); $event.preventDefault()">Terms of Use</button>,
-                <button type="button" class="legal-inline-btn" (click)="openLegal.emit('privacy'); $event.preventDefault()">Privacy Notice</button>,
-                <button type="button" class="legal-inline-btn" (click)="openLegal.emit('dpa'); $event.preventDefault()">Data Processing Addendum (DPA)</button>, and
-                <button type="button" class="legal-inline-btn" (click)="openLegal.emit('disclaimer'); $event.preventDefault()">Health Waiver</button>
-                governed by <strong>{{ selectedCompliance.name }} ({{ selectedCompliance.jurisdictionLabel }})</strong>.
-                I certify that I am authorized to bind this gym organization as a Data Fiduciary / Controller.
-              </span>
-            </label>
-          </div>
-          @if (error) {
-            <p class="form-error" role="alert">{{ error }}</p>
           }
-          <button
-            class="button button-dark button-wide"
-            type="submit"
-            [disabled]="busy || regGymForm.invalid || !registerGymDraft.acceptTerms"
-          >
-            {{ busy ? 'Setting up gym…' : 'Complete Registration & Launch' }} <span aria-hidden="true">↗</span>
-          </button>
-        </form>
-        <div class="auth-links">
-          <button (click)="setAuthMode.emit('login')">
-            ← Already registered? Sign in
-          </button>
-        </div>
+
+          <form (ngSubmit)="registerGym.emit()" #regOtpForm="ngForm">
+            <label>Verification code
+              <input
+                name="regVerificationCode"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                [(ngModel)]="registerGymDraft.verificationCode"
+                required
+                minlength="6"
+                maxlength="6"
+                placeholder="6-digit code"
+                autofocus
+              />
+            </label>
+
+            @if (error) {
+              <p class="form-error" role="alert">{{ error }}</p>
+            }
+
+            <button
+              class="button button-dark button-wide"
+              type="submit"
+              [disabled]="busy || regOtpForm.invalid || registerGymDraft.verificationCode.length !== 6"
+            >
+              {{ busy ? 'Verifying & Setting up gym…' : 'Complete Registration & Launch' }} <span aria-hidden="true">↗</span>
+            </button>
+          </form>
+
+          <div class="auth-links">
+            <button
+              type="button"
+              [disabled]="registerOtpCooldown > 0 || busy"
+              (click)="requestRegisterOtp.emit()"
+            >
+              {{ registerOtpCooldown > 0 ? ('Resend code in ' + registerOtpCooldown + 's') : 'Resend verification code' }}
+            </button>
+            <button type="button" (click)="setRegisterStep.emit('details')">
+              ← Change registration details
+            </button>
+          </div>
+        }
       } @else {
         <p class="eyebrow">ACCOUNT RECOVERY</p>
         <h2>Reset password.</h2>

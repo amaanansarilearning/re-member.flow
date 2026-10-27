@@ -24,7 +24,9 @@
               </span>
             }
           } @else if (user?.role === 'MEMBER') {
-            <span class="tier-chip" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">💪 Member Portal</span>
+            <span class="tier-chip" [ngClass]="'tier-chip-' + tierPillClass(user?.subscriptionTier).replace('tier-', '')">
+              {{ tierBadgeLabel(user?.subscriptionTier) }} Member
+            </span>
           } @else if (user?.role === 'PERSONAL_TRAINER') {
             <span class="tier-chip" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">⚡ Trainer Portal</span>
           } @else {

@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PlanRepository extends JpaRepository<MembershipPlan, Long> {
+    long countByOrganizationId(Long organizationId);
+
     List<MembershipPlan> findByActiveTrueOrderByPriceAsc();
 
     Optional<MembershipPlan> findByIdAndOrganizationId(Long id, Long organizationId);

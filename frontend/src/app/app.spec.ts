@@ -537,11 +537,65 @@ describe('App', () => {
       branchAddress: '123 Fitness St',
       subscriptionTier: 'STANDARD',
       countryCode: 'IN',
-      acceptTerms: false
+      acceptTerms: false,
+      verificationCode: ''
     };
 
     await app.registerGym();
     expect(app.error()).toContain('Please review and accept the Terms of Use');
+  });
+
+  it('blocks gym registration if verification code is not 6 digits', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.registerGymDraft = {
+      fullName: 'Owner Test',
+      email: 'owner@testgym.com',
+      phoneNumber: '+1234567890',
+      password: 'SecurePassword123!',
+      organizationName: 'Test Gym Club',
+      organizationCode: 'TESTGYM',
+      branchName: 'Main Branch',
+      branchAddress: '123 Fitness St',
+      subscriptionTier: 'STANDARD',
+      countryCode: 'IN',
+      acceptTerms: true,
+      verificationCode: '123'
+    };
+
+    await app.registerGym();
+    expect(app.error()).toContain('Please enter the 6-digit verification code');
+  });
+
+  it('requests registration OTP and moves to OTP step', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const api = TestBed.inject(GymApiService);
+    vi.spyOn(api, 'sendGymRegistrationOtp').mockReturnValue(of({
+      message: 'Verification code sent to owner@testgym.com',
+      developmentCode: '654321'
+    }));
+
+    app.registerGymDraft = {
+      fullName: 'Owner Test',
+      email: 'owner@testgym.com',
+      phoneNumber: '+1234567890',
+      password: 'SecurePassword123!',
+      organizationName: 'Test Gym Club',
+      organizationCode: 'TESTGYM',
+      branchName: 'Main Branch',
+      branchAddress: '123 Fitness St',
+      subscriptionTier: 'STANDARD',
+      countryCode: 'IN',
+      acceptTerms: true,
+      verificationCode: ''
+    };
+
+    await app.requestRegisterOtp();
+    expect(app.registerStep()).toBe('otp');
+    expect(app.developmentRegisterCode()).toBe('654321');
+    expect(app.notice()).toContain('Verification code sent');
   });
 
   it('blocks member registration if health waiver is not acknowledged', async () => {

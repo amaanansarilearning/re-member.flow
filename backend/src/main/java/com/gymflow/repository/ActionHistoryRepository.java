@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ActionHistoryRepository extends JpaRepository<ActionHistory, Long> {
+    long countByOrganizationId(Long organizationId);
+
     List<ActionHistory> findTop250ByOrganizationIdOrderByOccurredAtDesc(Long organizationId);
 
     @Query("select h.entityId as membershipId, max(h.occurredAt) as activityAt "

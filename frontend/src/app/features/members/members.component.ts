@@ -103,4 +103,24 @@ export class MembersComponent {
   onOpenAdjustment(mode: AdjustmentMode, member: Membership, freeze: Freeze | null = null): void {
     this.openAdjustment.emit({ mode, member, freeze });
   }
+
+  tierBadgeLabel(tier?: string): string {
+    switch (tier) {
+      case 'STARTER': return '⭐ STARTER';
+      case 'PRO': return '⚡ PRO';
+      case 'ENTERPRISE':
+      case 'PREMIUM': return '👑 ENTERPRISE';
+      default: return 'STANDARD';
+    }
+  }
+
+  tierPillClass(tier?: string): string {
+    switch (tier) {
+      case 'STARTER': return 'tier-starter';
+      case 'PRO': return 'tier-pro';
+      case 'ENTERPRISE':
+      case 'PREMIUM': return 'tier-enterprise';
+      default: return 'tier-standard';
+    }
+  }
 }

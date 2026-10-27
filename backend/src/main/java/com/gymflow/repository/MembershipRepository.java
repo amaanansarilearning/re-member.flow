@@ -284,4 +284,25 @@ public interface MembershipRepository extends JpaRepository<Membership, Long> {
         List<Membership> findByPersonalTrainerIdOrderByCreatedAtDesc(Long personalTrainerId);
 
         List<Membership> findByPersonalTrainerIdAndStatusOrderByCreatedAtDesc(Long personalTrainerId, MembershipStatus status);
+
+        @Query("select coalesce(sum(m.amountPaid), 0) from Membership m where m.member.organization.id = :orgId")
+        BigDecimal sumAmountPaidByOrganizationId(@Param("orgId") Long orgId);
+
+        @Query("select coalesce(sum(m.amountPaid), 0) from Membership m where m.member.organization.id = :orgId and m.createdAt >= :since")
+        BigDecimal sumAmountPaidByOrganizationIdSince(@Param("orgId") Long orgId, @Param("since") java.time.Instant since);
+
+        @Query("select coalesce(sum(m.listPrice * m.discountPercent / 100), 0) from Membership m where m.member.organization.id = :orgId")
+        BigDecimal sumDiscountsByOrganizationId(@Param("orgId") Long orgId);
+
+        @Query("select count(m) from Membership m where m.member.organization.id = :orgId and m.status = :status")
+        long countByOrganizationIdAndStatus(@Param("orgId") Long orgId, @Param("status") MembershipStatus status);
+
+        @Query("select coalesce(sum(m.amountPaid), 0) from Membership m")
+        BigDecimal sumAllPlatformRevenue();
+
+        @Query("select coalesce(sum(m.amountPaid), 0) from Membership m where m.branch.id = :branchId")
+        BigDecimal sumAmountPaidByBranchId(@Param("branchId") Long branchId);
+
+        @Query("select count(m) from Membership m where m.plan.id = :planId and m.status = com.gymflow.domain.MembershipStatus.ACTIVE")
+        long countActiveByPlanId(@Param("planId") Long planId);
 }

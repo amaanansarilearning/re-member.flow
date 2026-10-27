@@ -121,7 +121,11 @@ export class App {
   readonly view = signal<View>('overview');
   readonly authMode = signal<AuthMode>(hasExpiredSession() ? 'login' : 'home');
   readonly resetStep = signal<'request' | 'confirm'>('request');
+  readonly registerStep = signal<'details' | 'otp'>('details');
   readonly developmentResetCode = signal('');
+  readonly developmentRegisterCode = signal('');
+  readonly registerOtpCooldown = signal(0);
+  private registerCooldownInterval: any = null;
   readonly plans = signal<Plan[]>([]);
   readonly branches = signal<Branch[]>([]);
   readonly staff = signal<User[]>([]);
@@ -560,7 +564,8 @@ export class App {
     branchAddress: '',
     subscriptionTier: 'STANDARD' as 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE' | 'PREMIUM',
     countryCode: 'IN',
-    acceptTerms: false
+    acceptTerms: false,
+    verificationCode: ''
   };
 
   reportFrom = this.addDays(this.todayDate(), -30);
@@ -1080,12 +1085,86 @@ export class App {
   showLogin(): void {
     this.error.set('');
     this.notice.set('');
+    this.registerStep.set('details');
+    this.developmentRegisterCode.set('');
     this.authMode.set('login');
+  }
+
+  setRegisterStep(step: 'details' | 'otp'): void {
+    this.error.set('');
+    this.registerStep.set(step);
+  }
+
+  async requestRegisterOtp(): Promise<void> {
+    if (!this.registerGymDraft.organizationName.trim()) {
+      this.error.set('Please enter a gym or organization name.');
+      return;
+    }
+    if (!this.registerGymDraft.organizationCode.trim()) {
+      this.error.set('Please enter a unique gym code.');
+      return;
+    }
+    if (!this.registerGymDraft.fullName.trim()) {
+      this.error.set('Please enter your full name.');
+      return;
+    }
+    const email = this.registerGymDraft.email.trim();
+    if (!email || !email.includes('@')) {
+      this.error.set('Please enter a valid owner email address.');
+      return;
+    }
+    if (!this.registerGymDraft.password || this.registerGymDraft.password.length < 8) {
+      this.error.set('Password must be at least 8 characters.');
+      return;
+    }
+    if (!this.registerGymDraft.acceptTerms) {
+      this.error.set('Please review and accept the Terms of Use, Privacy Policy, and Health Disclaimer to proceed.');
+      return;
+    }
+
+    this.error.set('');
+    this.busy.set(true);
+    try {
+      const res = await firstValueFrom(this.api.sendGymRegistrationOtp({
+        email,
+        organizationCode: this.registerGymDraft.organizationCode.trim().toUpperCase()
+      }));
+      this.developmentRegisterCode.set(res.developmentCode ?? '');
+      this.registerStep.set('otp');
+      this.notice.set(res.message);
+      this.startRegisterOtpCooldown(60);
+    } catch (error) {
+      this.error.set(this.api.message(error, 'Could not send verification code. Please check your inputs.'));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  private startRegisterOtpCooldown(seconds: number): void {
+    if (this.registerCooldownInterval) {
+      clearInterval(this.registerCooldownInterval);
+    }
+    this.registerOtpCooldown.set(seconds);
+    this.registerCooldownInterval = setInterval(() => {
+      const current = this.registerOtpCooldown();
+      if (current <= 1) {
+        clearInterval(this.registerCooldownInterval);
+        this.registerCooldownInterval = null;
+        this.registerOtpCooldown.set(0);
+      } else {
+        this.registerOtpCooldown.set(current - 1);
+      }
+    }, 1000);
   }
 
   async registerGym(): Promise<void> {
     if (!this.registerGymDraft.acceptTerms) {
       this.error.set('Please review and accept the Terms of Use, Privacy Policy, and Health Disclaimer to proceed.');
+      return;
+    }
+    const code = (this.registerGymDraft.verificationCode || '').trim();
+    if (!code || code.length !== 6) {
+      this.error.set('Please enter the 6-digit verification code sent to your email.');
       return;
     }
     this.error.set('');
@@ -1101,11 +1180,19 @@ export class App {
         branchName: this.registerGymDraft.branchName.trim(),
         branchAddress: this.registerGymDraft.branchAddress.trim(),
         subscriptionTier: this.registerGymDraft.subscriptionTier,
-        countryCode: this.registerGymDraft.countryCode
+        countryCode: this.registerGymDraft.countryCode,
+        verificationCode: code
       }));
+      this.registerStep.set('details');
+      this.developmentRegisterCode.set('');
+      if (this.registerCooldownInterval) {
+        clearInterval(this.registerCooldownInterval);
+        this.registerCooldownInterval = null;
+      }
+      this.registerOtpCooldown.set(0);
       this.startSession(session);
     } catch (error) {
-      this.error.set(this.api.message(error, 'Gym registration failed. Please check your inputs.'));
+      this.error.set(this.api.message(error, 'Gym registration failed. Please check your verification code.'));
     } finally {
       this.busy.set(false);
     }
@@ -3915,6 +4002,8 @@ export class App {
 
     selectPlanFromPublic(tier: 'STANDARD' | 'STARTER' | 'PRO' | 'ENTERPRISE'): void {
     this.registerGymDraft.subscriptionTier = tier;
+    this.registerStep.set('details');
+    this.developmentRegisterCode.set('');
     this.authMode.set('register-gym');
     this.error.set('');
     if (typeof window !== 'undefined') {
