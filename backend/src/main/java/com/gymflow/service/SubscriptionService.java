@@ -610,6 +610,7 @@ public class SubscriptionService {
         );
     }
 
+    @Transactional(readOnly = true)
     public PlatformGymDetailDto getOrganizationDetails(Long organizationId) {
         GymOrganization org = organizations.findById(organizationId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Gym organization not found"));
@@ -728,7 +729,8 @@ public class SubscriptionService {
         if (org.getSubscriptionExpiresAt() != null) {
             daysUntilExpiry = ChronoUnit.DAYS.between(Instant.now(), org.getSubscriptionExpiresAt());
         }
-        String churnRisk = orgDto.healthScore() < 45 ? "HIGH" : orgDto.healthScore() < 75 ? "MEDIUM" : "LOW";
+        int scoreVal = orgDto.healthScore();
+        String churnRisk = scoreVal < 45 ? "HIGH" : scoreVal < 75 ? "MEDIUM" : "LOW";
 
         List<String> positiveIndicators = new ArrayList<>();
         if (orgDto.activeMemberCount() > 0) positiveIndicators.add(orgDto.activeMemberCount() + " actively paying gym members on roster");

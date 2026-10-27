@@ -34,6 +34,17 @@
     </button>
   </div>
 
+  <!-- Deep-Dive Global Error Alert -->
+  @if (deepDiveError) {
+    <div class="deep-dive-alert-banner">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">⚠️</span>
+        <strong>{{ deepDiveError }}</strong>
+      </div>
+      <button type="button" class="close-alert-btn" (click)="deepDiveError = ''">✕</button>
+    </div>
+  }
+
   <!-- Tab 1: Macro Telemetry & Decision Making -->
   @if (platformTab === 'metrics') {
     @if (pendingUpgradeRequestsCount > 0) {
@@ -97,17 +108,19 @@
         <div class="matrix-list">
           @for (gym of upsellGyms; track gym.id) {
             <div class="matrix-item" (click)="openDeepDive(gym.id)">
-              <div class="matrix-item-main">
-                <strong>{{ gym.name }}</strong>
-                <span class="tier-pill" [ngClass]="tierPillClass(gym.subscriptionTier)">{{ tierBadgeLabel(gym.subscriptionTier) }}</span>
-                <span class="badge" style="font-size: 11px; background: rgba(56, 189, 248, 0.12); color: #38bdf8;">
-                  {{ gym.memberCount }} Members · {{ gym.branchCount }} Branches
-                </span>
+              <div class="matrix-item-content">
+                <div class="matrix-item-header">
+                  <strong>{{ gym.name }}</strong>
+                  <span class="tier-pill" [ngClass]="tierPillClass(gym.subscriptionTier)">{{ tierBadgeLabel(gym.subscriptionTier) }}</span>
+                  <span class="badge" style="font-size: 11px; background: rgba(56, 189, 248, 0.12); color: #38bdf8;">
+                    {{ gym.memberCount }} Members · {{ gym.branchCount }} Branches
+                  </span>
+                </div>
+                <div class="matrix-item-insight">
+                  {{ gym.decisionInsights?.[0] || 'High usage' }}
+                </div>
               </div>
-              <div class="matrix-item-action">
-                <span style="font-size: 11px; color: var(--muted); margin-bottom: 4px;">{{ gym.decisionInsights?.[0] || 'High usage' }}</span>
-                <button type="button" class="btn-micro" (click)="openDeepDive(gym.id); $event.stopPropagation()">Inspect 360° →</button>
-              </div>
+              <button type="button" class="btn-micro" (click)="openDeepDive(gym.id); $event.stopPropagation()">Inspect 360° →</button>
             </div>
           } @empty {
             <div class="empty-hint">No standard tier gyms currently flagged for immediate upselling.</div>
@@ -127,19 +140,21 @@
         <div class="matrix-list">
           @for (gym of atRiskGyms; track gym.id) {
             <div class="matrix-item at-risk-border" (click)="openDeepDive(gym.id)">
-              <div class="matrix-item-main">
-                <strong>{{ gym.name }}</strong>
-                <span class="health-badge" [ngClass]="healthBadgeClass(gym.healthScore)">
-                  {{ gym.healthScore ?? 50 }}% · {{ gym.healthStatus }}
-                </span>
-                <span class="status-badge" [class.status-suspended]="gym.subscriptionStatus === 'SUSPENDED'" [class.status-active]="gym.subscriptionStatus === 'ACTIVE'">
-                  {{ gym.subscriptionStatus }}
-                </span>
+              <div class="matrix-item-content">
+                <div class="matrix-item-header">
+                  <strong>{{ gym.name }}</strong>
+                  <span class="health-badge" [ngClass]="healthBadgeClass(gym.healthScore)">
+                    {{ gym.healthScore ?? 50 }}% · {{ gym.healthStatus }}
+                  </span>
+                  <span class="status-badge" [class.status-suspended]="gym.subscriptionStatus === 'SUSPENDED'" [class.status-active]="gym.subscriptionStatus === 'ACTIVE'">
+                    {{ gym.subscriptionStatus }}
+                  </span>
+                </div>
+                <div class="matrix-item-insight risk-text">
+                  {{ gym.decisionInsights?.[0] || 'Attention required' }}
+                </div>
               </div>
-              <div class="matrix-item-action">
-                <span style="font-size: 11px; color: #f87171; margin-bottom: 4px;">{{ gym.decisionInsights?.[0] || 'Attention required' }}</span>
-                <button type="button" class="btn-micro btn-micro-danger" (click)="openDeepDive(gym.id); $event.stopPropagation()">Intervene →</button>
-              </div>
+              <button type="button" class="btn-micro btn-micro-danger" (click)="openDeepDive(gym.id); $event.stopPropagation()">Intervene →</button>
             </div>
           } @empty {
             <div class="empty-hint">All tenant organizations are currently in a healthy operational state.</div>
@@ -1258,10 +1273,11 @@
   <!-- Loading State Overlay -->
   @if (loadingDeepDive) {
     <div class="modal-backdrop">
-      <div style="background: var(--surface); padding: 32px; border-radius: var(--r-xl); text-align: center; border: 1px solid var(--border);">
-        <div style="font-size: 32px; margin-bottom: 12px; animation: spin 1s linear infinite;">⏳</div>
+      <div class="loading-deep-dive-card">
+        <div class="spinner-icon">⏳</div>
         <strong>Compiling 360° Gym Intelligence…</strong>
-        <p style="color: var(--muted); font-size: 12.5px; margin-top: 4px;">Aggregating membership sales, PT sessions, facilities, and telemetry.</p>
+        <p>Aggregating membership sales, PT sessions, facilities, and telemetry.</p>
+        <button type="button" class="button button-outline" style="margin-top: 14px; font-size: 11.5px; padding: 4px 14px;" (click)="loadingDeepDive = false">Cancel</button>
       </div>
     </div>
   }

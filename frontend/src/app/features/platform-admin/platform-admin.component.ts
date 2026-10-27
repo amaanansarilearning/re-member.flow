@@ -10,7 +10,7 @@ import {
 } from '../../core/models';
 import { dateLabel } from '../../core/utils/formatters';
 import { GymApiService } from '../../gym-api.service';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 
 @Component({
   selector: 'app-platform-admin',
@@ -91,9 +91,16 @@ export class PlatformAdminComponent {
     this.deepDiveError = '';
     this.deepDiveTab = 'decision';
     try {
-      this.selectedOrgForDeepDive = await firstValueFrom(this.api.platformOrganizationDetails(orgId));
-    } catch (err) {
-      this.deepDiveError = this.api.message(err, 'Failed to load gym 360° deep-dive analytics.');
+      this.selectedOrgForDeepDive = await firstValueFrom(
+        this.api.platformOrganizationDetails(orgId).pipe(timeout(15000))
+      );
+    } catch (err: any) {
+      console.error('Failed to load gym 360 deep-dive analytics:', err);
+      if (err?.name === 'TimeoutError') {
+        this.deepDiveError = 'The request timed out after 15 seconds while compiling 360° analytics. Please try again.';
+      } else {
+        this.deepDiveError = this.api.message(err, 'Failed to load gym 360° deep-dive analytics.');
+      }
     } finally {
       this.loadingDeepDive = false;
     }

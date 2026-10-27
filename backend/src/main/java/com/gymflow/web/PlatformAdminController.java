@@ -15,6 +15,7 @@ import java.util.List;
 @RequestMapping("/api/platform")
 @PreAuthorize("hasRole('SUPER_ADMIN')")
 public class PlatformAdminController {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(PlatformAdminController.class);
     private final SubscriptionService subscriptionService;
 
     public PlatformAdminController(SubscriptionService subscriptionService) {
