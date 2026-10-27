@@ -316,9 +316,9 @@
                 <span class="health-badge" [ngClass]="healthBadgeClass(org.healthScore)">
                   {{ healthStatusLabel(org.healthStatus, org.healthScore) }}
                 </span>
-                @if (org.decisionInsights?.[0]) {
-                  <small style="display: block; font-size: 10px; color: var(--muted); margin-top: 3px; max-width: 140px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" [title]="org.decisionInsights[0]">
-                    {{ org.decisionInsights[0] }}
+                @if (org.decisionInsights?.[0]; as firstInsight) {
+                  <small style="display: block; font-size: 10px; color: var(--muted); margin-top: 3px; max-width: 140px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" [title]="firstInsight">
+                    {{ firstInsight }}
                   </small>
                 }
               </td>
@@ -1188,7 +1188,7 @@
                       <br><small style="color: var(--muted);">{{ t.email }}</small>
                     </td>
                     <td><small>{{ t.specialties || 'General Fitness' }}</small></td>
-                    <td>{{ t.commissionRate ?? 0 }}%</td>
+                    <td>{{ t.commissionRate }}%</td>
                     <td><strong style="color: #10b981;">{{ t.activeMembers }}</strong></td>
                     <td><strong>{{ t.totalSessions }}</strong></td>
                     <td><strong style="color: #38bdf8;">{{ formatCurrency(t.totalEarnings) }}</strong></td>
