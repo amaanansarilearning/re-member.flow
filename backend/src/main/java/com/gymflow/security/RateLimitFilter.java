@@ -89,7 +89,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (trustProxy) {
             String xff = request.getHeader("X-Forwarded-For");
             if (xff != null && !xff.isBlank()) {
-                return xff.split(",")[0].trim();
+                // Use the RIGHTMOST address — it is appended by our own trusted proxy
+                // and cannot be spoofed by the client (unlike the leftmost address).
+                String[] ips = xff.split(",");
+                return ips[ips.length - 1].trim();
             }
         }
         return request.getRemoteAddr();

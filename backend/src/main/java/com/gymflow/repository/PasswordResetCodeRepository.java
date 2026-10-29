@@ -13,4 +13,8 @@ public interface PasswordResetCodeRepository extends JpaRepository<PasswordReset
     boolean existsByEmailIgnoreCaseAndCreatedAtAfter(String email, Instant createdAt);
 
     List<PasswordResetCode> findAllByEmailIgnoreCaseAndConsumedAtIsNull(String email);
+
+    // H-5: Used to detect recent lockout events and enforce a post-lockout cooldown,
+    // preventing attackers from looping: request → 5 bad guesses → lockout → request again.
+    List<PasswordResetCode> findAllByEmailIgnoreCaseAndConsumedAtIsNotNull(String email);
 }

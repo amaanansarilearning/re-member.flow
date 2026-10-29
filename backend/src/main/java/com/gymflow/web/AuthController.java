@@ -67,7 +67,7 @@ public class AuthController {
                 .secure(isSecureCookie(request))
                 .path("/")
                 .maxAge(maxAgeSeconds)
-                .sameSite("Lax")
+                .sameSite("Strict")
                 .build();
         response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString());
     }

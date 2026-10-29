@@ -442,7 +442,8 @@ public final class ApiDtos {
         }
 
         public record PasswordResetConfirmRequest(@NotBlank @Email String email,
-                        @NotBlank @Size(min = 6, max = 6) String code,
+                        // H-5 FIX: Code is now 8-char alphanumeric (see PasswordResetService.generateCode)
+                        @NotBlank @Size(min = 8, max = 8) String code,
                         @NotBlank @Size(min = 8, max = 72) String newPassword) {
         }
 

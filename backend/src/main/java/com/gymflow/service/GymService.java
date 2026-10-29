@@ -1094,8 +1094,22 @@ public class GymService {
     }
 
     public UserDto toUserDto(UserAccount user) {
+        // Default: only expose PIN when this user IS a member (their own /me response)
+        return toUserDto(user, user.getRole() == Role.MEMBER);
+    }
+
+    /**
+     * Converts a UserAccount to its DTO representation.
+     *
+     * @param includeMemberPin true only when the authenticated caller IS the member
+     *                         themselves. Prevents STAFF/PT from reading another
+     *                         member's attendance PIN.
+     */
+    public UserDto toUserDto(UserAccount user, boolean includeMemberPin) {
         GymBranch branch = user.getBranch();
         GymOrganization org = user.getOrganization();
+        // Only expose the PIN to the member who owns it
+        String memberPin = (includeMemberPin && user.getRole() == Role.MEMBER) ? user.getMemberPin() : null;
         return new UserDto(user.getId(), user.getFullName(), user.getEmail(), user.getPhoneNumber(), user.getRole(),
                 branch == null ? null : branch.getId(), branch == null ? null : branch.getName(),
                 org == null ? null : org.getId(), org == null ? null : org.getName(),
@@ -1104,7 +1118,7 @@ public class GymService {
                 org == null ? List.of("CORE_MANAGEMENT") : org.getEnabledFeatures(),
                 org == null ? SubscriptionStatus.ACTIVE : org.getSubscriptionStatus(),
                 org == null ? null : org.getSubscriptionExpiresAt(),
-                user.getMemberPin(),
+                memberPin,
                 org == null ? "IN" : org.getCountryCode(),
                 org == null ? "INDIA_DPDP" : org.getLegalJurisdiction());
     }

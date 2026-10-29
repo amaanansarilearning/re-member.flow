@@ -31,10 +31,20 @@ public class SuperAdminInitializer {
             if ("AdminPassword123!".equals(adminPassword) && !allowDefault) {
                 if (!env.acceptsProfiles(org.springframework.core.env.Profiles.of("dev", "test"))) {
                     throw new IllegalStateException(
-                            "FATAL: Default Super-Admin password detected in non-dev environment. Please configure GYM_PLATFORM_ADMIN_PASSWORD in your .env file (or set GYM_PLATFORM_ALLOW_DEFAULT_ADMIN_PASSWORD=true to bypass).");
+                            "FATAL: Default Super-Admin password detected in non-dev environment. "
+                            + "Please configure GYM_PLATFORM_ADMIN_PASSWORD in your .env file "
+                            + "(or set GYM_PLATFORM_ALLOW_DEFAULT_ADMIN_PASSWORD=true to bypass).");
                 }
-                log.warn(
-                        "SECURITY WARNING: Using default Super-Admin password. Configure GYM_PLATFORM_ADMIN_PASSWORD for production environments.");
+                log.warn("SECURITY WARNING: Using default Super-Admin password. "
+                        + "Configure GYM_PLATFORM_ADMIN_PASSWORD for production environments.");
+            } else if ("AdminPassword123!".equals(adminPassword) && allowDefault) {
+                // H-1 FIX: GYM_PLATFORM_ALLOW_DEFAULT_ADMIN_PASSWORD=true was explicitly set.
+                // Log at ERROR level so this is never silently active in production.
+                // The original code logged nothing in this branch, making the bypass invisible.
+                log.error("[SECURITY BYPASS ACTIVE] gym.platform.allow-default-admin-password=true is set "
+                        + "and the Super-Admin account is protected only by the default password 'AdminPassword123!'. "
+                        + "This is a CRITICAL security risk in any internet-facing deployment. "
+                        + "Set GYM_PLATFORM_ADMIN_PASSWORD to a strong unique secret immediately.");
             }
             if (!users.existsByEmailIgnoreCase(email)) {
                 users.save(new UserAccount("Platform Super-Admin", email, null,
