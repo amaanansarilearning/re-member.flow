@@ -225,6 +225,18 @@ button:active:not(:disabled),
   max-width: 480px;
 }
 
+@media (max-width: 600px) {
+  .toast-notification-hub {
+    top: 14px !important;
+    right: 14px !important;
+    left: 14px !important;
+  }
+  .toast-pill {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
+
 .toast-pill.toast-error {
   background: rgba(254, 242, 242, 0.96);
   border: 1px solid rgba(244, 63, 94, 0.3);
@@ -2911,33 +2923,65 @@ button.contact-pill:active {
 
 
 /* ══════════════════════════════
-   STATUS PILLS
+   STATUS PILLS (PREMIUM CAPSULES)
 ══════════════════════════════ */
 .status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 9px;
-  border-radius: var(--r-sm);
-  background: rgba(16,185,129,0.1);
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   color: var(--emerald);
   font-size: 10px;
   font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.status-pill::before { width: 5px; height: 5px; border-radius: 50%; background: currentColor; content: ''; }
-.status-pill.status-expiring { background: rgba(245,158,11,0.1); color: var(--amber); }
-.status-pill.status-upcoming { background: rgba(14,165,233,0.1); color: var(--sky); }
-.status-pill.status-renewed { background: rgba(99,102,241,0.1); color: var(--accent); }
-.status-pill.status-inactive { background: rgba(100,116,139,0.1); color: var(--muted); }
-.status-pill.status-frozen { background: rgba(14,165,233,0.1); color: var(--sky); }
-.status-pill.status-freeze-scheduled { background: rgba(14,165,233,0.07); color: #38BDF8; }
-.status-pill.status-completed { background: rgba(16,185,129,0.1); color: var(--emerald); }
-.status-pill.status-booked { background: rgba(99,102,241,0.1); color: var(--accent); }
-.status-pill.status-missed { background: rgba(244,63,94,0.1); color: var(--danger); }
-.status-pill.status-cancelled { background: rgba(100,116,139,0.1); color: var(--muted); }
-.status-pill.status-tentative { background: rgba(245,158,11,0.1); color: var(--amber); }
-.status-pill.status-paid { background: rgba(16,185,129,0.1); color: var(--emerald); }
-.status-pill.status-pending { background: rgba(245,158,11,0.1); color: var(--amber); }
+.status-pill::before {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  content: '';
+  box-shadow: 0 0 4px currentColor;
+}
+.status-pill.status-expiring { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--amber); }
+.status-pill.status-upcoming { background: rgba(14,165,233,0.1); border-color: rgba(14,165,233,0.3); color: var(--sky); }
+.status-pill.status-renewed { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.3); color: var(--accent); }
+.status-pill.status-inactive { background: rgba(100,116,139,0.1); border-color: rgba(100,116,139,0.25); color: var(--muted); }
+.status-pill.status-frozen { background: rgba(14,165,233,0.1); border-color: rgba(14,165,233,0.3); color: var(--sky); }
+.status-pill.status-freeze-scheduled { background: rgba(14,165,233,0.07); border-color: rgba(14,165,233,0.25); color: #38BDF8; }
+.status-pill.status-completed { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: var(--emerald); }
+.status-pill.status-booked { background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.3); color: var(--accent); }
+.status-pill.status-missed { background: rgba(244,63,94,0.1); border-color: rgba(244,63,94,0.3); color: var(--danger); }
+.status-pill.status-cancelled { background: rgba(100,116,139,0.1); border-color: rgba(100,116,139,0.25); color: var(--muted); }
+.status-pill.status-tentative { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--amber); }
+.status-pill.status-paid { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: var(--emerald); }
+.status-pill.status-pending { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--amber); }
+
+/* Tabular Numerics for Financial and Metric Displays */
+.metric-value,
+.team-kpi-val,
+.team-kpi-value,
+.mock-kpi-val,
+.queue-amount,
+.branch-pulse-revenue,
+.topup-amount,
+.stat-value,
+.stat-count,
+.revenue-amount,
+.exec-kpi-val,
+.exec-kpi-value,
+.platform-stat-card .stat-value {
+  font-variant-numeric: tabular-nums;
+  -webkit-font-feature-settings: "tnum" 1;
+  font-feature-settings: "tnum" 1;
+}
 .status-detail { display: block; margin-top: 4px; color: var(--muted-light); font-size: 9px; }
 
 /* ══════════════════════════════

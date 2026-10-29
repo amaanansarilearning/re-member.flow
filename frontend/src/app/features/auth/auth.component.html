@@ -327,14 +327,16 @@
             <label
               >Verification code<input
                 name="resetCode"
-                inputmode="numeric"
+                type="text"
+                inputmode="text"
                 autocomplete="one-time-code"
                 [(ngModel)]="resetDraft.code"
                 required
-                minlength="6"
-                maxlength="6"
-                placeholder="6-digit code"
-            /></label>
+                minlength="8"
+                maxlength="8"
+                placeholder="8-character code"
+                style="text-transform: uppercase; font-family: monospace; letter-spacing: 0.12em; font-weight: 700;"
+              /></label>
             <label>New password
               <div class="auth-input-password-wrap">
                 <input
